@@ -1,0 +1,179 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h2>网站分析仪表板</h2>
+        <p class="dashboard-subtitle">实时监控网站流量和用户行为</p>
+    </div>
+
+    <!-- 网站列表 -->
+    <div class="sites-section">
+        <div class="sites-list">
+            <!-- 数据将通过JavaScript动态加载 -->
+            <div style="text-align: center; padding: 2rem;">
+                <p style="margin-top: 1rem; color: var(--bg-secondary-text);"><span class="loading"></span>正在加载网站数据...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "extra_js"}}
+<script>
+// 获取网站列表及其数据概览
+async function loadSitesData() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error(`请先登录`);
+        }
+
+        // 获取网站列表
+        const response = await fetch('/api/sites?limit=50', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.msg}`);
+        }
+
+        const result = await response.json();
+        if (result.code != 0) {
+            throw new Error(result.msg || '获取网站列表失败');
+        }
+
+        const sites = result.data.list;
+        const sitesListContainer = document.querySelector('.sites-list');
+
+        if (!sitesListContainer) {
+            throw new Error(`未找到网站列表容器`);
+        }
+
+        // 清空现有内容
+        sitesListContainer.innerHTML = '';
+
+        // 如果没有网站
+        if (!sites || sites.length === 0) {
+            sitesListContainer.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--bg-secondary-text);">
+                    <h3>暂无网站数据</h3>
+                    <p>您还没有添加任何网站，请先添加网站后再查看数据</p>
+                </div>
+            `;
+            return;
+        }
+
+        // 为每个网站获取统计数据
+        for (const site of sites) {
+            try {
+                const statsResponse = await fetch(`/api/sites/${site.id}/simple-stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                let stats = {
+                    pv: 0,
+                    uv: 0,
+                    ip_count: 0,
+                    bounce_rate: 0,
+                    avg_duration: 0
+                };
+
+                if (statsResponse.ok) {
+                    const statsResult = await statsResponse.json();
+                    if (statsResult.code == 0) {
+                        stats = statsResult.data;
+                    }
+                }
+
+                // 创建网站项
+                const siteElement = createSiteElement(site, stats);
+                sitesListContainer.appendChild(siteElement);
+
+            } catch (error) {
+                console.error(`获取网站 ${site.name} 统计数据失败:`, error);
+                // 即使有错误也显示网站基本信息
+                const siteElement = createSiteElement(site, {
+                    pv: 0,
+                    uv: 0,
+                    ip_count: 0,
+                    bounce_rate: 0,
+                    avg_duration: 0
+                });
+                sitesListContainer.appendChild(siteElement);
+            }
+        }
+
+    } catch (error) {
+        console.error('加载网站数据失败:', error);
+        const sitesListContainer = document.querySelector('.sites-list');
+        if (sitesListContainer) {
+            sitesListContainer.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--bg-secondary-text);">
+                    <h3>加载失败</h3>
+                    <p>无法加载网站数据，请稍后重试</p>
+                    <button onclick="loadSitesData()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: var(--primary-text); border: none; border-radius: 4px; cursor: pointer;">
+                        重新加载
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
+// 创建网站元素
+function createSiteElement(site, stats) {
+    const siteDiv = document.createElement('div');
+    siteDiv.className = 'site-item';
+
+    // 格式化平均访问时长
+    const formatDuration = (seconds) => {
+        if (!seconds || seconds < 60) return `${seconds || 0}s`;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}m${remainingSeconds}s`;
+    };
+
+    siteDiv.innerHTML = `
+        <div class="site-header">
+            <h3 class="site-name">‣ ${site.name || '未命名网站'}</h3>
+            <a href="${site.domain}" target="_balnk" class="site-url">${site.domain || '未设置域名'}</a>
+            <a href="/websites/${site.id}"><button>查看更多 ➔</button></a>
+        </div>
+        <div class="site-metrics">
+            <div class="metric">
+                <div class="metric-label">浏览量</div>
+                <div class="metric-value">${stats.pv || 0}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">访问次数</div>
+                <div class="metric-value">${stats.uv || 0}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">访客</div>
+                <div class="metric-value">${stats.ip_count || 0}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">跳出率</div>
+                <div class="metric-value">${(stats.bounce_rate || 0).toFixed(1)}%</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">平均访问时长</div>
+                <div class="metric-value">${formatDuration(Math.floor(stats.avg_duration || 0))}</div>
+            </div>
+        </div>
+    `;
+
+    return siteDiv;
+}
+
+// 页面加载完成后执行
+document.addEventListener('DOMContentLoaded', function() {
+    loadSitesData();
+});
+</script>
+{{end}}

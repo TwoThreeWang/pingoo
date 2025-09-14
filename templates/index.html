@@ -1,0 +1,285 @@
+{{template "base" .}}
+
+{{define "title"}}
+{{.siteName}}，开源、简单、轻量、隐私友好的网站分析工具
+{{end}}
+
+{{define "head"}}
+   <style>
+        /* 英雄区域样式 */
+        .hero-section {
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .cta-button {
+            background: var(--primary-color);
+            color: var(--primary-text);
+            padding: 0.5rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        /* 功能特性区域 */
+        .features-section {
+            padding: 5rem 1rem;
+            background-color: var(--bg-secondary);
+            border-radius: 0.5rem;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: var(--bg-primary);
+            color: var(--bg-primary-text);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .feature-icon {
+            width: 4rem;
+            height: 4rem;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--bg-primary-text);
+        }
+
+        .feature-description {
+            color: var(--bg-secondary-text);
+            line-height: 1.6;
+        }
+
+        /* 代码示例区域 */
+        .code-section {
+            padding: 5rem 1rem;
+            text-align: center;
+        }
+
+        .code-block {
+            background: #1a1a1a;
+            color: #f5f5f5;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            text-align: left;
+            margin: 2rem 0;
+            position: relative;
+            overflow-x: auto;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--primary-color);
+            color: var(--primary-text);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .copy-button:hover {
+            background: var(--primary-color);
+        }
+
+        /* 行动号召区域 */
+        .cta-section {
+            padding: 5rem 1rem;
+            background: var(--primary-color);
+            color: var(--primary-text);
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .cta-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--primary-text);
+        }
+
+        .cta-description {
+            font-size: 1.125rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.125rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+        }
+
+        @media (max-width: 480px) {
+            .hero-section {
+                padding: 3rem 1rem;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+{{end}}
+
+{{define "content"}}
+    <!-- 英雄区域 -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">开源、简单、轻量、隐私友好的网站分析工具</h1>
+            <p class="hero-subtitle">{{.siteName}} 帮助您了解网站流量、用户行为和转换效率，无需担心隐私泄露</p>
+            <a href="/register" class="cta-button">免费开始</a>
+        </div>
+    </section>
+
+    <!-- 功能特性 -->
+    <section class="features-section">
+        <div class="container">
+            <h2 class="section-title">为什么选择 {{.siteName}}？</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3 class="feature-title">隐私优先</h3>
+                    <p class="feature-description">不收集个人身份信息，完全遵守 GDPR，所有数据都经过匿名化处理</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3 class="feature-title">轻量快速</h3>
+                    <p class="feature-description">脚本大小不到 1KB，不会影响网站加载速度，提供实时数据更新</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3 class="feature-title">直观分析</h3>
+                    <p class="feature-description">简洁明了的仪表板，一目了然地了解网站流量、来源和用户行为</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3 class="feature-title">开源透明</h3>
+                    <p class="feature-description">完全开源的代码，透明的数据处理流程，您可以随时查看和审计</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3 class="feature-title">简单易用</h3>
+                    <p class="feature-description">只需一行代码即可集成，无需复杂配置，支持所有主流框架</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <h3 class="feature-title">免费使用</h3>
+                    <p class="feature-description">基础功能完全免费，无隐藏费用，支持自托管部署</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 代码示例 -->
+    <section class="code-section">
+        <div class="code-container">
+            <h2 class="section-title">简单集成</h2>
+            <p style="color: #666; font-size: 1.125rem; margin-bottom: 2rem;">只需一行代码，即可开始使用 {{.siteName}} 进行网站分析</p>
+
+            <div class="code-block">
+                <button class="copy-button" onclick="copyCode(this)">复制</button>
+                <pre><code>&lt;script async defer src="{{.siteUrl}}/tracker.js" site-id="YOUR_SITE_ID"&gt;&lt;/script&gt;</code></pre>
+            </div>
+
+            <p style="color: #666; margin-top: 1rem;">将 YOUR_SITE_ID 替换为您在 {{.siteName}} 添加站点后获得的站点 ID</p>
+        </div>
+    </section>
+
+    <!-- 行动号召 -->
+    <section class="cta-section">
+        <div class="cta-content">
+            <h2 class="cta-title">准备好开始了吗？</h2>
+            <p class="cta-description">立即注册，在几分钟内获得您网站的详细分析数据</p>
+            <a href="/register" class="cta-button" style="background: var(--primary-text); color: var(--primary-color);">免费注册</a>
+        </div>
+    </section>
+
+    <script>
+        function copyCode(button) {
+            const codeBlock = button.nextElementSibling.querySelector('code');
+            const text = codeBlock.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = '已复制!';
+                setTimeout(() => {
+                    button.textContent = '复制';
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+    </script>
+{{end}}

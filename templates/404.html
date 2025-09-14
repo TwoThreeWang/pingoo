@@ -1,0 +1,100 @@
+{{template "base.html" .}}
+
+{{define "content"}}
+<style>
+/* 404页面专用样式 */
+.error-container {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.error-content {
+    text-align: center;
+    max-width: 600px;
+    width: 100%;
+}
+
+.error-code {
+    font-size: 8rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin: 0;
+    line-height: 1;
+    font-family: var(--font-sans);
+}
+
+.error-title {
+    font-size: 2rem;
+    color: var(--bg-primary-text);
+    margin: 1rem 0;
+    font-weight: 600;
+}
+
+.error-message {
+    font-size: 1.1rem;
+    color: var(--bg-secondary-text);
+    margin: 1.5rem 0;
+    line-height: 1.6;
+}
+
+.error-actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.error-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+    .error-code {
+        font-size: 6rem;
+    }
+    .error-title {
+        font-size: 1.5rem;
+    }
+    .error-message {
+        font-size: 1rem;
+    }
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* 暗模式下的调整 */
+.dark_mode .error-code {
+    color: var(--primary-color);
+    opacity: 0.9;
+}
+
+.dark_mode .error-icon {
+    opacity: 0.6;
+}
+</style>
+
+<div class="error-container">
+    <div class="error-content">
+        <div class="error-icon">🤔</div>
+        <h1 class="error-code">{{if .errorCode}}{{.errorCode}}{{else}}404{{end}}</h1>
+        <h2 class="error-title">{{if .errorTitle}}{{.errorTitle}}{{else}}页面找不到了{{end}}</h2>
+        <p class="error-message">{{if .errorMessage}}{{.errorMessage}}{{else}}
+            抱歉，您访问的页面不存在或已被移动。<br>
+            请检查网址是否正确，或者返回首页继续浏览。
+            {{end}}
+        </p>
+        <div class="error-actions">
+            <a href="/" class="button primary">返回首页</a>
+            <a href="javascript:history.back()" class="button light">返回上页</a>
+        </div>
+    </div>
+</div>
+{{end}}

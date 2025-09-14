@@ -20,25 +20,34 @@ func main() {
 	}
 	log.Println("数据库连接成功", db)
 
-	// 设置Gin模式
-	if cfg.Server.Mode == "release" {
-		gin.SetMode(gin.ReleaseMode)
+	// 执行数据库迁移
+	if err := database.Migrate(); err != nil {
+		log.Fatal("数据库迁移失败:", err)
 	}
+
+	// 添加测试数据（开发环境）
+	if cfg.Server.Mode == "development" {
+		if err := database.SeedData(); err != nil {
+			log.Printf("添加测试数据失败: %v", err)
+		}
+	}
+
+	// 设置Gin模式
+	gin.SetMode(cfg.Server.Mode)
 
 	// 创建Gin引擎
 	r := gin.Default()
 
 	// 配置静态文件服务
-	r.Static("/static", "./public")
-	r.LoadHTMLGlob("templates/*")
+	r.Static("/public", "./public")
 
-	// 设置路由
 	// 初始化路由
-	routers.SetupRouter(r)
+	routers.SetupRouter(r, db, cfg)
 
 	// 启动服务器
-	log.Printf("服务器启动在端口: %s", cfg.Server.Port)
-	if err := r.Run(":" + cfg.Server.Port); err != nil {
+	port := cfg.Server.Port
+	log.Printf("服务器启动在端口: %s", port)
+	if err := r.Run(":" + port); err != nil {
 		log.Fatal("服务器启动失败:", err)
 	}
 }

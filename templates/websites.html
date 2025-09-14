@@ -1,0 +1,524 @@
+{{template "base" .}}
+
+{{define "head"}}
+<style>
+    /* 网站概览样式 */
+    .site-item {
+        border: 0;
+    }
+
+    /* 图表区域 */
+    .chart-section {
+        border: 1px solid var(--border-primary);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .chart-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--bg-primary-text);
+    }
+
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+
+    .traffic-chart {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to bottom, rgba(204, 120, 92, 0.1), transparent);
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .chart-bars {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        height: 100%;
+        padding: 1rem;
+        gap: 0.4rem;
+    }
+
+    .chart-bar {
+        flex: 1;
+        background: var(--primary-color);
+        opacity: 0.5;
+        border-radius: 2px 2px 0 0;
+        min-height: 20px;
+        transition: opacity 0.3s ease;
+        position: relative;
+    }
+
+    .chart-bar:hover {
+        opacity: 0.8;
+    }
+
+    .chart-bar::after {
+        content: attr(data-value);
+        position: absolute;
+        top: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.75rem;
+        color: var(--bg-primary-text);
+        opacity: 0.5;
+        transition: opacity 0.3s ease;
+    }
+
+    .chart-bar:hover::after {
+        opacity: 1;
+    }
+
+    .chart-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: -1rem;
+        padding: 0 1rem;
+    }
+
+    .chart-label {
+        font-size: 0.75rem;
+        color: var(--bg-secondary-text);
+    }
+
+    /* 统计卡片网格 */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        padding: 1rem;
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.1rem 0;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+
+    .stat-item-label {
+        font-size: 0.875rem;
+        color: var(--bg-primary-text);
+        max-width: 70%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .stat-item-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-container {
+            height: 200px;
+        }
+    }
+</style>
+{{end}}
+
+{{define "content"}}
+<div class="dashboard-header">
+    <h2>网站概览</h2>
+    <p class="dashboard-subtitle">查看网站流量和统计数据明细</p>
+</div>
+<!-- 网站概览 -->
+<div class="site-item">
+    <div class="site-header">
+        <h3 class="site-name">‣ {{.Site.Name}}</h3>
+        <a href="{{.Site.Domain}}" target="_balnk" class="site-url">{{.Site.Domain}}</a>
+        <input type="date" class="date-selector" id="date-selector" value="{{.Today}}" onchange="dateChange()" style="width:auto;">
+    </div>
+    <div class="site-metrics" id="site-metrics">
+        <!-- 数据将通过JavaScript动态加载 -->
+        <div style="text-align: center; padding: 2rem;">
+            <p style="margin-top: 1rem; color: var(--bg-secondary-text);display: contents;"><span class="loading"></span>正在加载网站数据...</p>
+        </div>
+    </div>
+</div>
+
+    <!-- 流量图表 -->
+    <div class="chart-section">
+        <div class="chart-header">
+            <h3 class="chart-title">当日时段流量分布</h3>
+            <span>24小时数据</span>
+        </div>
+        <div class="chart-container">
+            <div class="traffic-chart">
+                <div class="chart-bars" id="hourly-traffic-chart">
+                    <center><span class="loading"></span>正在加载时段流量数据...</center>
+                </div>
+            </div>
+            <div class="chart-labels">
+                <span class="chart-label">00</span>
+                <span class="chart-label">01</span>
+                <span class="chart-label">02</span>
+                <span class="chart-label">03</span>
+                <span class="chart-label">04</span>
+                <span class="chart-label">05</span>
+                <span class="chart-label">06</span>
+                <span class="chart-label">07</span>
+                <span class="chart-label">08</span>
+                <span class="chart-label">09</span>
+                <span class="chart-label">10</span>
+                <span class="chart-label">11</span>
+                <span class="chart-label">12</span>
+                <span class="chart-label">13</span>
+                <span class="chart-label">14</span>
+                <span class="chart-label">15</span>
+                <span class="chart-label">16</span>
+                <span class="chart-label">17</span>
+                <span class="chart-label">18</span>
+                <span class="chart-label">19</span>
+                <span class="chart-label">20</span>
+                <span class="chart-label">21</span>
+                <span class="chart-label">22</span>
+                <span class="chart-label">23</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片网格 -->
+    <div class="stats-grid">
+        <!-- 访问网页Top10 -->
+        <div class="stat-card">
+            <h3>访问网页Top10</h3>
+            <ol class="stat-list" id="top-pages-list">
+                <center><span class="loading"></span>加载中...</center>
+            </ol>
+        </div>
+
+        <!-- 来源Top10 -->
+        <div class="stat-card">
+            <h3>来源Top10</h3>
+            <ol class="stat-list" id="top-referrers-list">
+                <center><span class="loading"></span>加载中...</center>
+            </ol>
+        </div>
+
+        <!-- 操作系统Top10 -->
+        <div class="stat-card">
+            <h3>操作系统Top10</h3>
+            <ol class="stat-list" id="top-os-list">
+                <center><span class="loading"></span>加载中...</center>
+            </ol>
+        </div>
+
+        <!-- 设备类型分布 -->
+        <div class="stat-card">
+            <h3>设备类型分布</h3>
+            <ol class="stat-list" id="device-distribution-list">
+                <center><span class="loading"></span>加载中...</center>
+            </ol>
+        </div>
+
+        <!-- 访问地区分布 -->
+        <div class="stat-card">
+            <h3>访问地区分布</h3>
+            <ol class="stat-list" id="top-locations-list">
+                <center><span class="loading"></span>加载中...</center>
+            </ol>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "extra_js"}}
+<script>
+const siteId = "{{.Site.ID}}";
+const dateInput = document.getElementById('date-selector');
+const metricsContainer = document.getElementById('site-metrics');
+// 获取网站simple-stats信息并填充到site-metrics容器
+async function loadSiteMetrics() {
+    const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+
+    // 调用API获取simple-stats
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error(`请先登录`);
+        }
+        const statsResponse = await fetch(`/api/sites/${siteId}/simple-stats?date=${date}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        let stats = {
+            pv: 0,
+            uv: 0,
+            ip_count: 0,
+            bounce_rate: 0,
+            avg_duration: 0
+        };
+
+        if (statsResponse.ok) {
+            const statsResult = await statsResponse.json();
+            if (statsResult.code == 0) {
+                stats = statsResult.data;
+            }
+        }
+
+        // 创建网站项
+        const siteElement = createSiteElement(stats);
+        metricsContainer.innerHTML = siteElement;
+
+    } catch (error) {
+        console.error(`获取网站 {{.Site.Name}} 统计数据失败:`, error);
+        metricsContainer.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--bg-secondary-text);display: contents;"><h3>获取网站 {{.Site.Name}} 统计数据失败</h3><p>${error}</p></div>`
+    }
+}
+
+// 渲染网站指标数据
+function createSiteElement(stats) {
+    // 格式化平均访问时长
+    const formatDuration = (seconds) => {
+        if (!seconds || seconds < 60) return `${seconds || 0}s`;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}m${remainingSeconds}s`;
+    };
+
+    statsHtml = `
+            <div class="metric">
+                <div class="metric-label">浏览量</div>
+                <div class="metric-value">${stats.pv || 0}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">访问次数</div>
+                <div class="metric-value">${stats.uv || 0}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">访客</div>
+                <div class="metric-value">${stats.ip_count || 0}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">跳出率</div>
+                <div class="metric-value">${(stats.bounce_rate || 0).toFixed(1)}%</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">平均访问时长</div>
+                <div class="metric-value">${formatDuration(Math.floor(stats.avg_duration || 0))}</div>
+            </div>
+    `;
+
+    return statsHtml;
+}
+
+// 获取详细统计数据并展示
+async function loadSiteStats() {
+    const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('请先登录');
+        }
+
+        const response = await fetch(`/api/sites/${siteId}/stats?date=${date}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取统计数据失败');
+        }
+
+        const result = await response.json();
+        if (result.code === 0 && result.data) {
+            renderSiteStats(result.data);
+        } else {
+            throw new Error(result.message || '获取数据失败');
+        }
+    } catch (error) {
+        console.error('获取详细统计数据失败:', error);
+        showMessage('获取详细统计数据失败，请刷新页面重试！', 'error');
+    }
+}
+
+// 渲染详细统计数据
+function renderSiteStats(stats) {
+    // 更新小时流量分布
+    const hourlyContainer = document.getElementById('hourly-traffic-chart');
+    if (stats.hourly_stats && stats.hourly_stats.length > 0) {
+        if (hourlyContainer) {
+            // 计算最大值用于比例计算
+            const maxValue = Math.max(...stats.hourly_stats.map(h => h.count));
+
+            let hourlyHtml = '';
+
+            // 生成24小时的图表条，确保每个小时都有数据
+            for (let hour = 0; hour < 24; hour++) {
+                const hourData = stats.hourly_stats.find(h => h.hour === hour);
+                const count = hourData ? hourData.count : 0;
+                const heightPercentage = maxValue > 0 ? (count / maxValue) * 100 : 0;
+                hourlyHtml += `
+                    <div class="chart-bar"
+                         style="height: ${Math.max(heightPercentage, 3)}%;"
+                         data-value="${count}"
+                         data-time="${hour.toString().padStart(2, '0')}:00">
+                    </div>
+                `;
+            }
+            hourlyContainer.innerHTML = hourlyHtml;
+        }
+    }else{
+        hourlyContainer.innerHTML = '<p>未获取到分时流量数据...</p>';
+    }
+
+    // 更新访问网页Top10
+    const pagesContainer = document.getElementById('top-pages-list');
+    if (stats.top_pages && stats.top_pages.length > 0) {
+        if (pagesContainer) {
+            let pagesHtml = '';
+            stats.top_pages.forEach((page, index) => {
+                pagesHtml += `
+                    <li class="stat-item">
+                        <span class="stat-item-label">${page.url}</span>
+                        <span class="stat-item-value">${page.count}</span>
+                    </li>
+                `;
+            });
+            pagesContainer.innerHTML = pagesHtml;
+        }
+    }else{
+        pagesContainer.innerHTML = '';
+    }
+
+    // 更新来源Top10
+    const referrersContainer = document.getElementById('top-referrers-list');
+    if (stats.top_referrers && stats.top_referrers.length > 0) {
+        if (referrersContainer) {
+            let referrersHtml = '';
+            stats.top_referrers.forEach((referrer, index) => {
+                const displayName = referrer.referrer === '' ? '直接访问' : referrer.referrer;
+                referrersHtml += `
+                    <li class="stat-item">
+                        <span class="stat-item-label">${displayName}</span>
+                        <span class="stat-item-value">${referrer.count}</span>
+                    </li>
+                `;
+            });
+            referrersContainer.innerHTML = referrersHtml;
+        }
+    }else{
+        referrersContainer.innerHTML = '';
+    }
+
+    // 更新操作系统Top10
+    const osContainer = document.getElementById('top-os-list');
+    if (stats.top_os && stats.top_os.length > 0) {
+        if (osContainer) {
+            let osHtml = '';
+            stats.top_os.forEach((os, index) => {
+                osHtml += `
+                    <li class="stat-item">
+                        <span class="stat-item-label">${os.os}</span>
+                        <span class="stat-item-value">${os.count}</span>
+                    </li>
+                `;
+            });
+            osContainer.innerHTML = osHtml;
+        }
+    }else{
+        osContainer.innerHTML = '';
+    }
+
+    // 更新设备类型分布
+    const deviceContainer = document.getElementById('device-distribution-list');
+    if (stats.device_types && stats.device_types.length > 0) {
+        if (deviceContainer) {
+            let deviceHtml = '';
+            stats.device_types.forEach(device => {
+                deviceHtml += `
+                    <li class="stat-item">
+                        <span class="stat-item-label">${device.device}</span>
+                        <span class="stat-item-value">${device.count}</span>
+                    </li>
+                `;
+            });
+            deviceContainer.innerHTML = deviceHtml;
+        }
+    }else{
+        deviceContainer.innerHTML = '';
+    }
+
+    // 更新访问地区Top10
+    const locationContainer = document.getElementById('top-locations-list');
+    if (stats.top_locations && stats.top_locations.length > 0) {
+        if (locationContainer) {
+            let locationHtml = '';
+            stats.top_locations.forEach((location, index) => {
+                const displayName = location.location === '' ? '未知' : location.location;
+                locationHtml += `
+                    <li class="stat-item">
+                        <span class="stat-item-label">${displayName}</span>
+                        <span class="stat-item-value">${location.count}</span>
+                    </li>
+                `;
+            });
+            locationContainer.innerHTML = locationHtml;
+        }
+    }else{
+        locationContainer.innerHTML = '';
+    }
+
+    // 更新概览数据指标
+    const week_ip = stats.week_ip || 0;
+    const week_pv = stats.week_pv || 0;
+    const month_ip = stats.month_ip || 0;
+    const month_pv = stats.month_pv || 0;
+    metricsContainer.innerHTML += `<div class="metric"><div class="metric-label">本周访客</div><div class="metric-value">${week_ip}</div></div>
+    <div class="metric"><div class="metric-label">本周浏览量</div><div class="metric-value">${week_pv}</div></div>
+    <div class="metric"><div class="metric-label">本月访客</div><div class="metric-value">${month_ip}</div></div>
+    <div class="metric"><div class="metric-label">本月浏览量</div><div class="metric-value">${month_pv}</div></div>`
+}
+
+// 监听日期选择器变化
+function dateChange(){
+    loadSiteMetrics();
+    loadSiteStats();
+}
+
+// 每60秒自动刷新simple-stats和详细stats
+setInterval(() => {
+    loadSiteMetrics();
+    loadSiteStats();
+}, 60000);
+
+// 初始加载
+loadSiteMetrics();
+loadSiteStats();
+</script>
+{{end}}

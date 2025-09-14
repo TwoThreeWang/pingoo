@@ -1,0 +1,169 @@
+{{template "base" .}}
+
+{{define "title"}}
+加入 {{.siteName}}，开始分析您的网站
+{{end}}
+
+{{define "head"}}
+<style>
+.auth-container{min-height:80vh;display:flex;align-items:center;justify-content:center}
+.auth-card{width:100%;max-width:600px;overflow:hidden}
+.auth-header{padding:1rem;text-align:center}
+.auth-form{padding:2rem}
+.error-message{color:var(--primary-color);font-size:0.875rem;margin-top:0.25rem;display:none}
+.error-message.show{display:block}
+.auth-footer{text-align:center;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border-primary)}
+.auth-footer a{color:var(--primary-color);text-decoration:none;font-weight:600}
+.auth-footer a:hover{text-decoration:underline}
+.checkbox-group{display:flex;align-items:flex-start;gap:0.75rem;margin-bottom:1.5rem}
+.checkbox-group input[type="checkbox"]{width:auto;margin-top:0.125rem;cursor:pointer}
+.checkbox-group label{margin-bottom:0;font-weight:normal;font-size:0.875rem;line-height:1.5;cursor:pointer}
+.checkbox-group label a{color:var(--primary-color);text-decoration:none}
+.checkbox-group label a:hover{text-decoration:underline}
+@media (max-width:480px){.auth-container{padding:1rem}
+.auth-card{border-radius:8px}
+.auth-header,.auth-form{padding:1.5rem}
+}
+</style>
+{{end}}
+
+{{define "content"}}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>创建账户</h1>
+            <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">加入 {{.siteName}}，开始分析您的网站</p>
+        </div>
+
+        <form class="auth-form" id="registerForm">
+            <div class="form-group">
+                <label for="email">邮箱地址</label>
+                <input type="email" id="email" name="email" required>
+                <div class="error-message" id="emailError">请输入有效的邮箱地址</div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" required minlength="6">
+                <div class="error-message" id="passwordError">密码至少需要6个字符</div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">确认密码</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6">
+                <div class="error-message" id="confirmPasswordError">两次输入的密码不一致</div>
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-label" style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 0.875rem; line-height: 1.5; color: var(--text-secondary);">
+                    <input type="checkbox" id="terms" name="terms" required style="margin: 0.125rem 0 0 0; flex-shrink: 0; width: 1rem; height: 1rem;">
+                    <span>我已阅读并同意 <a href="/terms" target="_blank" style="color: var(--primary-color); text-decoration: none;">服务条款</a> 和 <a href="/privacy" target="_blank" style="color: var(--primary-color); text-decoration: none;">隐私政策</a></span>
+                </label>
+                <div class="error-message" id="termsError">请同意服务条款和隐私政策</div>
+            </div>
+
+            <button type="submit" class="primary" id="registerButton" style="width:100%">
+                <span id="buttonText">注册</span>
+            </button>
+
+            <div class="auth-footer">
+                <p style="margin: 0;">已有账户？ <a href="/login">立即登录</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}
+
+{{define "extra_js"}}
+<script>
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirmPassword');
+    const terms = document.getElementById('terms');
+    const registerButton = document.getElementById('registerButton');
+    const buttonText = document.getElementById('buttonText');
+
+    // 清除之前的错误
+    document.querySelectorAll('.error-message').forEach(msg => msg.classList.remove('show'));
+    document.querySelectorAll('input').forEach(input => input.classList.remove('error'));
+
+    // 验证
+    let hasError = false;
+
+
+    if (!email.value || !email.validity.valid) {
+        document.getElementById('emailError').classList.add('show');
+        email.classList.add('error');
+        hasError = true;
+    }
+
+    if (!password.value || password.value.length < 6) {
+        document.getElementById('passwordError').classList.add('show');
+        password.classList.add('error');
+        hasError = true;
+    }
+
+    if (password.value !== confirmPassword.value) {
+        document.getElementById('confirmPasswordError').classList.add('show');
+        confirmPassword.classList.add('error');
+        hasError = true;
+    }
+
+    if (!terms.checked) {
+        document.getElementById('termsError').classList.add('show');
+        hasError = true;
+    }
+
+    if (hasError) return;
+
+    // 显示加载状态
+    registerButton.disabled = true;
+    buttonText.innerHTML = '<span class="loading"></span>注册中...';
+
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email.value,
+                password: password.value
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // 显示成功消息
+            showMessage('注册成功！正在跳转登录页面...', 'success');
+
+            // 跳转到登录页面
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+        } else {
+            // 显示错误消息
+            showMessage(data.msg || '注册失败，请重试', 'error');
+            registerButton.disabled = false;
+            buttonText.textContent = '注册';
+        }
+    } catch (error) {
+        console.error('Register error:', error);
+        showMessage('网络错误，请稍后重试', 'error');
+        registerButton.disabled = false;
+        buttonText.textContent = '注册';
+    }
+});
+
+// 回车键提交表单
+document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.target.matches('button')) {
+        document.getElementById('registerForm').dispatchEvent(new Event('submit'));
+    }
+});
+</script>
+{{end}}

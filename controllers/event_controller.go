@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"strconv"
 
 	"pingoo/models"
@@ -39,6 +38,8 @@ func (c *EventController) CreateEvent(ctx *gin.Context) {
 	if eventCreate.UserAgent == "" {
 		eventCreate.UserAgent = ctx.GetHeader("User-Agent")
 	}
+	// 从UserAgent中提取Device、Browser、OS、IsBot
+	eventCreate.Device, eventCreate.Browser, eventCreate.OS, eventCreate.IsBot = utils.ParseUserAgent(eventCreate.UserAgent)
 
 	event, err := c.eventService.CreateEvent(&eventCreate)
 	if err != nil {
@@ -105,64 +106,52 @@ func (c *EventController) GetEventByID(ctx *gin.Context) {
 	utils.Success(ctx, event)
 }
 
-// TrackPageView 页面浏览追踪接口（简化版）
-func (c *EventController) TrackPageView(ctx *gin.Context) {
+// TrackCustomEvent 自定义事件追踪接口
+func (c *EventController) TrackCustomEvent(ctx *gin.Context) {
 	var req struct {
-		SessionID string `json:"session_id" binding:"required"`
-		UserID    string `json:"user_id"`
-		URL       string `json:"url" binding:"required"`
-		Referrer  string `json:"referrer"`
-		Title     string `json:"title"`
+		SessionID  string `json:"session_id"`
+		UserID     string `json:"user_id"`
+		URL        string `json:"url"`
+		Referrer   string `json:"referrer"`
+		EventType  string `json:"event_type"`
+		EventValue string `json:"event_value"`
+		SiteIDStr  string `json:"site_id"`
+		Screen     string `json:"screen"`
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		utils.ValidationError(ctx, err.Error())
 		return
 	}
+	SiteID, err := strconv.ParseUint(req.SiteIDStr, 10, 64)
+	if err != nil {
+		utils.ValidationError(ctx, "无效的SiteID格式")
+		return
+	}
+
+	// 验证站点存在
+	siteService := services.NewSiteService()
+	if _, err := siteService.GetSiteByID(SiteID); err != nil {
+		utils.Fail(ctx, "站点不存在")
+		return
+	}
+	UserAgent := ctx.GetHeader("User-Agent")
+	// 从UserAgent中提取Device、Browser、OS、IsBot
+	device, browser, os, isBot := utils.ParseUserAgent(UserAgent)
 
 	eventCreate := &models.EventCreate{
+		SiteID:     SiteID,
 		SessionID:  req.SessionID,
 		UserID:     req.UserID,
 		IP:         ctx.ClientIP(),
 		URL:        req.URL,
 		Referrer:   req.Referrer,
-		UserAgent:  ctx.GetHeader("User-Agent"),
-		EventType:  "page_view",
-		EventValue: req.Title,
-	}
-
-	event, err := c.eventService.CreateEvent(eventCreate)
-	if err != nil {
-		utils.Fail(ctx, err.Error())
-		return
-	}
-	log.Printf("创建事件成功: %v", event)
-
-	// 返回1x1透明GIF像素
-	ctx.Data(200, "image/gif", []byte{0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x1, 0x0, 0x1, 0x0, 0x80, 0x0, 0x0, 0xff, 0xff, 0xff, 0x0, 0x0, 0x0, 0x2c, 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x1, 0x0, 0x0, 0x2, 0x2, 0x44, 0x1, 0x0, 0x3b})
-}
-
-// TrackCustomEvent 自定义事件追踪接口
-func (c *EventController) TrackCustomEvent(ctx *gin.Context) {
-	var req struct {
-		SessionID  string `json:"session_id" binding:"required"`
-		UserID     string `json:"user_id"`
-		URL        string `json:"url" binding:"required"`
-		EventType  string `json:"event_type" binding:"required"`
-		EventValue string `json:"event_value"`
-	}
-
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.ValidationError(ctx, err.Error())
-		return
-	}
-
-	eventCreate := &models.EventCreate{
-		SessionID:  req.SessionID,
-		UserID:     req.UserID,
-		IP:         ctx.ClientIP(),
-		URL:        req.URL,
-		UserAgent:  ctx.GetHeader("User-Agent"),
+		Screen:     req.Screen,
+		Device:     device,
+		Browser:    browser,
+		OS:         os,
+		IsBot:      isBot,
+		UserAgent:  UserAgent,
 		EventType:  req.EventType,
 		EventValue: req.EventValue,
 	}

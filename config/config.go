@@ -1,18 +1,36 @@
 package config
 
 import (
+	"log"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
 	Server   ServerConfig
+	Site     SiteConfig
 	Database DatabaseConfig
+	JWT      JWTConfig
+}
+
+var cfg *Config
+
+func GetConfig() *Config {
+	return cfg
 }
 
 type ServerConfig struct {
 	Port string
 	Mode string // debug or release
+}
+
+type SiteConfig struct {
+	SiteUrl           string
+	SiteName          string
+	VERSION           string
+	TrackerScriptName string
 }
 
 type DatabaseConfig struct {
@@ -24,11 +42,27 @@ type DatabaseConfig struct {
 	SSLMode  string
 }
 
+type JWTConfig struct {
+	SecretKey     string
+	ExpireHours   int
+	RefreshExpire int
+}
+
 func Load() *Config {
-	return &Config{
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Warning: Could not load .env file. Proceeding with environment variables.")
+	}
+	cfg = &Config{
 		Server: ServerConfig{
 			Port: getEnv("SERVER_PORT", "8080"),
 			Mode: getEnv("GIN_MODE", "debug"),
+		},
+		Site: SiteConfig{
+			SiteUrl:           getEnv("SITE_DOMAIN", "http://localhost:5004"),
+			SiteName:          getEnv("SITE_NAME", "Pingoo"),
+			VERSION:           getEnv("VERSION", "1.0.0"),
+			TrackerScriptName: getEnv("TRACKER_SCRIPT_NAME", "pingoo.js"),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
@@ -38,7 +72,13 @@ func Load() *Config {
 			DBName:   getEnv("DB_NAME", "pingoo"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 		},
+		JWT: JWTConfig{
+			SecretKey:     getEnv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production"),
+			ExpireHours:   getEnvAsInt("JWT_EXPIRE_HOURS", 24),
+			RefreshExpire: getEnvAsInt("JWT_REFRESH_EXPIRE", 168),
+		},
 	}
+	return cfg
 }
 
 func getEnv(key, defaultValue string) string {

@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  pingoo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pingoo
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - GIN_MODE=release
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data:/app/data
+    networks:
+      - pingoo-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis服务（可选，用于缓存和会话存储）
+  redis:
+    image: redis:7-alpine
+    container_name: pingoo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - pingoo-network
+
+  # PostgreSQL服务（可选，用于数据持久化）
+  postgres:
+    image: postgres:15-alpine
+    container_name: pingoo-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=pingoo
+      - POSTGRES_USER=pingoo
+      - POSTGRES_PASSWORD=pingoo123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pingoo-network
+
+volumes:
+  redis_data:
+  postgres_data:
+
+networks:
+  pingoo-network:
+    driver: bridge

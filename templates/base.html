@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.siteName}}</title>
+	<meta name="description" content="{{if .description}}{{.description}}{{else}}开源、简单、轻量、隐私友好的网站分析工具，帮助您了解您的网站流量、用户行为和转换效率。{{end}}">
+    <meta name="keywords" content="{{.Keywords}},网站分析,流量分析,用户行为分析,转换效率分析">
+    <meta name="author" content="{{.siteName}}">
+    <meta name="robots" content="index, follow">
+	<link rel="icon" href='/public/img/icon.png'/>
+    <link rel="canonical" href="{{.siteUrl}}{{.path}}" />
+	<!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{.siteName}}">
+    <meta property="og:description" content="{{if .description}}{{.description}}{{else}}开源、简单、轻量、隐私友好的网站分析工具，帮助您了解您的网站流量、用户行为和转换效率。{{end}}">
+    <meta property="og:url" content="{{.siteUrl}}{{.path}}">
+    <link rel="stylesheet" href="/public/css/main.css">
+    <link rel="stylesheet" href="/public/css/style.css">
+    <script src="/public/js/main.js" defer></script>
+    <script defer src="{{.siteUrl}}/{{.trackerScriptName}}" site-id="1"></script>
+    {{block "head" .}}{{end}}
+</head>
+<body>
+    <!-- 设置默认主题 -->
+    <script>(()=>document.body.classList[localStorage.theme==='dark'||(localStorage.theme==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches)?'add':'remove']('dark_mode'))();</script>
+    <!-- Header -->
+    <header role="banner">
+        <div class="header-content">
+            <div class="header-row">
+                <div class="logo">
+					<a href="/" aria-label="网站首页">{{.siteName}}</a>
+				</div>
+                <button class="menu-toggle" onclick="toggleMenu()"  aria-label="切换导航菜单" aria-expanded="false" aria-controls="navMenu">☰</button>
+            </div>
+            <nav class="nav-menu" id="navMenu" role="navigation" aria-label="主导航">
+                <li><a href="/">首页</a></li>
+                <li><a href="/docs/help">文档</a></li>
+                {{ if .userInfo }}
+                <li><a href="/dashboard">仪表盘</a></li>
+                <li><a href="/profile">用户中心</a></li>
+                {{else}}
+                <li><a href="/login">登录</a></li>
+                {{end}}
+                <li><a href="#" id="theme-toggle">☀︎ auto</a></li>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main role="main">
+        {{block "content" .}}{{end}}
+    </main>
+
+    <!-- 大图弹窗 -->
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <span class="close">&times;</span>
+        <img id="lightboxImg" alt="大图预览" aria-label="大图预览">
+    </div>
+    <span id="top" onclick="window.scrollTo({top:0,behavior:'smooth'})">▲</span>
+
+    <!-- Footer -->
+    <footer role="contentinfo">
+        <div class="footer-content">
+            <div class="footer-info">
+                <p>&copy; 2025 Pingoo. v{{.version}}</p>
+            </div>
+            <div class="footer-menu" role="navigation" aria-label="底部导航">
+                <a href="/docs/privacy">隐私政策</a>
+                <a href="/docs/terms">服务条款</a>
+                <a href="/docs/help">帮助中心</a>
+                <a href="/docs/api">API文档</a>
+            </div>
+        </div>
+    </footer>
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('navMenu');
+            menu.classList.toggle('active');
+        }
+
+        // 点击其他地方关闭菜单
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('navMenu');
+            const toggle = document.querySelector('.menu-toggle');
+
+            if (!menu.contains(event.target) && !toggle.contains(event.target)) {
+                menu.classList.remove('active');
+            }
+        });
+    </script>
+    {{block "extra_js" .}}{{end}}
+</body>
+</html>
