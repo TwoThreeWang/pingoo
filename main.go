@@ -5,6 +5,7 @@ import (
 	"pingoo/config"
 	"pingoo/database"
 	"pingoo/routers"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,6 +13,10 @@ import (
 func main() {
 	// 加载配置
 	cfg := config.Load()
+
+	// 时区设置
+	loc, _ := time.LoadLocation(cfg.Database.TimeZone)
+	time.Local = loc
 
 	// 初始化数据库
 	db, err := database.Initialize(cfg.Database)

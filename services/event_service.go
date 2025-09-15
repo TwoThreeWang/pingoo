@@ -41,6 +41,7 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 		IsBot:       eventCreate.IsBot,
 		Country:     eventCreate.Country,
 		City:        eventCreate.City,
+		ISP:         eventCreate.Isp,
 		Subdivision: eventCreate.Subdivision,
 		EventType:   eventCreate.EventType,
 		EventValue:  eventCreate.EventValue,

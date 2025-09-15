@@ -382,6 +382,21 @@ func (sc *SiteController) GetStats(c *gin.Context) {
 		LIMIT 10
 	`, siteID, startDate, endDate).Scan(&topLocations)
 
+	// 运营商TOP10
+	type ISPStats struct {
+		ISP   string `json:"isp"`
+		Count int64  `json:"count"`
+	}
+	var topISP []ISPStats
+	sc.db.Raw(`
+		SELECT ISP as isp, COUNT(*) as count
+		FROM events
+		WHERE site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?
+		GROUP BY ISP
+		ORDER BY count DESC
+		LIMIT 10
+	`, siteID, startDate, endDate).Scan(&topISP)
+
 	stats := struct {
 		SiteID       uint64          `json:"site_id"`
 		WeekIp       int64           `json:"week_ip"`
@@ -395,6 +410,7 @@ func (sc *SiteController) GetStats(c *gin.Context) {
 		TopOS        []OSStats       `json:"top_os"`
 		DeviceTypes  []DeviceStats   `json:"device_types"`
 		TopLocations []LocationStats `json:"top_locations"`
+		TopISP       []ISPStats      `json:"top_isp"`
 	}{
 		SiteID:       siteID,
 		WeekIp:       weekIp,
@@ -408,6 +424,7 @@ func (sc *SiteController) GetStats(c *gin.Context) {
 		TopOS:        topOS,
 		DeviceTypes:  deviceTypes,
 		TopLocations: topLocations,
+		TopISP:       topISP,
 	}
 
 	utils.Success(c, stats)

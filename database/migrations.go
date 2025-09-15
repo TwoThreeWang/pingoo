@@ -43,9 +43,6 @@ func addIndexes(db *gorm.DB) error {
 	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_sites_user_id ON sites(user_id)").Error; err != nil {
 		return err
 	}
-	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_sites_tracking_id ON sites(tracking_id)").Error; err != nil {
-		return err
-	}
 	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_sites_domain ON sites(domain)").Error; err != nil {
 		return err
 	}

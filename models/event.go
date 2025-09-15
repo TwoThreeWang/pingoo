@@ -21,6 +21,7 @@ type Event struct {
 	Country     string `gorm:"type:varchar(32);index" json:"country"`     // 国家
 	Subdivision string `gorm:"type:varchar(32);index" json:"subdivision"` // 省份
 	City        string `gorm:"type:varchar(32);index" json:"city"`        // 城市
+	ISP         string `gorm:"type:varchar(32);index" json:"isp"`         // 运营商
 	EventType   string `gorm:"type:varchar(32);index" json:"event_type"`  // 事件类型
 	EventValue  string `gorm:"type:text" json:"event_value"`              // 事件值
 
@@ -50,6 +51,7 @@ type EventCreate struct {
 	Country     string `json:"country"`
 	Subdivision string `json:"subdivision"`
 	City        string `json:"city"`
+	Isp         string `json:"isp"`
 	EventType   string `json:"event_type" binding:"required"`
 	EventValue  string `json:"event_value"`
 }
@@ -69,6 +71,7 @@ type EventQuery struct {
 	Country     string `json:"country" form:"country"`
 	Subdivision string `json:"subdivision" form:"subdivision"`
 	City        string `json:"city" form:"city"`
+	Isp         string `json:"isp" form:"isp"`
 	EventType   string `json:"event_type" form:"event_type"`
 	StartTime   string `json:"start_time" form:"start_time"`
 	EndTime     string `json:"end_time" form:"end_time"`

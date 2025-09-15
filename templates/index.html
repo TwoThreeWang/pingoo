@@ -1,9 +1,5 @@
 {{template "base" .}}
 
-{{define "title"}}
-{{.siteName}}，开源、简单、轻量、隐私友好的网站分析工具
-{{end}}
-
 {{define "head"}}
    <style>
         /* 英雄区域样式 */
@@ -251,7 +247,7 @@
 
             <div class="code-block">
                 <button class="copy-button" onclick="copyCode(this)">复制</button>
-                <pre><code>&lt;script async defer src="{{.siteUrl}}/tracker.js" site-id="YOUR_SITE_ID"&gt;&lt;/script&gt;</code></pre>
+                <pre><code>&lt;script async defer src="{{.siteUrl}}/{{.trackerScriptName}}" site-id="YOUR_SITE_ID"&gt;&lt;/script&gt;</code></pre>
             </div>
 
             <p style="color: #666; margin-top: 1rem;">将 YOUR_SITE_ID 替换为您在 {{.siteName}} 添加站点后获得的站点 ID</p>

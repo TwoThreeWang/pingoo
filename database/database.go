@@ -13,8 +13,8 @@ import (
 var DB *gorm.DB
 
 func Initialize(config config.DatabaseConfig) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
-		config.Host, config.User, config.Password, config.DBName, config.Port, config.SSLMode)
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s",
+		config.Host, config.User, config.Password, config.DBName, config.Port, config.SSLMode, config.TimeZone)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),

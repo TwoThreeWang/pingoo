@@ -159,10 +159,42 @@
         <a href="{{.Site.Domain}}" target="_balnk" class="site-url">{{.Site.Domain}}</a>
         <input type="date" class="date-selector" id="date-selector" value="{{.Today}}" onchange="dateChange()" style="width:auto;">
     </div>
-    <div class="site-metrics" id="site-metrics">
-        <!-- 数据将通过JavaScript动态加载 -->
-        <div style="text-align: center; padding: 2rem;">
-            <p style="margin-top: 1rem; color: var(--bg-secondary-text);display: contents;"><span class="loading"></span>正在加载网站数据...</p>
+    <div class="site-metrics">
+        <div class="metric">
+            <div class="metric-label">浏览量</div>
+            <div class="metric-value" id="pv">0</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">访问次数</div>
+            <div class="metric-value" id="uv">0</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">访客</div>
+            <div class="metric-value" id="ip">0</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">跳出率</div>
+            <div class="metric-value" id="bounce_rate">0%</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">平均访问时长</div>
+            <div class="metric-value" id="avg_duration">0s</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">本周访客</div>
+            <div class="metric-value" id="week_ip">0</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">本周浏览量</div>
+            <div class="metric-value" id="week_pv">0</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">本月访客</div>
+            <div class="metric-value" id="month_ip">0</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">本月浏览量</div>
+            <div class="metric-value" id="month_pv">0</div>
         </div>
     </div>
 </div>
@@ -249,6 +281,14 @@
                 <center><span class="loading"></span>加载中...</center>
             </ol>
         </div>
+
+        <!-- 运营商分布 -->
+        <div class="stat-card">
+            <h3>运营商分布</h3>
+            <ol class="stat-list" id="top-isp-list">
+                <center><span class="loading"></span>加载中...</center>
+            </ol>
+        </div>
     </div>
 </div>
 {{end}}
@@ -257,7 +297,6 @@
 <script>
 const siteId = "{{.Site.ID}}";
 const dateInput = document.getElementById('date-selector');
-const metricsContainer = document.getElementById('site-metrics');
 // 获取网站simple-stats信息并填充到site-metrics容器
 async function loadSiteMetrics() {
     const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
@@ -288,14 +327,11 @@ async function loadSiteMetrics() {
                 stats = statsResult.data;
             }
         }
-
         // 创建网站项
-        const siteElement = createSiteElement(stats);
-        metricsContainer.innerHTML = siteElement;
-
+        createSiteElement(stats);
     } catch (error) {
         console.error(`获取网站 {{.Site.Name}} 统计数据失败:`, error);
-        metricsContainer.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--bg-secondary-text);display: contents;"><h3>获取网站 {{.Site.Name}} 统计数据失败</h3><p>${error}</p></div>`
+        showMessage(`获取网站 {{.Site.Name}} 统计数据失败`, "error");
     }
 }
 
@@ -308,31 +344,11 @@ function createSiteElement(stats) {
         const remainingSeconds = seconds % 60;
         return `${minutes}m${remainingSeconds}s`;
     };
-
-    statsHtml = `
-            <div class="metric">
-                <div class="metric-label">浏览量</div>
-                <div class="metric-value">${stats.pv || 0}</div>
-            </div>
-            <div class="metric">
-                <div class="metric-label">访问次数</div>
-                <div class="metric-value">${stats.uv || 0}</div>
-            </div>
-            <div class="metric">
-                <div class="metric-label">访客</div>
-                <div class="metric-value">${stats.ip_count || 0}</div>
-            </div>
-            <div class="metric">
-                <div class="metric-label">跳出率</div>
-                <div class="metric-value">${(stats.bounce_rate || 0).toFixed(1)}%</div>
-            </div>
-            <div class="metric">
-                <div class="metric-label">平均访问时长</div>
-                <div class="metric-value">${formatDuration(Math.floor(stats.avg_duration || 0))}</div>
-            </div>
-    `;
-
-    return statsHtml;
+    document.getElementById('pv').innerHTML=stats.pv || 0;
+    document.getElementById('uv').innerHTML=stats.uv || 0;
+    document.getElementById('ip').innerHTML=stats.ip_count || 0;
+    document.getElementById('bounce_rate').innerHTML=(stats.bounce_rate || 0).toFixed(1);
+    document.getElementById('avg_duration').innerHTML=formatDuration(Math.floor(stats.avg_duration || 0));
 }
 
 // 获取详细统计数据并展示
@@ -494,15 +510,31 @@ function renderSiteStats(stats) {
         locationContainer.innerHTML = '';
     }
 
+    // 更新运营商Top10
+    const ispContainer = document.getElementById('top-isp-list');
+    if (stats.top_isp && stats.top_isp.length > 0) {
+        if (ispContainer) {
+            let ispHtml = '';
+            stats.top_isp.forEach((isp, index) => {
+                const displayName = isp.isp === '' ? '未知' : isp.isp;
+                ispHtml += `
+                    <li class="stat-item">
+                        <span class="stat-item-label">${displayName}</span>
+                        <span class="stat-item-value">${isp.count}</span>
+                    </li>
+                `;
+            });
+            ispContainer.innerHTML = ispHtml;
+        }
+    }else{
+        ispContainer.innerHTML = '';
+    }
+
     // 更新概览数据指标
-    const week_ip = stats.week_ip || 0;
-    const week_pv = stats.week_pv || 0;
-    const month_ip = stats.month_ip || 0;
-    const month_pv = stats.month_pv || 0;
-    metricsContainer.innerHTML += `<div class="metric"><div class="metric-label">本周访客</div><div class="metric-value">${week_ip}</div></div>
-    <div class="metric"><div class="metric-label">本周浏览量</div><div class="metric-value">${week_pv}</div></div>
-    <div class="metric"><div class="metric-label">本月访客</div><div class="metric-value">${month_ip}</div></div>
-    <div class="metric"><div class="metric-label">本月浏览量</div><div class="metric-value">${month_pv}</div></div>`
+    document.getElementById('week_ip').innerHTML=stats.week_ip || 0;
+    document.getElementById('week_pv').innerHTML=stats.week_pv || 0;
+    document.getElementById('month_ip').innerHTML=stats.month_ip || 0;
+    document.getElementById('month_pv').innerHTML=stats.month_pv || 0;
 }
 
 // 监听日期选择器变化

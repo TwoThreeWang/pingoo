@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"strconv"
 
 	"pingoo/models"
@@ -138,22 +139,33 @@ func (c *EventController) TrackCustomEvent(ctx *gin.Context) {
 	UserAgent := ctx.GetHeader("User-Agent")
 	// 从UserAgent中提取Device、Browser、OS、IsBot
 	device, browser, os, isBot := utils.ParseUserAgent(UserAgent)
-
+	ip := "36.112.118.66"
+	// ip := "64.69.36.11"
+	// ip := ctx.ClientIP()
+	// 从ip提取国家等信息
+	ipInfo, err := utils.QueryIP(ip)
+	if err != nil {
+		log.Println(err)
+	}
 	eventCreate := &models.EventCreate{
-		SiteID:     SiteID,
-		SessionID:  req.SessionID,
-		UserID:     req.UserID,
-		IP:         ctx.ClientIP(),
-		URL:        req.URL,
-		Referrer:   req.Referrer,
-		Screen:     req.Screen,
-		Device:     device,
-		Browser:    browser,
-		OS:         os,
-		IsBot:      isBot,
-		UserAgent:  UserAgent,
-		EventType:  req.EventType,
-		EventValue: req.EventValue,
+		SiteID:      SiteID,
+		SessionID:   req.SessionID,
+		UserID:      req.UserID,
+		IP:          ip,
+		URL:         req.URL,
+		Referrer:    req.Referrer,
+		Screen:      req.Screen,
+		Device:      device,
+		Browser:     browser,
+		OS:          os,
+		IsBot:       isBot,
+		Country:     ipInfo.Country,
+		Subdivision: ipInfo.Region,
+		City:        ipInfo.City,
+		Isp:         ipInfo.ISP,
+		UserAgent:   UserAgent,
+		EventType:   req.EventType,
+		EventValue:  req.EventValue,
 	}
 
 	event, err := c.eventService.CreateEvent(eventCreate)

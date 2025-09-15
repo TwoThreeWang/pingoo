@@ -321,17 +321,17 @@ async function loadUserSites() {
         }
     } catch (error) {
         console.error('加载网站列表失败:', error);
-        document.getElementById('userSites').innerHTML = '<div class="error-message">加载网站列表失败，请刷新重试</div>';
+        document.getElementById('userSites').innerHTML = '<center>加载网站列表失败，请刷新重试</center>';
     }
 }
 
 // 显示用户网站列表
 function displayUserSites(sites_list) {
-    const sites = sites_list.list || sites_list;
+    const sites = sites_list.list;
     const container = document.getElementById('userSites');
 
     if (!sites || sites.length === 0) {
-        container.innerHTML = '<h3>暂无网站，点击右上角添加新网站</h3>';
+        container.innerHTML = '<center>暂无网站，点击右上角添加新网站</center>';
         return;
     }
 
@@ -539,11 +539,13 @@ const overlayContent = document.getElementById('overlayContent');
 function showSiteDetail(site) {
     overlayContent.innerHTML = `
         <h3>网站详情</h3>
-        <p><strong>SiteID:</strong> <span id="detailSiteId">${site.id}</span></p>
-        <p><strong>名称:</strong> <span id="detailSiteName">${site.name}</span></p>
-        <p><strong>域名:</strong> <span id="detailDomain">${site.domain}</span></p>
-        <p><strong>创建时间:</strong> <span id="detailCreatedAt">${new Date(site.created_at).toLocaleString('zh-CN')}</span></p>
-        <p><strong>更新时间:</strong> <span id="detailUpdatedAt">${new Date(site.updated_at).toLocaleString('zh-CN')}</span></p>
+        <p><strong>SiteID:</strong> ${site.id}</p>
+        <p><strong>名称:</strong> ${site.name}</p>
+        <p><strong>域名:</strong> ${site.domain}</p>
+        <p><strong>创建时间:</strong> ${new Date(site.created_at).toLocaleString('zh-CN')}</p>
+        <p><strong>更新时间:</strong> ${new Date(site.updated_at).toLocaleString('zh-CN')}</p>
+        <p><strong>追踪代码:</strong></p>
+        <pre><code>&lt;script async defer src="{{.siteUrl}}/{{.trackerScriptName}}" site-id="${site.id}"&gt;&lt;/script&gt;</code></pre>
         <div class="detail-actions" style="display: flex; gap: 10px; margin-top: 20px;">
             <button onclick="editSite('${site.name}','${site.domain}',${site.id})">编辑</button>
             <button onclick="deleteSite('${site.name}',${site.id})">删除</button>

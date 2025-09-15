@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"pingoo/middleware"
 	"pingoo/services"
 	"strconv"
 	"time"
@@ -21,29 +22,58 @@ func NewWebController() *WebController {
 
 func (wc *WebController) Index(c *gin.Context) {
 	c.HTML(http.StatusOK, "index", OutputCommonSession(c, gin.H{
-		"Title": "首页",
+		"Title": "开源、简单、轻量、隐私友好的网站分析工具",
 	}))
 }
 
 func (wc *WebController) Login(c *gin.Context) {
+	// 判断是否登录，已登录跳转个人中心页面
+	userInfo := middleware.GetCurrentUser(c)
+	if userInfo != nil {
+		c.Redirect(http.StatusFound, "/profile")
+		c.Abort()
+		return
+	}
 	c.HTML(http.StatusOK, "login", OutputCommonSession(c, gin.H{
 		"Title": "登录",
 	}))
 }
 
 func (wc *WebController) Register(c *gin.Context) {
+	// 判断是否登录，已登录跳转个人中心页面
+	userInfo := middleware.GetCurrentUser(c)
+	if userInfo != nil {
+		c.Redirect(http.StatusFound, "/profile")
+		c.Abort()
+		return
+	}
 	c.HTML(http.StatusOK, "register", OutputCommonSession(c, gin.H{
 		"Title": "注册",
 	}))
 }
 
 func (wc *WebController) Dashboard(c *gin.Context) {
+	// 判断是否登录，未登录跳转登陆页面
+	userInfo := middleware.GetCurrentUser(c)
+	if userInfo == nil {
+		c.Redirect(http.StatusFound, "/login")
+		c.Abort()
+		return
+	}
 	c.HTML(http.StatusOK, "dashboard", OutputCommonSession(c, gin.H{
 		"Title": "仪表盘",
 	}))
 }
 
 func (wc *WebController) Websites(c *gin.Context) {
+	// 判断是否登录，未登录跳转登陆页面
+	userInfo := middleware.GetCurrentUser(c)
+	if userInfo == nil {
+		c.Redirect(http.StatusFound, "/login")
+		c.Abort()
+		return
+	}
+
 	siteID := c.Param("id")
 
 	// 默认事件为当天
@@ -81,6 +111,13 @@ func (wc *WebController) Websites(c *gin.Context) {
 
 // Profile 用户中心页面
 func (wc *WebController) Profile(c *gin.Context) {
+	// 判断是否登录，未登录跳转登陆页面
+	userInfo := middleware.GetCurrentUser(c)
+	if userInfo == nil {
+		c.Redirect(http.StatusFound, "/login")
+		c.Abort()
+		return
+	}
 	c.HTML(http.StatusOK, "profile", OutputCommonSession(c, gin.H{
 		"Title": "用户中心",
 	}))

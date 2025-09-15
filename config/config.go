@@ -40,6 +40,7 @@ type DatabaseConfig struct {
 	Password string
 	DBName   string
 	SSLMode  string
+	TimeZone string
 }
 
 type JWTConfig struct {
@@ -71,6 +72,7 @@ func Load() *Config {
 			Password: getEnv("DB_PASSWORD", "postgres"),
 			DBName:   getEnv("DB_NAME", "pingoo"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			TimeZone: getEnv("TIME_ZONE", "Asia/Shanghai"),
 		},
 		JWT: JWTConfig{
 			SecretKey:     getEnv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production"),

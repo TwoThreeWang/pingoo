@@ -1,9 +1,5 @@
 {{template "base" .}}
 
-{{define "title"}}
-加入 {{.siteName}}，开始分析您的网站
-{{end}}
-
 {{define "head"}}
 <style>
 .auth-container{min-height:80vh;display:flex;align-items:center;justify-content:center}
@@ -57,7 +53,7 @@
             <div class="form-group">
                 <label class="checkbox-label" style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 0.875rem; line-height: 1.5; color: var(--text-secondary);">
                     <input type="checkbox" id="terms" name="terms" required style="margin: 0.125rem 0 0 0; flex-shrink: 0; width: 1rem; height: 1rem;">
-                    <span>我已阅读并同意 <a href="/terms" target="_blank" style="color: var(--primary-color); text-decoration: none;">服务条款</a> 和 <a href="/privacy" target="_blank" style="color: var(--primary-color); text-decoration: none;">隐私政策</a></span>
+                    <span>我已阅读并同意 <a href="/docs/terms" target="_blank" style="color: var(--primary-color); text-decoration: none;">服务条款</a> 和 <a href="/docs/privacy" target="_blank" style="color: var(--primary-color); text-decoration: none;">隐私政策</a></span>
                 </label>
                 <div class="error-message" id="termsError">请同意服务条款和隐私政策</div>
             </div>
