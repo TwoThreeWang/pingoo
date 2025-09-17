@@ -86,7 +86,7 @@
         display: flex;
         justify-content: space-between;
         margin-top: -1rem;
-        padding: 0 1rem;
+        padding: 0 1.4rem;
     }
 
     .chart-label {
@@ -179,6 +179,10 @@
         <div class="metric">
             <div class="metric-label">平均访问时长</div>
             <div class="metric-value" id="avg_duration">0s</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">事件数量</div>
+            <div class="metric-value" id="event_count">0</div>
         </div>
         <div class="metric">
             <div class="metric-label">本周访客</div>
@@ -289,6 +293,14 @@
                 <center><span class="loading"></span>加载中...</center>
             </ol>
         </div>
+
+        <!-- 事件 -->
+         <div class="stat-card">
+            <h3>事件统计</h3>
+            <ol class="stat-list" id="top-event-list">
+                <center><span class="loading"></span>加载中...</center>
+            </ol>
+        </div>
     </div>
 </div>
 {{end}}
@@ -347,6 +359,7 @@ function createSiteElement(stats) {
     document.getElementById('pv').innerHTML=stats.pv || 0;
     document.getElementById('uv').innerHTML=stats.uv || 0;
     document.getElementById('ip').innerHTML=stats.ip_count || 0;
+    document.getElementById('event_count').innerHTML=stats.event_count || 0;
     document.getElementById('bounce_rate').innerHTML=(stats.bounce_rate || 0).toFixed(1);
     document.getElementById('avg_duration').innerHTML=formatDuration(Math.floor(stats.avg_duration || 0));
 }
@@ -383,6 +396,28 @@ async function loadSiteStats() {
     }
 }
 
+// 渲染统计列表的通用函数
+function renderStatList(containerId, data, labelKey, valueKey, displayFormatter = null) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (data && data.length > 0) {
+        let html = '';
+        data.forEach((item, index) => {
+            const label = displayFormatter ? displayFormatter(item[labelKey]) : item[labelKey];
+            html += `
+                <li class="stat-item">
+                    <span class="stat-item-label">${label}</span>
+                    <span class="stat-item-value">${item[valueKey]}</span>
+                </li>
+            `;
+        });
+        container.innerHTML = html;
+    } else {
+        container.innerHTML = `<center>暂无数据</center>`;
+    }
+}
+
 // 渲染详细统计数据
 function renderSiteStats(stats) {
     // 更新小时流量分布
@@ -414,121 +449,25 @@ function renderSiteStats(stats) {
     }
 
     // 更新访问网页Top10
-    const pagesContainer = document.getElementById('top-pages-list');
-    if (stats.top_pages && stats.top_pages.length > 0) {
-        if (pagesContainer) {
-            let pagesHtml = '';
-            stats.top_pages.forEach((page, index) => {
-                pagesHtml += `
-                    <li class="stat-item">
-                        <span class="stat-item-label">${page.url}</span>
-                        <span class="stat-item-value">${page.count}</span>
-                    </li>
-                `;
-            });
-            pagesContainer.innerHTML = pagesHtml;
-        }
-    }else{
-        pagesContainer.innerHTML = '';
-    }
+    renderStatList('top-pages-list', stats.top_pages, 'url', 'count');
 
     // 更新来源Top10
-    const referrersContainer = document.getElementById('top-referrers-list');
-    if (stats.top_referrers && stats.top_referrers.length > 0) {
-        if (referrersContainer) {
-            let referrersHtml = '';
-            stats.top_referrers.forEach((referrer, index) => {
-                const displayName = referrer.referrer === '' ? '直接访问' : referrer.referrer;
-                referrersHtml += `
-                    <li class="stat-item">
-                        <span class="stat-item-label">${displayName}</span>
-                        <span class="stat-item-value">${referrer.count}</span>
-                    </li>
-                `;
-            });
-            referrersContainer.innerHTML = referrersHtml;
-        }
-    }else{
-        referrersContainer.innerHTML = '';
-    }
+    renderStatList('top-referrers-list', stats.top_referrers, 'referrer', 'count', (value) => value === '' ? '直接访问' : value);
 
     // 更新操作系统Top10
-    const osContainer = document.getElementById('top-os-list');
-    if (stats.top_os && stats.top_os.length > 0) {
-        if (osContainer) {
-            let osHtml = '';
-            stats.top_os.forEach((os, index) => {
-                osHtml += `
-                    <li class="stat-item">
-                        <span class="stat-item-label">${os.os}</span>
-                        <span class="stat-item-value">${os.count}</span>
-                    </li>
-                `;
-            });
-            osContainer.innerHTML = osHtml;
-        }
-    }else{
-        osContainer.innerHTML = '';
-    }
+    renderStatList('top-os-list', stats.top_os, 'os', 'count');
 
     // 更新设备类型分布
-    const deviceContainer = document.getElementById('device-distribution-list');
-    if (stats.device_types && stats.device_types.length > 0) {
-        if (deviceContainer) {
-            let deviceHtml = '';
-            stats.device_types.forEach(device => {
-                deviceHtml += `
-                    <li class="stat-item">
-                        <span class="stat-item-label">${device.device}</span>
-                        <span class="stat-item-value">${device.count}</span>
-                    </li>
-                `;
-            });
-            deviceContainer.innerHTML = deviceHtml;
-        }
-    }else{
-        deviceContainer.innerHTML = '';
-    }
+    renderStatList('device-distribution-list', stats.device_types, 'device', 'count');
 
     // 更新访问地区Top10
-    const locationContainer = document.getElementById('top-locations-list');
-    if (stats.top_locations && stats.top_locations.length > 0) {
-        if (locationContainer) {
-            let locationHtml = '';
-            stats.top_locations.forEach((location, index) => {
-                const displayName = location.location === '' ? '未知' : location.location;
-                locationHtml += `
-                    <li class="stat-item">
-                        <span class="stat-item-label">${displayName}</span>
-                        <span class="stat-item-value">${location.count}</span>
-                    </li>
-                `;
-            });
-            locationContainer.innerHTML = locationHtml;
-        }
-    }else{
-        locationContainer.innerHTML = '';
-    }
+    renderStatList('top-locations-list', stats.top_locations, 'location', 'count', (value) => value === '' ? '未知' : value);
 
     // 更新运营商Top10
-    const ispContainer = document.getElementById('top-isp-list');
-    if (stats.top_isp && stats.top_isp.length > 0) {
-        if (ispContainer) {
-            let ispHtml = '';
-            stats.top_isp.forEach((isp, index) => {
-                const displayName = isp.isp === '' ? '未知' : isp.isp;
-                ispHtml += `
-                    <li class="stat-item">
-                        <span class="stat-item-label">${displayName}</span>
-                        <span class="stat-item-value">${isp.count}</span>
-                    </li>
-                `;
-            });
-            ispContainer.innerHTML = ispHtml;
-        }
-    }else{
-        ispContainer.innerHTML = '';
-    }
+    renderStatList('top-isp-list', stats.top_isp, 'isp', 'count', (value) => value === '' ? '未知' : value);
+
+    // 更新事件统计
+    renderStatList('top-event-list', stats.top_event, 'event', 'count', (value) => value === '' ? '未知' : value);
 
     // 更新概览数据指标
     document.getElementById('week_ip').innerHTML=stats.week_ip || 0;

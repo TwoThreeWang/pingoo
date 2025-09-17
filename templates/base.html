@@ -38,7 +38,7 @@
                 <li><a href="/docs/help">文档</a></li>
                 {{ if .userInfo }}
                 <li><a href="/dashboard">仪表盘</a></li>
-                <li><a href="/profile">用户中心</a></li>
+                <li><a href="/profile" pingoo-event="go profile">用户中心</a></li>
                 {{else}}
                 <li><a href="/login">登录</a></li>
                 {{end}}
@@ -66,11 +66,11 @@
                 <p>&copy; 2025 Pingoo. v{{.version}}</p>
             </div>
             <div class="footer-menu" role="navigation" aria-label="底部导航">
-                <a href="/docs/about">关于</a>
-                <a href="/docs/privacy">隐私政策</a>
-                <a href="/docs/terms">服务条款</a>
-                <a href="/docs/help">帮助中心</a>
-                <a href="/docs/api">API文档</a>
+                <a href="/docs/about" pingoo-event="view about">关于</a>
+                <a href="/docs/privacy" pingoo-event="view privacy">隐私政策</a>
+                <a href="/docs/terms" pingoo-event="view terms">服务条款</a>
+                <a href="/docs/help" pingoo-event="view help">帮助中心</a>
+                <a href="/docs/api" pingoo-event="view api">API文档</a>
             </div>
         </div>
     </footer>

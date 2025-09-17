@@ -48,7 +48,7 @@
         sendEvent('page_view', '');
         d.addEventListener('click', e => {
             const el = e.target.closest('[pingoo-event]');
-            if (el) sendEvent(el.getAttribute('pingoo-event'), el.getAttribute('pingoo-event-value') || '');
+            if (el) sendEvent('custom', el.getAttribute('pingoo-event'));
         });
     }
     d.readyState === 'loading' ? d.addEventListener('DOMContentLoaded', init) : init();

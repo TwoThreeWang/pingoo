@@ -294,6 +294,13 @@ func (s *EventService) GetSimpleStats(siteID uint64, startDate string, endDate s
 		return nil, fmt.Errorf("统计IP数量失败: %v", err)
 	}
 
+	// 获取事件数量
+	if err := db.Model(&models.Event{}).
+		Where("site_id = ? AND event_type = 'custom' AND created_at BETWEEN ? AND ?", siteID, start, end).
+		Count(&stats.EventCount).Error; err != nil {
+		return nil, fmt.Errorf("统计事件数量失败: %v", err)
+	}
+
 	// 获取跳出率和平均访问时长
 	var totalSessions int64
 	var bounceSessions int64

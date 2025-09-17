@@ -397,20 +397,36 @@ func (sc *SiteController) GetStats(c *gin.Context) {
 		LIMIT 10
 	`, siteID, startDate, endDate).Scan(&topISP)
 
+	// 事件TOP10
+	type CustomEventStats struct {
+		Event string `json:"event"`
+		Count int64  `json:"count"`
+	}
+	var topCustomEvent []CustomEventStats
+	sc.db.Raw(`
+		SELECT event_value as event, COUNT(*) as count
+		FROM events
+		WHERE site_id = ? AND event_type = 'custom' AND created_at >= ? AND created_at < ?
+		GROUP BY event_value
+		ORDER BY count DESC
+		LIMIT 10
+	`, siteID, startDate, endDate).Scan(&topCustomEvent)
+
 	stats := struct {
-		SiteID       uint64          `json:"site_id"`
-		WeekIp       int64           `json:"week_ip"`
-		WeekPv       int64           `json:"week_pv"`
-		MonthIp      int64           `json:"month_ip"`
-		MonthPv      int64           `json:"month_pv"`
-		TargetDate   string          `json:"target_date"`
-		HourlyStats  []HourlyStats   `json:"hourly_stats"`
-		TopPages     []PageStats     `json:"top_pages"`
-		TopReferrers []ReferrerStats `json:"top_referrers"`
-		TopOS        []OSStats       `json:"top_os"`
-		DeviceTypes  []DeviceStats   `json:"device_types"`
-		TopLocations []LocationStats `json:"top_locations"`
-		TopISP       []ISPStats      `json:"top_isp"`
+		SiteID       uint64             `json:"site_id"`
+		WeekIp       int64              `json:"week_ip"`
+		WeekPv       int64              `json:"week_pv"`
+		MonthIp      int64              `json:"month_ip"`
+		MonthPv      int64              `json:"month_pv"`
+		TargetDate   string             `json:"target_date"`
+		HourlyStats  []HourlyStats      `json:"hourly_stats"`
+		TopPages     []PageStats        `json:"top_pages"`
+		TopReferrers []ReferrerStats    `json:"top_referrers"`
+		TopOS        []OSStats          `json:"top_os"`
+		DeviceTypes  []DeviceStats      `json:"device_types"`
+		TopLocations []LocationStats    `json:"top_locations"`
+		TopISP       []ISPStats         `json:"top_isp"`
+		TopEvent     []CustomEventStats `json:"top_event"`
 	}{
 		SiteID:       siteID,
 		WeekIp:       weekIp,
@@ -425,6 +441,7 @@ func (sc *SiteController) GetStats(c *gin.Context) {
 		DeviceTypes:  deviceTypes,
 		TopLocations: topLocations,
 		TopISP:       topISP,
+		TopEvent:     topCustomEvent,
 	}
 
 	utils.Success(c, stats)
