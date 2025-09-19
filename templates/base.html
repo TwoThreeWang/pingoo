@@ -23,7 +23,7 @@
 </head>
 <body>
     <!-- 设置默认主题 -->
-    <script>(()=>document.body.classList[localStorage.theme==='dark'||(localStorage.theme==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches)?'add':'remove']('dark_mode'))();</script>
+    <script>(()=>document.body.classList[localStorage.theme==='dark'?'add':'remove']('dark_mode'))();</script>
     <!-- Header -->
     <header role="banner">
         <div class="header-content">
@@ -42,7 +42,7 @@
                 {{else}}
                 <li><a href="/login">登录</a></li>
                 {{end}}
-                <li><a href="#" id="theme-toggle">☀︎ auto</a></li>
+                <li><a href="#" id="theme-toggle">☀︎ light</a></li>
             </nav>
         </div>
     </header>

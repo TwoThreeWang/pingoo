@@ -1,0 +1,199 @@
+/* 卡片组件样式 - 基于main.css设计系统 */
+
+/* 基础卡片样式 */
+.card {
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    background-color: var(--bg-primary);
+    box-shadow: 6px 6px 0px var(--border-primary), -0px -0px 0px var(--bg-primary);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 8px 8px 0px var(--border-primary), -2px -2px 0px var(--bg-primary);
+    transform: translate(-1px, -1px);
+}
+
+/* 卡片头部 */
+.card-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--bg-primary-text);
+    margin: 0 0 0.5rem 0;
+}
+
+.card-subtitle {
+    font-size: 0.9rem;
+    color: var(--bg-secondary-text);
+    margin: 0;
+}
+
+/* 卡片内容 */
+.card-body {
+    margin-bottom: 1.5rem;
+}
+
+.card-body:last-child {
+    margin-bottom: 0;
+}
+
+/* 卡片底部 */
+.card-footer {
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+/* 卡片变体 */
+.card-primary {
+    border-color: var(--primary-color);
+    box-shadow: 6px 6px 0px rgba(204, 120, 92, 0.3), -0px -0px 0px var(--bg-primary);
+}
+
+.card-primary:hover {
+    box-shadow: 8px 8px 0px rgba(204, 120, 92, 0.4), -2px -2px 0px var(--bg-primary);
+}
+
+.card-secondary {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-primary);
+}
+
+.card-accent {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--accent-text);
+}
+
+.card-accent .card-title,
+.card-accent .card-subtitle {
+    color: var(--accent-text);
+}
+
+/* 认证卡片（用于登录/注册） */
+.card-auth {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+}
+
+/* 个人资料卡片 */
+.card-profile {
+    padding: 2rem;
+}
+
+/* 特性卡片（用于首页） */
+.card-feature {
+    text-align: center;
+    padding: 2rem 1.5rem;
+}
+
+.card-feature .icon {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    fill: var(--primary-color);
+}
+
+/* 统计卡片 */
+.card-stat {
+    text-align: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+.card-stat .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    font-family: var(--font-mono);
+    line-height: 1;
+    margin: 0 0 0.5rem 0;
+}
+
+.card-stat .stat-label {
+    font-size: 0.9rem;
+    color: var(--bg-secondary-text);
+    margin: 0;
+}
+
+/* 无边框卡片 */
+.card-borderless {
+    border: none;
+    box-shadow: none;
+}
+
+.card-borderless:hover {
+    box-shadow: none;
+    transform: none;
+}
+
+/* 紧凑卡片 */
+.card-compact {
+    padding: 1rem;
+}
+
+.card-compact .card-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+}
+
+.card-compact .card-footer {
+    padding-top: 0.75rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .card {
+        padding: 1.25rem;
+        margin: 0.75rem 0;
+    }
+    
+    .card-auth {
+        margin: 1.5rem auto;
+        padding: 1.5rem;
+    }
+    
+    .card-profile {
+        padding: 1.5rem;
+    }
+    
+    .card-feature {
+        padding: 1.5rem 1rem;
+    }
+    
+    .card-footer {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .card-footer .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .card {
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+    
+    .card-header {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+    }
+    
+    .card-body {
+        margin-bottom: 1rem;
+    }
+}

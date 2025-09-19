@@ -1,9 +1,9 @@
-const {body} = document, themes = ['auto','light','dark'],
+const {body} = document, themes = ['light','dark'],
       toggle = id => document.getElementById(id);
-    let currentTheme = localStorage.theme || 'auto';
+    let currentTheme = localStorage.theme || 'light';
 
 const updateTheme = theme => {
-  const isDark = theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  const isDark = theme === 'dark';
   body.classList.toggle('dark_mode', isDark);
   if(toggle('theme-toggle')) toggle('theme-toggle').textContent = `☀︎ ${theme}`;
 };
@@ -17,8 +17,6 @@ toggle('theme-toggle')?.addEventListener('click', () => {
 });
 
 addEventListener('DOMContentLoaded', () => {
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => currentTheme === 'auto' && updateTheme('auto'));
-
   const topBtn = toggle('top');
   if (topBtn) addEventListener('scroll', () => topBtn.classList.toggle('show', scrollY > 200));
 

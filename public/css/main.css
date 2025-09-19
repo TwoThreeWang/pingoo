@@ -1,14 +1,29 @@
 /* 配色参考 https://tweakcn.com/editor/theme */
 :root {
+  /* 字体设置 */
   --font-sans:  Arial, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
   --font-mono: ui-monospace,SFMono-Regular,Roboto Mono,Menlo,Monaco,Liberation Mono,DejaVu Sans Mono,Courier New,monospace,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol;
-  --primary-color: #cc785c;
+  /* 主色调 */
+  --primary-color: #c96442;
   --primary-text: #ffffff;
+  /* 辅助色调 */
   --secondary-color: #EFD6C5;
   --secondary-text: #535146;
+  /* 强调色调 */
   --accent-color: #e9e6dc;
   --accent-text: #28261b;
-  --success-color: #7b9d75;
+  /* 状态色调 */
+  --success-color: #4caf50;
+  --success-bg: #e8f5e8;
+  --error-color: #f44336;
+  --error-bg: #ffebee;
+  --warning-color: #ff9800;
+  --warning-bg: #fff3e0;
+  --info-color: #2196f3;
+  --info-bg: #e3f2fd;
+  --disabled-color: #9e9e9e;
+  --disabled-bg: #f5f5f5;
+  /* 背景色调 */
   --bg-primary: #faf9f5;
   --bg-primary-text: #000000;
   --bg-secondary: #f5f4ee;
@@ -16,12 +31,22 @@
   --border-primary: #dad9d4;
 }
 .dark_mode {
-  --primary-color: #9c5941;
+  --primary-color: #d97757;
   --primary-text: #ffffff;
   --secondary-color: #EFD6C5;
   --secondary-text: #535146;
   --accent-color: #1a1915;
   --accent-text: #f5f4ee;
+  --success-color: #a8d8a5;
+  --success-bg: #1e2b1c;
+  --error-color: #ff8a80;
+  --error-bg: #2a1513;
+  --warning-color: #ffd54f;
+  --warning-bg: #2a2415;
+  --info-color: #64b5f6;
+  --info-bg: #15202a;
+  --disabled-color: #95a5a6;
+  --disabled-bg: #2c3e50;
   --bg-primary: #262624;
   --bg-primary-text: #c3c0b6;
   --bg-secondary: #1f1e1d;

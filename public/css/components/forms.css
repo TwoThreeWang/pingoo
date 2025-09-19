@@ -1,0 +1,257 @@
+/* 表单组件样式 - 基于main.css设计系统 */
+
+/* 表单容器 */
+.form-container {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* 表单组 */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+/* 标签样式 */
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--bg-primary-text);
+    font-size: 0.9rem;
+}
+
+.form-label.required::after {
+    content: "*";
+    color: #dc3545;
+    margin-left: 0.25rem;
+}
+
+/* 输入框基础样式 */
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+    color: var(--bg-primary-text);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    box-shadow: 3px 3px 0px var(--border-primary), -0px -0px 0px var(--bg-primary);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(204, 120, 92, 0.2), 3px 3px 0px var(--border-primary);
+}
+
+.form-control::placeholder {
+    color: var(--bg-secondary-text);
+    opacity: 0.7;
+}
+
+/* 输入框状态 */
+.form-control:disabled {
+    background-color: var(--bg-secondary);
+    color: var(--bg-secondary-text);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.form-control.error {
+    border-color: #dc3545;
+    box-shadow: 3px 3px 0px rgba(220, 53, 69, 0.2), -0px -0px 0px var(--bg-primary);
+}
+
+.form-control.success {
+    border-color: #28a745;
+    box-shadow: 3px 3px 0px rgba(40, 167, 69, 0.2), -0px -0px 0px var(--bg-primary);
+}
+
+/* 文本区域 */
+.form-textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+/* 选择框 */
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+
+/* 复选框和单选框 */
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 3px;
+    background-color: var(--bg-primary);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-check-input:checked::after {
+    content: "✓";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--primary-text);
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.form-check-label {
+    font-size: 0.9rem;
+    color: var(--bg-primary-text);
+    cursor: pointer;
+    margin: 0;
+}
+
+/* 单选按钮 */
+.form-radio .form-check-input {
+    border-radius: 50%;
+}
+
+.form-radio .form-check-input:checked::after {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background-color: var(--primary-text);
+}
+
+/* 表单帮助文本 */
+.form-help {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--bg-secondary-text);
+}
+
+.form-help.error {
+    color: #dc3545;
+}
+
+.form-help.success {
+    color: #28a745;
+}
+
+/* 表单操作区域 */
+.form-actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.form-actions.center {
+    justify-content: center;
+}
+
+.form-actions.stacked {
+    flex-direction: column;
+}
+
+/* 内联表单 */
+.form-inline {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.form-inline .form-group {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.form-inline .form-actions {
+    margin-top: 0;
+}
+
+/* 水平表单 */
+.form-horizontal {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    align-items: center;
+}
+
+.form-horizontal .form-label {
+    margin-bottom: 0;
+    text-align: right;
+}
+
+.form-horizontal .form-group {
+    display: contents;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .form-container {
+        max-width: none;
+        padding: 0 1rem;
+    }
+    
+    .form-inline {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .form-horizontal {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .form-horizontal .form-label {
+        text-align: left;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+    
+    .form-control {
+        padding: 0.625rem 0.875rem;
+    }
+    
+    .form-actions {
+        margin-top: 1.5rem;
+    }
+}
