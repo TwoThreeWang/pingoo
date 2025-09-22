@@ -4,7 +4,7 @@
 <style>
     /* 网站概览样式 */
     .site-item {
-        border: 0;
+        border: 1px solid var(--border-primary);
     }
 
     /* 图表区域 */
@@ -136,19 +136,8 @@
     }
 
     .date-nav-btn {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    color: var(--bg-primary-text);
-    padding: 0.25rem 0.5rem;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 1rem;
-    transition: background-color 0.2s;
-}
-
-.date-nav-btn:hover {
-    background-color: var(--bg-primary);
-}
+        padding: 0.5rem;
+    }
 
     @media (max-width: 768px) {
         .stats-grid {
@@ -174,8 +163,8 @@
         <a href="{{.Site.Domain}}" target="_balnk" class="site-url">{{.Site.Domain}}</a>
         <span>
             <input type="date" class="date-selector" id="date-selector" value="{{.Today}}" onchange="dateChange()" style="width:auto;">
-            <button class="date-nav-btn" id="prev-day" onclick="changeDay(-1)">←</button>
-            <button class="date-nav-btn" id="next-day" onclick="changeDay(1)">→</button>
+            <button class="date-nav-btn" id="prev-day" onclick="changeDay(-1)">◄</button>
+            <button class="date-nav-btn" id="next-day" onclick="changeDay(1)">►</button>
         </span>
     </div>
     <div class="site-metrics">
@@ -431,6 +420,7 @@ function renderStatList(containerId, data, labelKey, valueKey, displayFormatter 
                 </li>
             `;
         });
+        html += `<center><a href="/detail/${siteId}?type=${containerId}">查看更多</a><center>`
         container.innerHTML = html;
     } else {
         container.innerHTML = `<center>暂无数据</center>`;

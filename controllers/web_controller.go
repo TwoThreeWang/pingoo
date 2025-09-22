@@ -123,6 +123,28 @@ func (wc *WebController) Profile(c *gin.Context) {
 	}))
 }
 
+// Detail 通用详情页面
+func (wc *WebController) Detail(c *gin.Context) {
+	// 判断是否登录，未登录跳转登陆页面
+	userInfo := middleware.GetCurrentUser(c)
+	if userInfo == nil {
+		c.Redirect(http.StatusFound, "/login")
+		c.Abort()
+		return
+	}
+
+	siteID := c.Param("id")
+
+	// 默认事件为当天
+	today := time.Now().Format("2006-01-02")
+
+	c.HTML(http.StatusOK, "detail", OutputCommonSession(c, gin.H{
+		"Title":  "详情分析",
+		"SiteID": siteID,
+		"Today":  today,
+	}))
+}
+
 // RenderMarkdownFile 文档解析
 func (wc *WebController) RenderMarkdownFile(c *gin.Context) {
 	name := c.Param("name")

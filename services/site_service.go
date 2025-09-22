@@ -3,9 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
-
 	"pingoo/database"
 	"pingoo/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -174,4 +174,99 @@ func (s *SiteService) GetSimpleSiteStats(siteID uint64, userID uint64, startDate
 	}
 
 	return stats, nil
+}
+
+// GetGenericStats 通用统计方法
+func (s *SiteService) GetGenericStats(siteID uint64, userID uint64, startDate string, endDate string, page int, pageSize int, fieldName string, statType string) (interface{}, int64, error) {
+	// 验证权限
+	if hasAccess, err := s.CheckUserAccess(siteID, userID); err != nil || !hasAccess {
+		return nil, 0, errors.New("无权限访问此站点")
+	}
+
+	db := database.GetDB()
+
+	// 解析日期
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return nil, 0, fmt.Errorf("开始日期格式错误: %v", err)
+	}
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return nil, 0, fmt.Errorf("结束日期格式错误: %v", err)
+	}
+	end = end.Add(24 * time.Hour).Add(-time.Nanosecond)
+
+	var total int64
+
+	// 统计总数
+	countQuery := db.Model(&models.Event{}).
+		Where("site_id = ? AND event_type = 'page_view' AND "+fieldName+" IS NOT NULL AND "+fieldName+" != '' AND created_at BETWEEN ? AND ?", siteID, start, end)
+
+	if err := countQuery.Distinct(fieldName).Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("统计%s总数失败: %v", statType, err)
+	}
+
+	offset := (page - 1) * pageSize
+
+	// 根据类型获取统计数据
+	switch statType {
+	case "ReferrerStat":
+		var stats []models.TypeStat
+		if err := db.Model(&models.Event{}).
+			Select(fieldName+" as referrer, COUNT(*) as count").
+			Where("site_id = ? AND event_type = 'page_view' AND "+fieldName+" IS NOT NULL AND "+fieldName+" != '' AND created_at BETWEEN ? AND ?", siteID, start, end).
+			Group(fieldName).
+			Order("count DESC").
+			Limit(pageSize).
+			Offset(offset).
+			Scan(&stats).Error; err != nil {
+			return nil, 0, fmt.Errorf("获取%s统计失败: %v", statType, err)
+		}
+		return stats, total, nil
+
+	case "PageStat":
+		var stats []models.TypeStat
+		if err := db.Model(&models.Event{}).
+			Select(fieldName+" as path, COUNT(*) as count").
+			Where("site_id = ? AND event_type = 'page_view' AND "+fieldName+" IS NOT NULL AND "+fieldName+" != '' AND created_at BETWEEN ? AND ?", siteID, start, end).
+			Group(fieldName).
+			Order("count DESC").
+			Limit(pageSize).
+			Offset(offset).
+			Scan(&stats).Error; err != nil {
+			return nil, 0, fmt.Errorf("获取%s统计失败: %v", statType, err)
+		}
+		return stats, total, nil
+
+	case "DeviceStat":
+		var stats []models.TypeStat
+		if err := db.Model(&models.Event{}).
+			Select(fieldName+" as device, COUNT(*) as count").
+			Where("site_id = ? AND event_type = 'page_view' AND "+fieldName+" IS NOT NULL AND "+fieldName+" != '' AND created_at BETWEEN ? AND ?", siteID, start, end).
+			Group(fieldName).
+			Order("count DESC").
+			Limit(pageSize).
+			Offset(offset).
+			Scan(&stats).Error; err != nil {
+			return nil, 0, fmt.Errorf("获取%s统计失败: %v", statType, err)
+		}
+		return stats, total, nil
+
+	case "BrowserStat":
+		var stats []models.TypeStat
+		if err := db.Model(&models.Event{}).
+			Select(fieldName+" as browser, COUNT(*) as count").
+			Where("site_id = ? AND event_type = 'page_view' AND "+fieldName+" IS NOT NULL AND "+fieldName+" != '' AND created_at BETWEEN ? AND ?", siteID, start, end).
+			Group(fieldName).
+			Order("count DESC").
+			Limit(pageSize).
+			Offset(offset).
+			Scan(&stats).Error; err != nil {
+			return nil, 0, fmt.Errorf("获取%s统计失败: %v", statType, err)
+		}
+		return stats, total, nil
+
+	default:
+		return nil, 0, fmt.Errorf("不支持的统计类型: %s", statType)
+	}
 }

@@ -74,6 +74,7 @@ func SetupRouter(router *gin.Engine, db *gorm.DB, cfg *config.Config) *gin.Engin
 			sites.DELETE("/:id/stats", siteController.ClearStats)         // 删除网站所有统计数据
 			sites.GET("/:id/stats", siteController.GetStats)              // 获取站点统计信息
 			sites.GET("/:id/simple-stats", siteController.GetSimpleStats) // 获取站点统计信息概览
+			sites.GET("/:id/detail", siteController.GetDetail)            // 获取站点指定类型的统计
 		}
 	}
 
@@ -109,6 +110,7 @@ func SetupRouter(router *gin.Engine, db *gorm.DB, cfg *config.Config) *gin.Engin
 	router.GET("/dashboard", webController.Dashboard)           // 仪表盘页
 	router.GET("/websites/:id", webController.Websites)         // 网站详情页
 	router.GET("/profile", webController.Profile)               // 用户中心页
+	router.GET("/detail/:id", webController.Detail)             // 通用详情页
 	router.GET("/docs/:name", webController.RenderMarkdownFile) // 文档解析
 
 	// 404路由错误

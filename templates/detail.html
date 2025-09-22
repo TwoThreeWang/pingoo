@@ -1,0 +1,420 @@
+{{define "title"}}事件详情 - {{.Site.Name}}{{end}}
+
+{{define "extra_css"}}
+<style>
+/* 事件详情页面样式 */
+.event-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.event-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.event-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.event-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.date-selector {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+}
+
+.event-list {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.event-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.2s;
+}
+
+.event-item:hover {
+    background-color: #f9fafb;
+}
+
+.event-item:last-child {
+    border-bottom: none;
+}
+
+.event-info {
+    flex: 1;
+}
+
+.event-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.event-meta {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.event-count {
+    font-size: 18px;
+    font-weight: 600;
+    color: #3b82f6;
+    min-width: 60px;
+    text-align: right;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.pagination-btn {
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #374151;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.pagination-btn:disabled {
+    background-color: #f9fafb;
+    color: #9ca3af;
+    cursor: not-allowed;
+    border-color: #e5e7eb;
+}
+
+.pagination-btn.active {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 15px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6b7280;
+}
+
+.empty-state svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .event-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .event-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .event-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .event-count {
+        align-self: flex-end;
+    }
+
+    .pagination {
+        flex-wrap: wrap;
+    }
+}
+</style>
+{{end}}
+
+{{define "content"}}
+<div class="dashboard-header">
+    <h2 id="dashboard-title">事件详情</h2>
+    <p class="dashboard-subtitle">查看网站事件统计明细</p>
+</div>
+
+<div class="event-container">
+    <div class="event-header">
+        <h1 class="event-title">{{.Site.Name}} - 事件列表</h1>
+        <div class="event-controls">
+            <input type="date" class="date-selector" id="date-selector" value="{{.Today}}" onchange="loadEvents()">
+            <button class="date-nav-btn" onclick="changeDay(-1)">◄</button>
+            <button class="date-nav-btn" onclick="changeDay(1)">►</button>
+        </div>
+    </div>
+
+    <div class="event-list" id="event-list">
+        <div class="loading" style="text-align: center; padding: 40px;">
+            <span class="loading"></span>正在加载事件数据...
+        </div>
+    </div>
+
+    <div class="pagination" id="pagination">
+        <!-- 分页按钮将通过JavaScript动态生成 -->
+    </div>
+</div>
+{{end}}
+
+{{define "extra_js"}}
+<script>
+const siteId = "{{.SiteID}}";
+const dateInput = document.getElementById('date-selector');
+let currentPage = 1;
+const pageSize = 20;
+let totalEvents = 0;
+let allEvents = [];
+let detailType = 'events'; // 默认显示事件详情
+
+// 获取URL参数中的type
+function getUrlParameter(name) {
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+    const results = regex.exec(location.search);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+}
+
+// 设置详情类型
+detailType = getUrlParameter('type') || 'events';
+
+// 更新页面标题
+const titleMap = {
+    'events': '事件详情',
+    'pages': '访问页面详情',
+    'sources': '来源详情',
+    'devices': '设备详情'
+};
+const subtitleMap = {
+    'events': '查看网站事件统计明细',
+    'pages': '查看网站访问页面详情',
+    'sources': '查看网站来源统计详情',
+    'devices': '查看网站设备统计详情'
+};
+document.querySelector('.event-title').textContent = `${document.querySelector('.event-title').textContent.split(' - ')[0]} - ${titleMap[detailType] || '事件列表'}`;
+document.getElementById('dashboard-title').textContent = titleMap[detailType] || '事件详情';
+document.querySelector('.dashboard-subtitle').textContent = subtitleMap[detailType] || '查看网站事件统计明细';
+
+// 加载事件数据
+async function loadEvents() {
+    const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('请先登录');
+        }
+
+        const response = await fetch(`/api/sites/${siteId}/${detailType}?date=${date}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`获取${titleMap[detailType] || '事件'}数据失败`);
+        }
+
+        const result = await response.json();
+        if (result.code === 0 && result.data) {
+            allEvents = result.data[detailType] || result.data.events || [];
+            totalEvents = allEvents.length;
+            currentPage = 1;
+            renderEvents();
+            renderPagination();
+        } else {
+            throw new Error(result.message || '获取数据失败');
+        }
+    } catch (error) {
+        console.error(`获取${titleMap[detailType] || '事件'}数据失败:`, error);
+        showEventError(error.message);
+    }
+}
+
+// 渲染事件列表
+function renderEvents() {
+    const container = document.getElementById('event-list');
+
+    if (!allEvents || allEvents.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p>暂无事件数据</p>
+            </div>
+        `;
+        return;
+    }
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, totalEvents);
+    const pageEvents = allEvents.slice(startIndex, endIndex);
+
+    let html = '';
+    pageEvents.forEach(event => {
+        const eventTime = new Date(event.created_at).toLocaleString('zh-CN');
+        html += `
+            <div class="event-item">
+                <div class="event-info">
+                    <div class="event-name">${event.event || '未知事件'}</div>
+                    <div class="event-meta">
+                        ${eventTime} · ${event.ip || '未知IP'} · ${event.location || '未知位置'}
+                        ${event.referrer ? `· 来源: ${event.referrer}` : ''}
+                    </div>
+                </div>
+                <div class="event-count">${event.count || 1}</div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// 渲染分页
+function renderPagination() {
+    const container = document.getElementById('pagination');
+    const totalPages = Math.ceil(totalEvents / pageSize);
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    // 上一页按钮
+    html += `<button class="pagination-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+
+    // 页码按钮
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+    }
+
+    // 下一页按钮
+    html += `<button class="pagination-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
+
+    // 分页信息
+    const startIndex = (currentPage - 1) * pageSize + 1;
+    const endIndex = Math.min(currentPage * pageSize, totalEvents);
+    html += `<span class="pagination-info">${startIndex}-${endIndex} / ${totalEvents}</span>`;
+
+    container.innerHTML = html;
+}
+
+// 切换页面
+function changePage(page) {
+    const totalPages = Math.ceil(totalEvents / pageSize);
+    if (page < 1 || page > totalPages) return;
+
+    currentPage = page;
+    renderEvents();
+    renderPagination();
+
+    // 滚动到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 显示错误信息
+function showEventError(message) {
+    const container = document.getElementById('event-list');
+    container.innerHTML = `
+        <div class="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p>${message}</p>
+            <button class="pagination-btn" onclick="loadEvents()" style="margin-top: 16px;">重试</button>
+        </div>
+    `;
+}
+
+// 切换日期
+function changeDay(offset) {
+    const dateSelector = document.getElementById('date-selector');
+    const currentDate = new Date(dateSelector.value);
+    currentDate.setDate(currentDate.getDate() + offset);
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    const newDate = `${year}-${month}-${day}`;
+    dateSelector.value = newDate;
+    loadEvents();
+}
+
+// 每60秒自动刷新数据
+setInterval(() => {
+    loadEvents();
+}, 60000);
+
+// 初始加载
+loadEvents();
+</script>
+{{end}}

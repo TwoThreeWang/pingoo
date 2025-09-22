@@ -535,3 +535,95 @@ func (sc *SiteController) ClearStats(c *gin.Context) {
 
 	utils.Success(c, gin.H{"message": "统计数据已清空"})
 }
+
+// GetDetail 根据传入参数获取指定类型的站点统计
+func (sc *SiteController) GetDetail(c *gin.Context) {
+	// 获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.Fail(c, "用户未登录")
+		return
+	}
+
+	// 获取站点ID
+	siteIDStr := c.Param("id")
+	siteID, err := strconv.ParseUint(siteIDStr, 10, 64)
+	if err != nil {
+		utils.Fail(c, "站点ID格式错误")
+		return
+	}
+
+	// 获取统计类型
+	statType := c.Query("type")
+	if statType == "" {
+		utils.Fail(c, "统计类型参数错误")
+		return
+	}
+
+	// 获取分页参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	// 获取时间范围参数，默认获取当天的数据
+	startDate := c.DefaultQuery("date", time.Now().Format("2006-01-02"))
+	endDate := startDate
+
+	// 根据类型获取统计
+	siteService := services.NewSiteService()
+	var result interface{}
+	var total int64
+
+	switch statType {
+	case "referrer":
+		stats, totalCount, err := siteService.GetGenericStats(siteID, userID.(uint64), startDate, endDate, page, pageSize, "referrer", "ReferrerStat")
+		if err != nil {
+			utils.Fail(c, err.Error())
+			return
+		}
+		result = stats
+		total = totalCount
+	case "page":
+		stats, totalCount, err := siteService.GetGenericStats(siteID, userID.(uint64), startDate, endDate, page, pageSize, "page", "PageStat")
+		if err != nil {
+			utils.Fail(c, err.Error())
+			return
+		}
+		result = stats
+		total = totalCount
+	case "device":
+		stats, totalCount, err := siteService.GetGenericStats(siteID, userID.(uint64), startDate, endDate, page, pageSize, "device", "DeviceStat")
+		if err != nil {
+			utils.Fail(c, err.Error())
+			return
+		}
+		result = stats
+		total = totalCount
+	case "browser":
+		stats, totalCount, err := siteService.GetGenericStats(siteID, userID.(uint64), startDate, endDate, page, pageSize, "browser", "BrowserStat")
+		if err != nil {
+			utils.Fail(c, err.Error())
+			return
+		}
+		result = stats
+		total = totalCount
+	case "events":
+		stats, totalCount, err := siteService.GetGenericStats(siteID, userID.(uint64), startDate, endDate, page, pageSize, "event_type", "EventsStat")
+		if err != nil {
+			utils.Fail(c, err.Error())
+			return
+		}
+		result = stats
+		total = totalCount
+	default:
+		utils.Fail(c, "不支持的统计类型")
+		return
+	}
+
+	utils.SuccessWithPage(c, result, total, page, pageSize)
+}

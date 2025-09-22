@@ -86,3 +86,9 @@ type EventStats struct {
 	BounceRate  float64 `json:"bounce_rate"`
 	AvgDuration float64 `json:"avg_duration"`
 }
+
+// TypeStat 指标统计
+type TypeStat struct {
+	TypeData string `json:"type_data"`
+	Count    int64  `json:"count"`
+}
