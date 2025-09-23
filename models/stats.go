@@ -9,6 +9,19 @@ type SimpleSiteStats struct {
 	EventCount  int64   `json:"event_count"`  // 事件数
 	BounceRate  float64 `json:"bounce_rate"`  // 跳出率
 	AvgDuration float64 `json:"avg_duration"` // 平均访问时长（秒）
-	StartDate   string  `json:"start_time"`   // 开始时间
-	EndDate     string  `json:"end_time"`     // 结束时间
+	WeekIp      int64   `json:"week_ip"`      // 本周IP
+	WeekPv      int64   `json:"week_pv"`      // 本周PV
+	MonthIp     int64   `json:"month_ip"`     // 本月IP
+	MonthPv     int64   `json:"month_pv"`     // 本月PV
+	HourlyStats struct {
+		Hour  int   `json:"hour"`
+		Count int64 `json:"count"`
+	} `json:"hourly_stats"` // 按小时流量分布
+	StartDate string `json:"start_time"` // 开始时间
+	EndDate   string `json:"end_time"`   // 结束时间
+}
+
+type RankStats struct {
+	Key   string `json:"key"`
+	Count int64  `json:"count"`
 }

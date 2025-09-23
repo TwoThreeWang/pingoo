@@ -102,9 +102,12 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 	return event, nil
 }
 
-// GetEvents 获取事件列表
-func (s *EventService) GetEvents(query *models.EventQuery) ([]models.Event, int64, error) {
-	db := database.GetDB().Model(&models.Event{})
+// GetEvents 根据站点ID获取事件列表
+func (s *EventService) GetEventsDetail(query *models.EventQuery) ([]models.Event, int64, error) {
+	if query.SiteID == 0 {
+		return nil, 0, errors.New("站点ID不能为空")
+	}
+	db := database.GetDB().Model(&models.Event{}).Where("site_id = ?", query.SiteID)
 
 	// 构建查询条件
 	if query.SessionID != "" {
@@ -183,76 +186,8 @@ func (s *EventService) GetEvents(query *models.EventQuery) ([]models.Event, int6
 	return events, total, nil
 }
 
-// GetEventStats 获取事件统计信息
-func (s *EventService) GetEventStats(query *models.EventQuery) (*models.EventStats, error) {
-	if query.SiteID == 0 {
-		return nil, errors.New("站点ID不能为空")
-	}
-
-	db := database.GetDB().Model(&models.Event{}).Where("site_id = ?", query.SiteID)
-
-	// 时间范围查询
-	if query.StartTime != "" {
-		startTime, err := time.Parse("2006-01-02", query.StartTime)
-		if err == nil {
-			db = db.Where("created_at >= ?", startTime)
-		}
-	}
-	if query.EndTime != "" {
-		endTime, err := time.Parse("2006-01-02", query.EndTime)
-		if err == nil {
-			endTime = endTime.Add(24 * time.Hour)
-			db = db.Where("created_at <= ?", endTime)
-		}
-	}
-
-	// 统计总PV（页面浏览量）
-	var totalPV int64
-	if err := db.Count(&totalPV).Error; err != nil {
-		return nil, fmt.Errorf("统计PV失败: %v", err)
-	}
-
-	// 统计总UV（独立访客）
-	var totalUV int64
-	if err := db.Distinct("session_id").Count(&totalUV).Error; err != nil {
-		return nil, fmt.Errorf("统计UV失败: %v", err)
-	}
-
-	// 计算跳出率（只访问了一个页面的会话数/总会话数）
-	var bounceRate float64
-	if totalUV > 0 {
-		var singlePageSessions int64
-		subQuery := db.Select("session_id").Group("session_id").Having("COUNT(*) = 1")
-		if err := db.Model(&models.Event{}).Where("session_id IN (?)", subQuery).Distinct("session_id").Count(&singlePageSessions).Error; err != nil {
-			return nil, fmt.Errorf("统计跳出率失败: %v", err)
-		}
-		bounceRate = float64(singlePageSessions) / float64(totalUV) * 100
-	}
-
-	stats := &models.EventStats{
-		TotalPV:    totalPV,
-		TotalUV:    totalUV,
-		BounceRate: bounceRate,
-	}
-
-	return stats, nil
-}
-
-// GetEventByID 根据ID获取事件
-func (s *EventService) GetEventByID(id uint64) (*models.Event, error) {
-	var event models.Event
-	db := database.GetDB()
-	if err := db.First(&event, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("事件不存在")
-		}
-		return nil, fmt.Errorf("查询事件失败: %v", err)
-	}
-	return &event, nil
-}
-
-// GetSimpleStats 获取详细网站统计信息
-func (s *EventService) GetSimpleStats(siteID uint64, startDate string, endDate string) (*models.SimpleSiteStats, error) {
+// GetEventsSummary 获取网站下整体流量指标
+func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate string) (*models.SimpleSiteStats, error) {
 	var stats models.SimpleSiteStats
 	db := database.GetDB()
 
@@ -342,5 +277,55 @@ func (s *EventService) GetSimpleStats(siteID uint64, startDate string, endDate s
 		stats.AvgDuration = 0
 	}
 
+	// 本周IP和PV总量（基于传入的日期所在周）
+	weekStart := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
+	for weekStart.Weekday() != time.Monday {
+		weekStart = weekStart.AddDate(0, 0, -1)
+	}
+	weekEnd := weekStart.AddDate(0, 0, 7)
+	db.Model(&models.Event{}).Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, weekStart, weekEnd).Count(&stats.WeekPv)
+	db.Model(&models.Event{}).Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, weekStart, weekEnd).Distinct("ip").Count(&stats.WeekIp)
+
+	// 本月IP和PV总量（基于传入的日期所在周）
+	monthStart := time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, start.Location())
+	monthEnd := monthStart.AddDate(0, 1, 0)
+	db.Model(&models.Event{}).Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, monthStart, monthEnd).Count(&stats.MonthPv)
+	db.Model(&models.Event{}).Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, monthStart, monthEnd).Distinct("ip").Count(&stats.MonthIp)
+
+	// 小时流量分布
+	db.Raw(`
+		SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
+		FROM events
+		WHERE site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?
+		GROUP BY EXTRACT(HOUR FROM created_at)
+		ORDER BY hour
+	`, siteID, startDate, endDate).Scan(&stats.HourlyStats)
+
 	return &stats, nil
+}
+
+// GetEventsRank 事件概览排行
+func (s *EventService) GetEventsRank(siteID uint64, startDate, endDate, statType, eventType string, page, pageSize int) (*[]models.RankStats, int64, error) {
+	var rankStats []models.RankStats
+	db := database.GetDB()
+
+	// 获取排行数据
+	db.Raw(`
+		SELECT ? AS key, COUNT(*) as count
+		FROM events
+		WHERE site_id = ? AND event_type = ? AND created_at >= ? AND created_at < ?
+		GROUP BY ?
+		ORDER BY count DESC
+		LIMIT ? OFFSET ?
+	`, statType, siteID, eventType, startDate, endDate, statType, pageSize, (page-1)*pageSize).Scan(&rankStats)
+
+	// 获取总量
+	var total int64
+	db.Raw(`
+		SELECT COUNT(distinct ?)
+		FROM events
+		WHERE site_id = ? AND event_type = ? AND created_at >= ? AND created_at < ?
+	`, statType, siteID, eventType, startDate, endDate).Scan(&total)
+
+	return &rankStats, total, nil
 }

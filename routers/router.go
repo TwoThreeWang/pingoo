@@ -33,22 +33,18 @@ func SetupRouter(router *gin.Engine, db *gorm.DB, cfg *config.Config) *gin.Engin
 
 		c.Next()
 	})
+
+	// 创建认证控制器实例
+	authController := controllers.NewAuthController(db, cfg)
 	// 创建事件控制器实例
 	eventController := controllers.NewEventController()
+	// 创建站点控制器实例
+	siteController := controllers.NewSiteController(db)
+
 	// API路由组
 	api := router.Group("/api")
 	{
-		// 事件相关路由
-		events := api.Group("/events")
-		{
-			events.GET("", middleware.AuthMiddleware(), eventController.GetEvents)           // 获取事件列表
-			events.POST("", middleware.AuthMiddleware(), eventController.CreateEvent)        // 创建事件
-			events.GET("/stats", middleware.AuthMiddleware(), eventController.GetEventStats) // 获取事件统计
-			events.GET("/:id", middleware.AuthMiddleware(), eventController.GetEventByID)    // 获取单个事件
-		}
 
-		// 创建认证控制器实例
-		authController := controllers.NewAuthController(db, cfg)
 		// 用户认证路由
 		auth := api.Group("/auth")
 		{
@@ -60,21 +56,25 @@ func SetupRouter(router *gin.Engine, db *gorm.DB, cfg *config.Config) *gin.Engin
 			auth.PUT("/password", middleware.AuthMiddleware(), authController.ChangePassword) // 更新用户密码
 		}
 
-		// 创建站点控制器实例
-		siteController := controllers.NewSiteController(db)
+		// 事件相关路由
+		events := api.Group("/events")
+		{
+			events.GET("/:site_id", middleware.AuthMiddleware(), eventController.GetEvents)                // 获取网站下事件列表
+			events.POST("", middleware.AuthMiddleware(), eventController.CreateEvent)                      // 创建事件
+			events.GET("/:site_id/stats", middleware.AuthMiddleware(), eventController.GetEventsRank)      // 获取事件统计排行
+			events.GET("/:site_id/summary", middleware.AuthMiddleware(), eventController.GetEventsSummary) // 获取网站下整体流量指标
+		}
+
 		// 站点管理路由
 		sites := api.Group("/sites")
 		sites.Use(middleware.AuthMiddleware())
 		{
-			sites.GET("", siteController.List)                            // 获取站点列表
-			sites.POST("", siteController.Create)                         // 创建站点
-			sites.GET("/:id", siteController.Get)                         // 获取站点详情
-			sites.PUT("/:id", siteController.Update)                      // 更新站点信息
-			sites.DELETE("/:id", siteController.Delete)                   // 删除站点
-			sites.DELETE("/:id/stats", siteController.ClearStats)         // 删除网站所有统计数据
-			sites.GET("/:id/stats", siteController.GetStats)              // 获取站点统计信息
-			sites.GET("/:id/simple-stats", siteController.GetSimpleStats) // 获取站点统计信息概览
-			sites.GET("/:id/detail", siteController.GetDetail)            // 获取站点指定类型的统计
+			sites.GET("", siteController.List)                    // 获取站点列表
+			sites.POST("", siteController.Create)                 // 创建站点
+			sites.GET("/:id", siteController.Get)                 // 获取站点详情
+			sites.PUT("/:id", siteController.Update)              // 更新站点信息
+			sites.DELETE("/:id", siteController.Delete)           // 删除站点
+			sites.DELETE("/:id/stats", siteController.ClearStats) // 删除网站所有统计数据
 		}
 	}
 
