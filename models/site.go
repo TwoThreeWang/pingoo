@@ -51,18 +51,6 @@ type SiteResponse struct {
 	UniqueUsers int64 `json:"unique_users,omitempty"` // 独立用户数
 }
 
-// SiteQuery 查询站点结构体
-type SiteQuery struct {
-	UserID   uint64 `json:"user_id" form:"user_id"`
-	Name     string `json:"name" form:"name"`
-	Domain   string `json:"domain" form:"domain"`
-	Page     int    `json:"page" form:"page"`
-	PageSize int    `json:"page_size" form:"page_size"`
-}
-
-// JSONB 自定义JSONB类型
-type JSONB map[string]interface{}
-
 // SiteStats 站点统计结构体
 type SiteStats struct {
 	SiteID       uint64          `json:"site_id"`

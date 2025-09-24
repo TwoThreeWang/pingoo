@@ -4,9 +4,15 @@
 
 ## 基本信息
 
-- **Base URL**: `http://localhost:8080/api`
+- **Base URL**: `http://localhost:5004/api`
 - **认证方式**: Bearer Token (JWT)
 - **响应格式**: JSON
+- **请求头**:
+```json
+{
+  "Authorization": "Bearer yourtoken"
+}
+```
 
 ## API 路径
 
@@ -26,15 +32,19 @@
 - **响应**:
 ```json
 {
-  "token": "jwt_token",
-  "refresh_token": "refresh_token",
-  "user": {
-    "id": 1,
-    "username": "user",
-    "email": "user@example.com",
-    "role": "user"
-  },
-  "expires_in": 86400
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJ1c2VybmFtZSI6InVzZXIiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImV4cCI6MTc1ODk1NDc3OX0.VjO5VWdu3qrRUceRh9Mn0wSRiankKoFmmSypSx4EFX4",
+        "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJ1c2VybmFtZSI6InVzZXIiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImV4cCI6MTc1OTMwMDM3OX0.Ucy4yGOqhPYSzSU3MbrVT3X943WDAi_I1-IRbrr0Q-U",
+        "user": {
+            "id": 1,
+            "username": "user",
+            "email": "user@example.com",
+            "role": "user"
+        },
+        "expires_in": 259200
+    }
 }
 ```
 
@@ -70,10 +80,14 @@
 - **响应**:
 ```json
 {
-  "id": 1,
-  "username": "user",
-  "email": "user@example.com",
-  "role": "user"
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "id": 2,
+        "username": "user",
+        "email": "user@example.com",
+        "role": "user"
+    }
 }
 ```
 
@@ -90,6 +104,26 @@
 ```
 - **响应**: 同获取用户信息接口
 
+#### 更新用户密码
+- **URL**: `/auth/password`
+- **方法**: PUT
+- **认证**: 需要
+- **请求体**:
+```json
+{
+  "old_password": "password123",
+  "new_password": "password1234"
+}
+```
+- **响应**:
+```json
+{
+    "code": 0,
+    "msg": "success",
+    "data": "密码修改成功"
+}
+```
+
 ### 事件相关
 
 #### 创建事件
@@ -101,27 +135,68 @@
 {
   "site_id": 1,
   "session_id": "session_123",
-  "user_id": "user_456",
+  "user_id": "user_456",  // 非必填，用于跟追踪网站用户系统关联
+  "ip": "66.249.72.20", // 非必填，如果为空后台会获取请求者IP
   "url": "https://example.com/page",
   "referrer": "https://google.com",
   "user_agent": "Mozilla/5.0...",
-  "device": "Desktop",
-  "browser": "Chrome",
-  "os": "Windows",
   "screen": "1920x1080",
-  "is_bot": false,
-  "country": "China",
-  "subdivision": "Beijing",
-  "city": "Beijing",
-  "isp": "China Telecom",
   "event_type": "page_view",
   "event_value": "homepage"
 }
 ```
-- **响应**: 创建的事件对象
+- **响应**:
+```json
+{
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "ID": 153,
+        "CreatedAt": "2025-09-24T14:58:37.7937739+08:00",
+        "UpdatedAt": "2025-09-24T14:58:37.7937739+08:00",
+        "DeletedAt": null,
+        "site_id": 1,
+        "session_id": "session_123",
+        "user_id": "user_456",
+        "ip": "66.249.72.20",
+        "url": "https://example.com/page",
+        "referrer": "https://google.com",
+        "user_agent": "Mozilla/5.0...",
+        "device": "desktop",
+        "browser": "Mozilla 5.0...",
+        "os": "",
+        "screen": "1920x1080",
+        "is_bot": false,
+        "country": "美国",
+        "subdivision": "",
+        "city": "",
+        "isp": "Google",
+        "event_type": "page_view",
+        "event_value": "homepage",
+        "site": {
+            "ID": 0,
+            "CreatedAt": "0001-01-01T00:00:00Z",
+            "UpdatedAt": "0001-01-01T00:00:00Z",
+            "DeletedAt": null,
+            "user_id": 0,
+            "name": "",
+            "domain": "",
+            "user": {
+                "ID": 0,
+                "CreatedAt": "0001-01-01T00:00:00Z",
+                "UpdatedAt": "0001-01-01T00:00:00Z",
+                "DeletedAt": null,
+                "username": "",
+                "email": "",
+                "role": ""
+            }
+        }
+    }
+}
+```
 
 #### 获取事件列表
-- **URL**: `/events/site/:site_id`
+- **URL**: `/events/:site_id`
 - **方法**: GET
 - **认证**: 需要
 - **查询参数**:
@@ -132,52 +207,166 @@
   - `event_type`
   - `start_time`
   - `end_time`
-- **响应**: 分页的事件列表
+- **响应**:
+```json
+{
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "list": [{
+                "ID": 153,
+                "CreatedAt": "2025-09-24T14:58:37.793773+08:00",
+                "UpdatedAt": "2025-09-24T14:58:37.793773+08:00",
+                "DeletedAt": null,
+                "site_id": 1,
+                "session_id": "session_123",
+                "user_id": "user_456",
+                "ip": "66.249.72.20",
+                "url": "https://example.com/page",
+                "referrer": "https://google.com",
+                "user_agent": "Mozilla/5.0...",
+                "device": "desktop",
+                "browser": "Mozilla 5.0...",
+                "os": "",
+                "screen": "1920x1080",
+                "is_bot": false,
+                "country": "美国",
+                "subdivision": "",
+                "city": "",
+                "isp": "Google",
+                "event_type": "page_view",
+                "event_value": "homepage",
+                "site": {
+                    "ID": 0,
+                    "CreatedAt": "0001-01-01T00:00:00Z",
+                    "UpdatedAt": "0001-01-01T00:00:00Z",
+                    "DeletedAt": null,
+                    "user_id": 0,
+                    "name": "",
+                    "domain": "",
+                    "user": {
+                        "ID": 0,
+                        "CreatedAt": "0001-01-01T00:00:00Z",
+                        "UpdatedAt": "0001-01-01T00:00:00Z",
+                        "DeletedAt": null,
+                        "username": "",
+                        "email": "",
+                        "role": ""
+                    }
+                }
+            }, {
+                "ID": 152,
+                "CreatedAt": "2025-09-24T14:54:45.980443+08:00",
+                "UpdatedAt": "2025-09-24T14:54:45.980443+08:00",
+                "DeletedAt": null,
+                "site_id": 1,
+                "session_id": "session_123",
+                "user_id": "user_456",
+                "ip": "::1",
+                "url": "https://example.com/page",
+                "referrer": "https://google.com",
+                "user_agent": "Mozilla/5.0...",
+                "device": "desktop",
+                "browser": "Mozilla 5.0...",
+                "os": "",
+                "screen": "1920x1080",
+                "is_bot": false,
+                "country": "纯真网络",
+                "subdivision": "",
+                "city": "",
+                "isp": "2025年07月09日IP数据",
+                "event_type": "page_view",
+                "event_value": "homepage",
+                "site": {
+                    "ID": 0,
+                    "CreatedAt": "0001-01-01T00:00:00Z",
+                    "UpdatedAt": "0001-01-01T00:00:00Z",
+                    "DeletedAt": null,
+                    "user_id": 0,
+                    "name": "",
+                    "domain": "",
+                    "user": {
+                        "ID": 0,
+                        "CreatedAt": "0001-01-01T00:00:00Z",
+                        "UpdatedAt": "0001-01-01T00:00:00Z",
+                        "DeletedAt": null,
+                        "username": "",
+                        "email": "",
+                        "role": ""
+                    }
+                }
+            }
+        ],
+        "total": 153,
+        "page": 1,
+        "page_size": 10
+    }
+}
+```
 
 #### 获取事件统计排名
-- **URL**: `/events/site/:site_id/rank`
+- **URL**: `/events/:site_id/stats`
 - **方法**: GET
 - **认证**: 需要
 - **查询参数**:
-  - `date` (默认当天)
+  - `date` (默认当天，格式：20250915)
   - `page` (默认1)
   - `stat_type` (默认"url")
   - `event_type` (默认"page_view")
-- **响应**: 统计排名数据
+- **响应**:
+```json
+{
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "list": [
+            {
+                "key": "/websites/1",
+                "count": 31
+            },
+            {
+                "key": "/",
+                "count": 16
+            }
+        ],
+        "total": 2,
+        "page": 1,
+        "page_size": 10
+    }
+}
+```
 
-#### 获取事件摘要
-- **URL**: `/events/site/:site_id/summary`
+#### 获取网站下整体流量指标
+- **URL**: `/events/:site_id/summary`
 - **方法**: GET
 - **认证**: 需要
 - **查询参数**: `date` (默认当天)
 - **响应**:
 ```json
 {
-  "total_pv": 1000,
-  "total_uv": 500,
-  "bounce_rate": 0.3,
-  "avg_duration": 120.5
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "site_id": 1,
+        "pv": 81,
+        "uv": 3,
+        "ip_count": 3,
+        "event_count": 0,
+        "bounce_rate": 0,
+        "avg_duration": 2016,
+        "week_ip": 3,
+        "week_pv": 134,
+        "month_ip": 4,
+        "month_pv": 142,
+        "hourly_stats": {
+            "hour": 15,
+            "count": 27
+        },
+        "start_time": "20250915",
+        "end_time": "20250915"
+    }
 }
 ```
-
-#### 自定义事件追踪
-- **URL**: `/events/track`
-- **方法**: POST
-- **认证**: 不需要
-- **请求体**:
-```json
-{
-  "session_id": "session_123",
-  "user_id": "user_456",
-  "url": "https://example.com/page",
-  "referrer": "https://google.com",
-  "event_type": "custom_event",
-  "event_value": "button_click",
-  "site_id": "1",
-  "screen": "1920x1080"
-}
-```
-- **响应**: 创建的事件对象
 
 ### 站点相关
 
@@ -195,12 +384,17 @@
 - **响应**:
 ```json
 {
-  "id": 1,
-  "user_id": 1,
-  "name": "我的网站",
-  "domain": "https://example.com",
-  "created_at": "2023-01-01T00:00:00Z",
-  "updated_at": "2023-01-01T00:00:00Z"
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "id": 2,
+        "user_id": 1,
+        "name": "我的网站",
+        "domain": "https://example.com",
+        "tracking_id": "",
+        "created_at": "2025-09-24T17:38:33.7565505+08:00",
+        "updated_at": "2025-09-24T17:38:33.7565505+08:00"
+    }
 }
 ```
 
@@ -244,3 +438,19 @@
 - **方法**: DELETE
 - **认证**: 需要
 - **响应**: 操作结果
+
+### 错误
+
+#### 认证错误，缺失认证请求头
+```json
+{
+    "error": "Authorization header required"
+}
+```
+
+#### 认证错误，Token 失效
+```json
+{
+    "error": "Invalid token: token is malformed: could not base64 decode header: illegal base64 data at input byte 36"
+}
+```

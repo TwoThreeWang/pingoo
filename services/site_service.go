@@ -37,12 +37,12 @@ func (s *SiteService) CreateSite(siteCreate *models.SiteCreate, userID uint64) (
 }
 
 // GetSites 获取用户站点列表
-func (s *SiteService) GetSites(userID uint64, query *models.SiteQuery) ([]models.Site, int64, error) {
+func (s *SiteService) GetSites(userID uint64, page, pageSize int, name string) ([]models.Site, int64, error) {
 	db := database.GetDB().Model(&models.Site{}).Where("user_id = ?", userID)
 
 	// 搜索
-	if query.Name != "" {
-		db = db.Where("name LIKE ? OR domain LIKE ?", "%"+query.Name+"%", "%"+query.Name+"%")
+	if name != "" {
+		db = db.Where("name LIKE ? OR domain LIKE ?", "%"+name+"%", "%"+name+"%")
 	}
 
 	// 统计总数
@@ -53,7 +53,7 @@ func (s *SiteService) GetSites(userID uint64, query *models.SiteQuery) ([]models
 
 	// 分页查询
 	var sites []models.Site
-	if err := db.Order("created_at DESC").Offset((query.Page - 1) * query.PageSize).Limit(query.PageSize).Find(&sites).Error; err != nil {
+	if err := db.Order("created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&sites).Error; err != nil {
 		return nil, 0, fmt.Errorf("查询站点列表失败: %v", err)
 	}
 
@@ -127,6 +127,9 @@ func (s *SiteService) CheckUserAccess(siteID uint64, userID uint64) (bool, error
 	db := database.GetDB().Model(&models.Site{})
 	if err := db.Where("id = ? AND user_id = ?", siteID, userID).Count(&count).Error; err != nil {
 		return false, fmt.Errorf("检查权限失败: %v", err)
+	}
+	if count <= 0 {
+		return false, errors.New("权限检查失败")
 	}
 	return count > 0, nil
 }

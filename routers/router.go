@@ -59,8 +59,8 @@ func SetupRouter(router *gin.Engine, db *gorm.DB, cfg *config.Config) *gin.Engin
 		// 事件相关路由
 		events := api.Group("/events")
 		{
-			events.GET("/:site_id", middleware.AuthMiddleware(), eventController.GetEvents)                // 获取网站下事件列表
 			events.POST("", middleware.AuthMiddleware(), eventController.CreateEvent)                      // 创建事件
+			events.GET("/:site_id", middleware.AuthMiddleware(), eventController.GetEvents)                // 获取网站下事件列表
 			events.GET("/:site_id/stats", middleware.AuthMiddleware(), eventController.GetEventsRank)      // 获取事件统计排行
 			events.GET("/:site_id/summary", middleware.AuthMiddleware(), eventController.GetEventsSummary) // 获取网站下整体流量指标
 		}

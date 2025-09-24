@@ -92,6 +92,15 @@ func (ec *EventController) GetEvents(c *gin.Context) {
 		return
 	}
 	query.SiteID = siteID
+	if query.Page <= 0 {
+		query.Page = 1
+	}
+	if query.PageSize <= 0 {
+		query.PageSize = 10
+	}
+	if query.PageSize > 100 {
+		query.PageSize = 100
+	}
 
 	events, total, err := ec.eventService.GetEventsDetail(&query)
 	if err != nil {

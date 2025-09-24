@@ -9,6 +9,7 @@ import (
 
 	"pingoo/database"
 	"pingoo/models"
+	"pingoo/utils"
 
 	"gorm.io/gorm"
 )
@@ -145,13 +146,13 @@ func (s *EventService) GetEventsDetail(query *models.EventQuery) ([]models.Event
 
 	// 时间范围查询
 	if query.StartTime != "" {
-		startTime, err := time.Parse("2006-01-02", query.StartTime)
+		startTime, err := utils.ParseDate(query.StartTime)
 		if err == nil {
 			db = db.Where("created_at >= ?", startTime)
 		}
 	}
 	if query.EndTime != "" {
-		endTime, err := time.Parse("2006-01-02", query.EndTime)
+		endTime, err := utils.ParseDate(query.EndTime)
 		if err == nil {
 			endTime = endTime.Add(24 * time.Hour) // 包含当天
 			db = db.Where("created_at <= ?", endTime)
@@ -167,15 +168,6 @@ func (s *EventService) GetEventsDetail(query *models.EventQuery) ([]models.Event
 	// 分页查询
 	page := query.Page
 	pageSize := query.PageSize
-	if page <= 0 {
-		page = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 20
-	}
-	if pageSize > 100 {
-		pageSize = 100
-	}
 
 	var events []models.Event
 	offset := (page - 1) * pageSize
@@ -192,11 +184,11 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 	db := database.GetDB()
 
 	// 解析日期
-	start, err := time.Parse("2006-01-02", startDate)
+	start, err := utils.ParseDate(startDate)
 	if err != nil {
 		return nil, fmt.Errorf("开始日期格式错误: %v", err)
 	}
-	end, err := time.Parse("2006-01-02", endDate)
+	end, err := utils.ParseDate(endDate)
 	if err != nil {
 		return nil, fmt.Errorf("结束日期格式错误: %v", err)
 	}
@@ -206,34 +198,23 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 	stats.StartDate = startDate
 	stats.EndDate = endDate
 
-	// 获取PV（页面浏览量）
-	if err := db.Model(&models.Event{}).
-		Where("site_id = ? AND event_type = 'page_view' AND created_at BETWEEN ? AND ?", siteID, start, end).
-		Count(&stats.PV).Error; err != nil {
-		return nil, fmt.Errorf("统计PV失败: %v", err)
+	// 同时查询PV（页面浏览量）、UV（独立访客数）和IPCount
+	if err = db.Raw(`
+		SELECT
+			COUNT(*) as pv,
+			COUNT(DISTINCT(session_id)) as uv,
+			COUNT(DISTINCT(ip)) as ip_count
+		FROM events
+		WHERE site_id = ? AND event_type = 'page_view' AND created_at BETWEEN ? AND ?
+	`, siteID, start, end).Row().Scan(&stats.PV, &stats.UV, &stats.IPCount); err != nil {
+		return nil, fmt.Errorf("统计PV、UV和IP失败: %v", err.Error())
 	}
 
-	// 获取UV（独立访客数）
-	if err := db.Model(&models.Event{}).
-		Where("site_id = ? AND created_at BETWEEN ? AND ?", siteID, start, end).
-		Distinct("session_id").
-		Count(&stats.UV).Error; err != nil {
-		return nil, fmt.Errorf("统计UV失败: %v", err)
-	}
-
-	// 获取访客IP数量
-	if err := db.Model(&models.Event{}).
-		Where("site_id = ? AND created_at BETWEEN ? AND ?", siteID, start, end).
-		Distinct("ip").
-		Count(&stats.IPCount).Error; err != nil {
-		return nil, fmt.Errorf("统计IP数量失败: %v", err)
-	}
-
-	// 获取事件数量
-	if err := db.Model(&models.Event{}).
+	// 获取自定义事件数量
+	if err = db.Model(&models.Event{}).
 		Where("site_id = ? AND event_type = 'custom' AND created_at BETWEEN ? AND ?", siteID, start, end).
 		Count(&stats.EventCount).Error; err != nil {
-		return nil, fmt.Errorf("统计事件数量失败: %v", err)
+		return nil, fmt.Errorf("统计事件数量失败: %v", err.Error())
 	}
 
 	// 获取跳出率和平均访问时长
@@ -241,26 +222,18 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 	var bounceSessions int64
 	var totalDuration int64
 
-	// 获取总会话数
-	if err := db.Model(&models.Session{}).
-		Where("site_id = ? AND start_time BETWEEN ? AND ?", siteID, start, end).
-		Count(&totalSessions).Error; err != nil {
-		return nil, fmt.Errorf("统计会话数失败: %v", err)
+	if err = db.Model(&models.Session{}).
+		Select("COUNT(*) as session_count, COALESCE(SUM(duration), 0) as total_duration").
+		Where("site_id = ? AND start_time BETWEEN ? AND ?", siteID, start, end).Row().
+		Scan(&totalSessions, &totalDuration); err != nil {
+		return nil, fmt.Errorf("统计会话数和访问时长失败: %v", err.Error())
 	}
 
 	// 获取跳出会话数（只访问了一个页面的会话）
-	if err := db.Model(&models.Session{}).
+	if err = db.Model(&models.Session{}).
 		Where("site_id = ? AND start_time BETWEEN ? AND ? AND pages = 1", siteID, start, end).
 		Count(&bounceSessions).Error; err != nil {
 		return nil, fmt.Errorf("统计跳出会话失败: %v", err)
-	}
-
-	// 获取总访问时长
-	if err := db.Model(&models.Session{}).
-		Where("site_id = ? AND start_time BETWEEN ? AND ?", siteID, start, end).
-		Select("COALESCE(SUM(duration), 0)").
-		Scan(&totalDuration).Error; err != nil {
-		return nil, fmt.Errorf("统计访问时长失败: %v", err)
 	}
 
 	// 计算跳出率
@@ -283,23 +256,33 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 		weekStart = weekStart.AddDate(0, 0, -1)
 	}
 	weekEnd := weekStart.AddDate(0, 0, 7)
-	db.Model(&models.Event{}).Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, weekStart, weekEnd).Count(&stats.WeekPv)
-	db.Model(&models.Event{}).Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, weekStart, weekEnd).Distinct("ip").Count(&stats.WeekIp)
+	if err = db.Model(&models.Event{}).
+		Select("COUNT(*) as pv, COUNT(DISTINCT(ip)) as ips").
+		Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, weekStart, weekEnd).Row().
+		Scan(&stats.WeekPv, &stats.WeekIp); err != nil {
+		return nil, fmt.Errorf("统计本周数据失败: %v", err.Error())
+	}
 
 	// 本月IP和PV总量（基于传入的日期所在周）
 	monthStart := time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, start.Location())
 	monthEnd := monthStart.AddDate(0, 1, 0)
-	db.Model(&models.Event{}).Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, monthStart, monthEnd).Count(&stats.MonthPv)
-	db.Model(&models.Event{}).Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, monthStart, monthEnd).Distinct("ip").Count(&stats.MonthIp)
+	if err = db.Model(&models.Event{}).
+		Select("COUNT(*) as month_pv, COUNT(DISTINCT ip) as month_ip").
+		Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, monthStart, monthEnd).
+		Row().Scan(&stats.MonthPv, &stats.MonthIp); err != nil {
+		return nil, fmt.Errorf("统计本月PV和IP失败: %v", err.Error())
+	}
 
 	// 小时流量分布
-	db.Raw(`
+	if err := db.Raw(`
 		SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
 		FROM events
 		WHERE site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?
 		GROUP BY EXTRACT(HOUR FROM created_at)
 		ORDER BY hour
-	`, siteID, startDate, endDate).Scan(&stats.HourlyStats)
+	`, siteID, start, end).Scan(&stats.HourlyStats).Error; err != nil {
+		return nil, fmt.Errorf("统计小时流量分布失败: %v", err.Error())
+	}
 
 	return &stats, nil
 }
@@ -309,23 +292,36 @@ func (s *EventService) GetEventsRank(siteID uint64, startDate, endDate, statType
 	var rankStats []models.RankStats
 	db := database.GetDB()
 
+	// 解析日期
+	start, err := utils.ParseDate(startDate)
+	if err != nil {
+		return &rankStats, 0, fmt.Errorf("开始日期格式错误: %v", err)
+	}
+	end, err := utils.ParseDate(endDate)
+	if err != nil {
+		return &rankStats, 0, fmt.Errorf("结束日期格式错误: %v", err)
+	}
+	end = end.Add(24 * time.Hour).Add(-time.Nanosecond)
+
 	// 获取排行数据
-	db.Raw(`
-		SELECT ? AS key, COUNT(*) as count
+	sql := fmt.Sprintf(`
+		SELECT %s AS key, COUNT(*) as count
 		FROM events
 		WHERE site_id = ? AND event_type = ? AND created_at >= ? AND created_at < ?
-		GROUP BY ?
+		GROUP BY %s
 		ORDER BY count DESC
 		LIMIT ? OFFSET ?
-	`, statType, siteID, eventType, startDate, endDate, statType, pageSize, (page-1)*pageSize).Scan(&rankStats)
+	`, statType, statType)
+	db.Raw(sql, siteID, eventType, start, end, pageSize, (page-1)*pageSize).Scan(&rankStats)
 
 	// 获取总量
 	var total int64
-	db.Raw(`
-		SELECT COUNT(distinct ?)
+	sqlTotal := fmt.Sprintf(`
+		SELECT COUNT(distinct %s)
 		FROM events
 		WHERE site_id = ? AND event_type = ? AND created_at >= ? AND created_at < ?
-	`, statType, siteID, eventType, startDate, endDate).Scan(&total)
+	`, statType)
+	db.Raw(sqlTotal, siteID, eventType, start, end).Scan(&total)
 
 	return &rankStats, total, nil
 }

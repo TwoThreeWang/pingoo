@@ -5,6 +5,7 @@ import (
 
 	"pingoo/middleware"
 	"pingoo/models"
+	"pingoo/services"
 	"pingoo/utils"
 
 	"github.com/gin-gonic/gin"
@@ -13,12 +14,12 @@ import (
 
 // SiteController 站点控制器
 type SiteController struct {
-	db *gorm.DB
+	siteService *services.SiteService
 }
 
 // NewSiteController 创建站点控制器
 func NewSiteController(db *gorm.DB) *SiteController {
-	return &SiteController{db: db}
+	return &SiteController{siteService: services.NewSiteService()}
 }
 
 // Create 创建站点
@@ -31,21 +32,8 @@ func (sc *SiteController) Create(c *gin.Context) {
 		return
 	}
 
-	// 检查域名是否已存在
-	var existingSite models.Site
-	if err := sc.db.Where("domain = ?", input.Domain).First(&existingSite).Error; err == nil {
-		utils.Fail(c, "域名已存在")
-		return
-	}
-
-	// 创建站点
-	site := models.Site{
-		Name:   input.Name,
-		Domain: input.Domain,
-		UserID: userID,
-	}
-
-	if err := sc.db.Create(&site).Error; err != nil {
+	site, err := sc.siteService.CreateSite(&input, userID)
+	if err != nil {
 		utils.ServerError(c, "创建站点失败")
 		return
 	}
@@ -76,25 +64,9 @@ func (sc *SiteController) List(c *gin.Context) {
 	if limit < 1 || limit > 100 {
 		limit = 10
 	}
-
-	offset := (page - 1) * limit
-
-	// 查询站点列表
-	var sites []models.Site
-	var total int64
-
-	query := sc.db.Where("user_id = ?", userID)
-
-	// 搜索条件
-	if search := c.Query("search"); search != "" {
-		query = query.Where("name LIKE ? OR domain LIKE ?", "%"+search+"%", "%"+search+"%")
-	}
-
-	// 获取总数
-	query.Model(&models.Site{}).Count(&total)
-
-	// 获取分页数据
-	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&sites).Error; err != nil {
+	search := c.Query("search")
+	sites, total, err := sc.siteService.GetSites(userID, page, limit, search)
+	if err != nil {
 		utils.ServerError(c, "获取站点列表失败")
 		return
 	}
@@ -125,13 +97,13 @@ func (sc *SiteController) Get(c *gin.Context) {
 		return
 	}
 
-	var site models.Site
-	if err := sc.db.Where("id = ? AND user_id = ?", siteID, userID).First(&site).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			utils.NotFound(c, "站点不存在")
-		} else {
-			utils.ServerError(c, "获取站点详情失败")
-		}
+	site, err := sc.siteService.GetSiteByID(siteID)
+	if err != nil {
+		utils.ServerError(c, "获取站点详情失败")
+		return
+	}
+	if site.UserID != userID {
+		utils.ServerError(c, "站点不存在")
 		return
 	}
 
