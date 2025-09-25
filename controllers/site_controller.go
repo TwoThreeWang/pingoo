@@ -136,32 +136,8 @@ func (sc *SiteController) Update(c *gin.Context) {
 		return
 	}
 
-	var site models.Site
-	if err := sc.db.Where("id = ? AND user_id = ?", siteID, userID).First(&site).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			utils.NotFound(c, "站点不存在")
-		} else {
-			utils.ServerError(c, "获取站点详情失败")
-		}
-		return
-	}
-
-	// 检查域名是否被其他站点使用
-	if input.Domain != site.Domain {
-		var existingSite models.Site
-		if err := sc.db.Where("domain = ? AND id != ?", site.Domain, siteID).First(&existingSite).Error; err == nil {
-			utils.Fail(c, "域名已被其他站点使用")
-			return
-		}
-		site.Domain = input.Domain
-	}
-
-	// 更新站点信息
-	if input.Name != "" {
-		site.Name = input.Name
-	}
-
-	if err := sc.db.Save(&site).Error; err != nil {
+	site, err := sc.siteService.UpdateSite(siteID, userID, &input)
+	if err != nil {
 		utils.ServerError(c, "更新站点失败")
 		return
 	}
@@ -188,18 +164,8 @@ func (sc *SiteController) Delete(c *gin.Context) {
 		return
 	}
 
-	var site models.Site
-	if err := sc.db.Where("id = ? AND user_id = ?", siteID, userID).First(&site).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			utils.FailWithCode(c, 200, "站点不存在")
-		} else {
-			utils.ServerError(c, "获取站点详情失败")
-		}
-		return
-	}
-
-	// 物理删除站点
-	if err := sc.db.Unscoped().Delete(&site).Error; err != nil {
+	err = sc.siteService.DeleteSite(siteID, userID)
+	if err != nil {
 		utils.ServerError(c, "删除站点失败")
 		return
 	}
@@ -217,43 +183,9 @@ func (sc *SiteController) ClearStats(c *gin.Context) {
 		return
 	}
 
-	// 验证站点存在且属于当前用户
-	var site models.Site
-	if err := sc.db.Where("id = ? AND user_id = ?", siteID, userID).First(&site).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			utils.NotFound(c, "站点不存在")
-		} else {
-			utils.ServerError(c, "获取站点详情失败")
-		}
-		return
-	}
-
-	// 使用事务删除所有统计数据
-	tx := sc.db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	// 删除events
-	if err := tx.Unscoped().Where("site_id = ?", siteID).Delete(&models.Event{}).Error; err != nil {
-		tx.Rollback()
-		utils.ServerError(c, "删除events统计数据失败")
-		return
-	}
-
-	// 删除sessions
-	if err := tx.Unscoped().Where("site_id = ?", siteID).Delete(&models.Session{}).Error; err != nil {
-		tx.Rollback()
-		utils.ServerError(c, "删除session统计数据失败")
-		return
-	}
-
-	// 提交事务
-	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		utils.ServerError(c, "事务提交失败")
+	err = sc.siteService.ClearSiteStats(siteID, userID)
+	if err != nil {
+		utils.ServerError(c, err.Error())
 		return
 	}
 

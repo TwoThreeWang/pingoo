@@ -13,7 +13,7 @@ type SimpleSiteStats struct {
 	WeekPv      int64   `json:"week_pv"`      // 本周PV
 	MonthIp     int64   `json:"month_ip"`     // 本月IP
 	MonthPv     int64   `json:"month_pv"`     // 本月PV
-	HourlyStats struct {
+	HourlyStats []struct {
 		Hour  int   `json:"hour"`
 		Count int64 `json:"count"`
 	} `json:"hourly_stats"` // 按小时流量分布

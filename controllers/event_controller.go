@@ -127,7 +127,7 @@ func (ec *EventController) GetEventsRank(c *gin.Context) {
 		return
 	}
 	// 获取查询日期参数，默认为当天
-	dateStr := c.DefaultQuery("date", time.Now().String())
+	dateStr := c.DefaultQuery("date", time.Now().Format("2006-01-02"))
 	page := c.DefaultQuery("page", "1")
 	pageInt, err := strconv.Atoi(page)
 	if err != nil {
@@ -162,7 +162,7 @@ func (ec *EventController) GetEventsSummary(c *gin.Context) {
 		return
 	}
 	// 获取查询日期参数，默认为当天
-	dateStr := c.DefaultQuery("date", time.Now().String())
+	dateStr := c.DefaultQuery("date", time.Now().Format("2006-01-02"))
 
 	stats, err := ec.eventService.GetEventsSummary(siteID, dateStr, dateStr)
 	if err != nil {

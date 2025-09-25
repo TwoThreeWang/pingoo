@@ -57,3 +57,49 @@ function toggleDiv(id){
   const el = document.getElementById(id);
   if(el) el.style.display = el.style.display === 'none' ? '' : 'none';
 };
+
+async function sendRequest(method, url, data, options = {}) {
+    const token = localStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+    if (options.headers) Object.assign(headers, options.headers);
+    const fetchOptions = {
+        method,
+        headers,
+        credentials: 'include',
+        ...options
+    };
+    if (data) {
+        fetchOptions.body = JSON.stringify(data);
+    }
+    const resp = await fetch(`${url}`, fetchOptions);
+    if (resp.status === 401) {
+        const refreshResp = await fetch(`/api/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ refresh_token: localStorage.getItem('refresh_token') })
+        });
+        if (!refreshResp.ok) {
+            console.error('Token refresh failed:', refreshResp.status);
+            // 可添加登出逻辑
+            localStorage.removeItem('token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/login';
+            return refreshResp;
+        };
+        const data = await refreshResp.json();
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('refresh_token', data.data.refresh_token);
+        // Retry original request once
+        const retryOptions = { ...fetchOptions, headers: { ...fetchOptions.headers, Authorization: `Bearer ${data.data.token}` } };
+        return await fetch(`${url}`, retryOptions);
+
+    }
+    return resp;
+}

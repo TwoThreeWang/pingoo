@@ -162,7 +162,8 @@
         <h3 class="site-name">‣ {{.Site.Name}}</h3>
         <a href="{{.Site.Domain}}" target="_balnk" class="site-url">{{.Site.Domain}}</a>
         <span>
-            <input type="date" class="date-selector" id="date-selector" value="{{.Today}}" onchange="dateChange()" style="width:auto;">
+            <input type="date" class="date-selector" id="date-selector" value="{{.Today}}" onchange="dateChange()"
+                style="width:auto;">
             <button class="date-nav-btn" id="prev-day" onclick="changeDay(-1)">◄</button>
             <button class="date-nav-btn" id="next-day" onclick="changeDay(1)">►</button>
         </span>
@@ -211,306 +212,280 @@
     </div>
 </div>
 
-    <!-- 流量图表 -->
-    <div class="chart-section">
-        <div class="chart-header">
-            <h3 class="chart-title">当日时段流量分布</h3>
-            <span>24小时数据</span>
-        </div>
-        <div class="chart-container">
-            <div class="traffic-chart">
-                <div class="chart-bars" id="hourly-traffic-chart">
-                    <center><span class="loading"></span>正在加载时段流量数据...</center>
-                </div>
-            </div>
-            <div class="chart-labels">
-                <span class="chart-label">00</span>
-                <span class="chart-label">01</span>
-                <span class="chart-label">02</span>
-                <span class="chart-label">03</span>
-                <span class="chart-label">04</span>
-                <span class="chart-label">05</span>
-                <span class="chart-label">06</span>
-                <span class="chart-label">07</span>
-                <span class="chart-label">08</span>
-                <span class="chart-label">09</span>
-                <span class="chart-label">10</span>
-                <span class="chart-label">11</span>
-                <span class="chart-label">12</span>
-                <span class="chart-label">13</span>
-                <span class="chart-label">14</span>
-                <span class="chart-label">15</span>
-                <span class="chart-label">16</span>
-                <span class="chart-label">17</span>
-                <span class="chart-label">18</span>
-                <span class="chart-label">19</span>
-                <span class="chart-label">20</span>
-                <span class="chart-label">21</span>
-                <span class="chart-label">22</span>
-                <span class="chart-label">23</span>
+<!-- 流量图表 -->
+<div class="chart-section">
+    <div class="chart-header">
+        <h3 class="chart-title">当日时段流量分布</h3>
+        <span>24小时数据</span>
+    </div>
+    <div class="chart-container">
+        <div class="traffic-chart">
+            <div class="chart-bars" id="hourly-traffic-chart">
+                <center><span class="loading"></span>正在加载时段流量数据...</center>
             </div>
         </div>
-    </div>
-
-    <!-- 统计卡片网格 -->
-    <div class="stats-grid">
-        <!-- 访问网页Top10 -->
-        <div class="stat-card">
-            <h3>访问网页Top10</h3>
-            <ol class="stat-list" id="top-pages-list">
-                <center><span class="loading"></span>加载中...</center>
-            </ol>
-        </div>
-
-        <!-- 来源Top10 -->
-        <div class="stat-card">
-            <h3>来源Top10</h3>
-            <ol class="stat-list" id="top-referrers-list">
-                <center><span class="loading"></span>加载中...</center>
-            </ol>
-        </div>
-
-        <!-- 操作系统Top10 -->
-        <div class="stat-card">
-            <h3>操作系统Top10</h3>
-            <ol class="stat-list" id="top-os-list">
-                <center><span class="loading"></span>加载中...</center>
-            </ol>
-        </div>
-
-        <!-- 设备类型分布 -->
-        <div class="stat-card">
-            <h3>设备类型分布</h3>
-            <ol class="stat-list" id="device-distribution-list">
-                <center><span class="loading"></span>加载中...</center>
-            </ol>
-        </div>
-
-        <!-- 访问地区分布 -->
-        <div class="stat-card">
-            <h3>访问地区分布</h3>
-            <ol class="stat-list" id="top-locations-list">
-                <center><span class="loading"></span>加载中...</center>
-            </ol>
-        </div>
-
-        <!-- 运营商分布 -->
-        <div class="stat-card">
-            <h3>运营商分布</h3>
-            <ol class="stat-list" id="top-isp-list">
-                <center><span class="loading"></span>加载中...</center>
-            </ol>
-        </div>
-
-        <!-- 事件 -->
-         <div class="stat-card">
-            <h3>事件统计</h3>
-            <ol class="stat-list" id="top-event-list">
-                <center><span class="loading"></span>加载中...</center>
-            </ol>
+        <div class="chart-labels">
+            <span class="chart-label">00</span>
+            <span class="chart-label">01</span>
+            <span class="chart-label">02</span>
+            <span class="chart-label">03</span>
+            <span class="chart-label">04</span>
+            <span class="chart-label">05</span>
+            <span class="chart-label">06</span>
+            <span class="chart-label">07</span>
+            <span class="chart-label">08</span>
+            <span class="chart-label">09</span>
+            <span class="chart-label">10</span>
+            <span class="chart-label">11</span>
+            <span class="chart-label">12</span>
+            <span class="chart-label">13</span>
+            <span class="chart-label">14</span>
+            <span class="chart-label">15</span>
+            <span class="chart-label">16</span>
+            <span class="chart-label">17</span>
+            <span class="chart-label">18</span>
+            <span class="chart-label">19</span>
+            <span class="chart-label">20</span>
+            <span class="chart-label">21</span>
+            <span class="chart-label">22</span>
+            <span class="chart-label">23</span>
         </div>
     </div>
+</div>
+
+<!-- 统计卡片网格 -->
+<div class="stats-grid">
+    <!-- 访问网页Top10 -->
+    <div class="stat-card">
+        <h3>访问网页Top10</h3>
+        <ol class="stat-list" id="url-list">
+            <center><span class="loading"></span>加载中...</center>
+        </ol>
+    </div>
+
+    <!-- 来源Top10 -->
+    <div class="stat-card">
+        <h3>来源Top10</h3>
+        <ol class="stat-list" id="referrer-list">
+            <center><span class="loading"></span>加载中...</center>
+        </ol>
+    </div>
+
+    <!-- 操作系统Top10 -->
+    <div class="stat-card">
+        <h3>操作系统Top10</h3>
+        <ol class="stat-list" id="os-list">
+            <center><span class="loading"></span>加载中...</center>
+        </ol>
+    </div>
+
+    <!-- 设备类型分布 -->
+    <div class="stat-card">
+        <h3>设备类型分布</h3>
+        <ol class="stat-list" id="device-list">
+            <center><span class="loading"></span>加载中...</center>
+        </ol>
+    </div>
+
+    <!-- 访问地区分布 -->
+    <div class="stat-card">
+        <h3>访问地区分布</h3>
+        <ol class="stat-list" id="country-list">
+            <center><span class="loading"></span>加载中...</center>
+        </ol>
+    </div>
+
+    <!-- 运营商分布 -->
+    <div class="stat-card">
+        <h3>运营商分布</h3>
+        <ol class="stat-list" id="isp-list">
+            <center><span class="loading"></span>加载中...</center>
+        </ol>
+    </div>
+
+    <!-- 事件 -->
+    <div class="stat-card">
+        <h3>事件统计</h3>
+        <ol class="stat-list" id="event_type-list">
+            <center><span class="loading"></span>加载中...</center>
+        </ol>
+    </div>
+</div>
 </div>
 {{end}}
 
 {{define "extra_js"}}
 <script>
-const siteId = "{{.Site.ID}}";
-const dateInput = document.getElementById('date-selector');
-// 获取网站simple-stats信息并填充到site-metrics容器
-async function loadSiteMetrics() {
-    const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+    const siteId = "{{.Site.ID}}";
+    const dateInput = document.getElementById('date-selector');
+    // 获取网站summary信息并填充到site-metrics容器
+    async function loadSiteMetrics() {
+        const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
 
-    // 调用API获取simple-stats
-    try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            throw new Error(`请先登录`);
-        }
-        const statsResponse = await fetch(`/api/sites/${siteId}/simple-stats?date=${date}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
+        // 调用API获取summary
+        try {
+            const statsResponse = await sendRequest('GET', `/api/events/${siteId}/summary?date=${date}`);
+
+            let stats = {
+                pv: 0,
+                uv: 0,
+                ip_count: 0,
+                event_count: 0,
+                bounce_rate: 0,
+                avg_duration: 0,
+                week_ip: 0,
+                week_pv: 0,
+                month_ip: 0,
+                month_pv: 0,
+                hourly_stats: {},
+            };
+
+            if (statsResponse.ok) {
+                const statsResult = await statsResponse.json();
+                if (statsResult.code == 0) {
+                    stats = statsResult.data;
+                } else {
+                    showMessage(statsResult.data.msg, 'error');
+                }
+            } else {
+                showMessage('站点概览数据请求失败', 'error');
             }
-        });
+            // 创建网站项
+            createSiteElement(stats);
+        } catch (error) {
+            console.error(`获取网站 {{.Site.Name}} 统计数据失败:`, error);
+            showMessage(`获取网站 {{.Site.Name}} 统计数据失败`, "error");
+        }
+    }
 
-        let stats = {
-            pv: 0,
-            uv: 0,
-            ip_count: 0,
-            bounce_rate: 0,
-            avg_duration: 0
+    // 渲染网站指标数据
+    function createSiteElement(stats) {
+        // 格式化平均访问时长
+        const formatDuration = (seconds) => {
+            if (!seconds || seconds < 60) return `${seconds || 0}s`;
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}m${remainingSeconds}s`;
         };
+        document.getElementById('pv').innerHTML = stats.pv || 0;
+        document.getElementById('uv').innerHTML = stats.uv || 0;
+        document.getElementById('ip').innerHTML = stats.ip_count || 0;
+        document.getElementById('event_count').innerHTML = stats.event_count || 0;
+        document.getElementById('bounce_rate').innerHTML = (stats.bounce_rate || 0).toFixed(1);
+        document.getElementById('avg_duration').innerHTML = formatDuration(Math.floor(stats.avg_duration || 0));
+        document.getElementById('week_ip').innerHTML = stats.week_ip || 0;
+        document.getElementById('week_pv').innerHTML = stats.week_pv || 0;
+        document.getElementById('month_ip').innerHTML = stats.month_ip || 0;
+        document.getElementById('month_pv').innerHTML = stats.month_pv || 0;
+        // 更新小时流量分布
+        const hourlyContainer = document.getElementById('hourly-traffic-chart');
+        if (stats.hourly_stats && stats.hourly_stats.length > 0) {
+            if (hourlyContainer) {
+                // 计算最大值用于比例计算
+                const maxValue = Math.max(...stats.hourly_stats.map(h => h.count));
 
-        if (statsResponse.ok) {
-            const statsResult = await statsResponse.json();
-            if (statsResult.code == 0) {
-                stats = statsResult.data;
-            }
-        }
-        // 创建网站项
-        createSiteElement(stats);
-    } catch (error) {
-        console.error(`获取网站 {{.Site.Name}} 统计数据失败:`, error);
-        showMessage(`获取网站 {{.Site.Name}} 统计数据失败`, "error");
-    }
-}
+                let hourlyHtml = '';
 
-// 渲染网站指标数据
-function createSiteElement(stats) {
-    // 格式化平均访问时长
-    const formatDuration = (seconds) => {
-        if (!seconds || seconds < 60) return `${seconds || 0}s`;
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes}m${remainingSeconds}s`;
-    };
-    document.getElementById('pv').innerHTML=stats.pv || 0;
-    document.getElementById('uv').innerHTML=stats.uv || 0;
-    document.getElementById('ip').innerHTML=stats.ip_count || 0;
-    document.getElementById('event_count').innerHTML=stats.event_count || 0;
-    document.getElementById('bounce_rate').innerHTML=(stats.bounce_rate || 0).toFixed(1);
-    document.getElementById('avg_duration').innerHTML=formatDuration(Math.floor(stats.avg_duration || 0));
-}
-
-// 获取详细统计数据并展示
-async function loadSiteStats() {
-    const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
-
-    try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            throw new Error('请先登录');
-        }
-
-        const response = await fetch(`/api/sites/${siteId}/stats?date=${date}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('获取统计数据失败');
-        }
-
-        const result = await response.json();
-        if (result.code === 0 && result.data) {
-            renderSiteStats(result.data);
-        } else {
-            throw new Error(result.message || '获取数据失败');
-        }
-    } catch (error) {
-        console.error('获取详细统计数据失败:', error);
-        showMessage('获取详细统计数据失败，请刷新页面重试！', 'error');
-    }
-}
-
-// 渲染统计列表的通用函数
-function renderStatList(containerId, data, labelKey, valueKey, displayFormatter = null) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    if (data && data.length > 0) {
-        let html = '';
-        data.forEach((item, index) => {
-            const label = displayFormatter ? displayFormatter(item[labelKey]) : item[labelKey];
-            html += `
-                <li class="stat-item">
-                    <span class="stat-item-label">${label}</span>
-                    <span class="stat-item-value">${item[valueKey]}</span>
-                </li>
-            `;
-        });
-        html += `<center><a href="/detail/${siteId}?type=${containerId}">查看更多</a><center>`
-        container.innerHTML = html;
-    } else {
-        container.innerHTML = `<center>暂无数据</center>`;
-    }
-}
-
-// 渲染详细统计数据
-function renderSiteStats(stats) {
-    // 更新小时流量分布
-    const hourlyContainer = document.getElementById('hourly-traffic-chart');
-    if (stats.hourly_stats && stats.hourly_stats.length > 0) {
-        if (hourlyContainer) {
-            // 计算最大值用于比例计算
-            const maxValue = Math.max(...stats.hourly_stats.map(h => h.count));
-
-            let hourlyHtml = '';
-
-            // 生成24小时的图表条，确保每个小时都有数据
-            for (let hour = 0; hour < 24; hour++) {
-                const hourData = stats.hourly_stats.find(h => h.hour === hour);
-                const count = hourData ? hourData.count : 0;
-                const heightPercentage = maxValue > 0 ? (count / maxValue) * 100 : 0;
-                hourlyHtml += `
+                // 生成24小时的图表条，确保每个小时都有数据
+                for (let hour = 0; hour < 24; hour++) {
+                    const hourData = stats.hourly_stats.find(h => h.hour === hour);
+                    const count = hourData ? hourData.count : 0;
+                    const heightPercentage = maxValue > 0 ? (count / maxValue) * 100 : 0;
+                    hourlyHtml += `
                     <div class="chart-bar"
                          style="height: ${Math.max(heightPercentage, 3)}%;"
                          data-value="${count}"
                          data-time="${hour.toString().padStart(2, '0')}:00">
                     </div>
                 `;
+                }
+                hourlyContainer.innerHTML = hourlyHtml;
             }
-            hourlyContainer.innerHTML = hourlyHtml;
+        } else {
+            hourlyContainer.innerHTML = '<p>未获取到分时流量数据...</p>';
         }
-    }else{
-        hourlyContainer.innerHTML = '<p>未获取到分时流量数据...</p>';
     }
 
-    // 更新访问网页Top10
-    renderStatList('top-pages-list', stats.top_pages, 'url', 'count');
+    // 获取详细统计数据并展示
+    async function loadSiteStats() {
+        const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+        stat_types = ['url', 'referrer', 'os', 'device', 'country', 'isp', 'event_type']
+        for (let i = 0; i < stat_types.length; i++) {
+            try {
+                const response = await sendRequest('GET', `/api/events/${siteId}/stats?date=${date}&stat_type=${stat_types[i]}`);
+                if (!response.ok) {
+                    throw new Error(stat_types[i] + '获取统计数据失败');
+                }
 
-    // 更新来源Top10
-    renderStatList('top-referrers-list', stats.top_referrers, 'referrer', 'count', (value) => value === '' ? '直接访问' : value);
+                const result = await response.json();
+                if (result.code === 0 && result.data) {
+                    renderStatList(stat_types[i], result.data.list);
+                } else {
+                    throw new Error(result.msg || '获取数据失败');
+                }
+            } catch (error) {
+                console.error('获取详细统计数据失败:', error);
+                showMessage('获取详细统计数据失败，请刷新页面重试！', 'error');
+            }
+        }
 
-    // 更新操作系统Top10
-    renderStatList('top-os-list', stats.top_os, 'os', 'count');
+    }
 
-    // 更新设备类型分布
-    renderStatList('device-distribution-list', stats.device_types, 'device', 'count');
+    // 渲染统计列表的通用函数
+    function renderStatList(containerId, data) {
+        const container = document.getElementById(`${containerId}-list`);
+        if (!container) return;
 
-    // 更新访问地区Top10
-    renderStatList('top-locations-list', stats.top_locations, 'location', 'count', (value) => value === '' ? '未知' : value);
+        if (data && data.length > 0) {
+            let html = '';
+            data.forEach((item, index) => {
+                var label = item['key'];
+                if (label == '') {
+                    label = '-'
+                }
+                html += `
+                <li class="stat-item">
+                    <span class="stat-item-label">${label}</span>
+                    <span class="stat-item-value">${item['count']}</span>
+                </li>
+            `;
+            });
+            html += `<center><a href="/detail/${siteId}?type=${containerId}">查看更多</a><center>`
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `<center>暂无数据</center>`;
+        }
+    }
 
-    // 更新运营商Top10
-    renderStatList('top-isp-list', stats.top_isp, 'isp', 'count', (value) => value === '' ? '未知' : value);
+    // 监听日期选择器变化
+    function dateChange() {
+        loadSiteMetrics();
+        loadSiteStats();
+    }
 
-    // 更新事件统计
-    renderStatList('top-event-list', stats.top_event, 'event', 'count', (value) => value === '' ? '未知' : value);
+    // 每60秒自动刷新summary和详细stats
+    setInterval(() => {
+        loadSiteMetrics();
+        loadSiteStats();
+    }, 60000);
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function () {
+        // 初始加载
+        loadSiteMetrics();
+        loadSiteStats();
+    });
 
-    // 更新概览数据指标
-    document.getElementById('week_ip').innerHTML=stats.week_ip || 0;
-    document.getElementById('week_pv').innerHTML=stats.week_pv || 0;
-    document.getElementById('month_ip').innerHTML=stats.month_ip || 0;
-    document.getElementById('month_pv').innerHTML=stats.month_pv || 0;
-}
 
-// 监听日期选择器变化
-function dateChange(){
-    loadSiteMetrics();
-    loadSiteStats();
-}
-
-// 每60秒自动刷新simple-stats和详细stats
-setInterval(() => {
-    loadSiteMetrics();
-    loadSiteStats();
-}, 60000);
-
-// 初始加载
-loadSiteMetrics();
-loadSiteStats();
-
-function changeDay(offset) {
-  const dateSelector = document.getElementById('date-selector');
-  const currentDate = new Date(dateSelector.value);
-  currentDate.setDate(currentDate.getDate() + offset);
-  const year = currentDate.getFullYear();
-  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-  const day = String(currentDate.getDate()).padStart(2, '0');
-  const newDate = `${year}-${month}-${day}`;
-  dateSelector.value = newDate;
-  dateChange();
-}
+    function changeDay(offset) {
+        const dateSelector = document.getElementById('date-selector');
+        const currentDate = new Date(dateSelector.value);
+        currentDate.setDate(currentDate.getDate() + offset);
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const newDate = `${year}-${month}-${day}`;
+        dateSelector.value = newDate;
+        dateChange();
+    }
 </script>
 {{end}}

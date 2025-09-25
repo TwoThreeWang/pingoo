@@ -114,7 +114,7 @@ func (s *SiteService) DeleteSite(id uint64, userID uint64) error {
 	}
 
 	db := database.GetDB()
-	if err := db.Delete(&models.Site{}, id).Error; err != nil {
+	if err := db.Unscoped().Delete(&models.Site{}, id).Error; err != nil {
 		return fmt.Errorf("删除站点失败: %v", err)
 	}
 
@@ -132,4 +132,44 @@ func (s *SiteService) CheckUserAccess(siteID uint64, userID uint64) (bool, error
 		return false, errors.New("权限检查失败")
 	}
 	return count > 0, nil
+}
+
+func (s *SiteService) ClearSiteStats(siteID uint64, userID uint64) error {
+	site, err := s.GetSiteByID(siteID)
+	if err != nil {
+		return err
+	}
+
+	// 验证权限
+	if site.UserID != userID {
+		return errors.New("无权限删除此站点")
+	}
+
+	db := database.GetDB()
+	// 使用事务删除所有统计数据
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 删除events
+	if err := tx.Unscoped().Where("site_id = ?", siteID).Delete(&models.Event{}).Error; err != nil {
+		tx.Rollback()
+		return errors.New("删除events统计数据失败")
+	}
+
+	// 删除sessions
+	if err := tx.Unscoped().Where("site_id = ?", siteID).Delete(&models.Session{}).Error; err != nil {
+		tx.Rollback()
+		return errors.New("删除session统计数据失败")
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return errors.New("事务提交失败")
+	}
+	return nil
 }

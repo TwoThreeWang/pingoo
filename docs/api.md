@@ -1,6 +1,6 @@
 # Pingoo API 使用文档
 
-发布于 2025年9月14日 · 最后更新 2025年9月23日
+发布于 2025年9月14日 · 最后更新 2025年9月25日
 
 ## 基本信息
 
@@ -358,10 +358,10 @@
         "week_pv": 134,
         "month_ip": 4,
         "month_pv": 142,
-        "hourly_stats": {
+        "hourly_stats": [{
             "hour": 15,
             "count": 27
-        },
+        }],
         "start_time": "20250915",
         "end_time": "20250915"
     }
@@ -406,13 +406,59 @@
   - `page` (默认1)
   - `limit` (默认10)
   - `search` (可选)
-- **响应**: 分页的站点列表
+- **响应**:
+```json
+{
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "list": [
+            {
+                "id": 2,
+                "user_id": 1,
+                "name": "我的网站",
+                "domain": "https://example.com",
+                "tracking_id": "",
+                "created_at": "2025-09-24T17:38:33.75655+08:00",
+                "updated_at": "2025-09-24T17:38:33.75655+08:00"
+            },
+            {
+                "id": 1,
+                "user_id": 1,
+                "name": "Pingoo",
+                "domain": "http://127.0.0.1:5004/",
+                "tracking_id": "",
+                "created_at": "2025-09-15T15:35:28.141283+08:00",
+                "updated_at": "2025-09-15T15:35:28.141283+08:00"
+            }
+        ],
+        "total": 2,
+        "page": 1,
+        "page_size": 10
+    }
+}
+```
 
 #### 获取站点详情
 - **URL**: `/sites/:id`
 - **方法**: GET
 - **认证**: 需要
-- **响应**: 站点详情对象
+- **响应**:
+```json
+{
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "id": 2,
+        "user_id": 1,
+        "name": "我的网站",
+        "domain": "https://example.com",
+        "tracking_id": "",
+        "created_at": "2025-09-24T17:38:33.75655+08:00",
+        "updated_at": "2025-09-24T17:38:33.75655+08:00"
+    }
+}
+```
 
 #### 更新站点信息
 - **URL**: `/sites/:id`
@@ -425,19 +471,62 @@
   "domain": "https://newdomain.com"
 }
 ```
-- **响应**: 更新后的站点对象
+- **响应**:
+```json
+{
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "id": 2,
+        "user_id": 1,
+        "name": "新站点名称",
+        "domain": "https://newdomain.com",
+        "tracking_id": "",
+        "created_at": "2025-09-24T17:38:33.75655+08:00",
+        "updated_at": "2025-09-25T14:21:00.8914916+08:00"
+    }
+}
+```
 
 #### 删除站点
 - **URL**: `/sites/:id`
 - **方法**: DELETE
 - **认证**: 需要
-- **响应**: "站点删除成功"
+- **响应**:
+```json
+{
+    "code": 0,
+    "msg": "success",
+    "data": "站点删除成功"
+}
+```
 
 #### 清空站点统计
 - **URL**: `/sites/:id/stats`
 - **方法**: DELETE
 - **认证**: 需要
-- **响应**: 操作结果
+- **响应**:
+```json
+{
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "message": "统计数据已清空"
+    }
+}
+```
+
+#### 健康检查
+- **URL**: `/health`
+- **方法**: GET
+- **认证**: 不需要
+- **响应**:
+```json
+{
+    "message": "服务运行正常",
+    "status": "ok"
+}
+```
 
 ### 错误
 

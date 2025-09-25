@@ -11,6 +11,10 @@ func ParseDate(dateStr string) (time.Time, error) {
 	if dateStr == "" {
 		return time.Time{}, fmt.Errorf("日期字符串不能为空")
 	}
+	// 先截取dateStr，精确到秒级别
+	if len(dateStr) > 18 {
+		dateStr = dateStr[:19]
+	}
 
 	// 尝试常见日期格式
 	formats := []string{

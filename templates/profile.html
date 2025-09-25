@@ -2,158 +2,164 @@
 
 {{define "head"}}
 <style>
-.profile-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    margin-bottom: 2rem;
-    overflow: hidden;
-}
+    .profile-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
 
-.card-header {
-    background: var(--bg-primary);
-    padding: 0 1rem;
-    border-bottom: 1px solid var(--border-primary);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+    .card-header {
+        background: var(--bg-primary);
+        padding: 0 1rem;
+        border-bottom: 1px solid var(--border-primary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-.user-info {
-    padding: 2rem;
-}
+    .user-info {
+        padding: 2rem;
+    }
 
-.info-row {
-    display: grid;
-    grid-template-columns: 120px 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    align-items: center;
-}
+    .info-row {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        align-items: center;
+    }
 
-.info-row label {
-    font-weight: 600;
-    color: var(--bg-primary-text);
-}
+    .info-row label {
+        font-weight: 600;
+        color: var(--bg-primary-text);
+    }
 
-.info-row span {
-    color: var(--bg-secondary-text);
-}
+    .info-row span {
+        color: var(--bg-secondary-text);
+    }
 
-.info-row input {
-    padding: 0.5rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 4px;
-    background: var(--bg-primary);
-    color: var(--bg-primary-text);
-    font-size: 1rem;
-}
+    .info-row input {
+        padding: 0.5rem;
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        background: var(--bg-primary);
+        color: var(--bg-primary-text);
+        font-size: 1rem;
+    }
 
-.edit-actions {
-    padding: 0 2rem 2rem;
-    display: flex;
-    gap: 1rem;
-}
+    .edit-actions {
+        padding: 0 2rem 2rem;
+        display: flex;
+        gap: 1rem;
+    }
 
-.password-form {
-    padding: 2rem;
-}
+    .password-form {
+        padding: 2rem;
+    }
 
-.form-group {
-    margin-bottom: 1.5rem;
-}
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
 
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: var(--bg-primary-text);
-}
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--bg-primary-text);
+    }
 
-.form-group input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    background: var(--bg-primary);
-    color: var(--bg-primary-text);
-    font-size: 1rem;
-}
-.sites-table tr td, .sites-table tr th{
-    border: 0;
-}
-.sites-table{
-    margin: 0;
-}
+    .form-group input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-primary);
+        border-radius: 6px;
+        background: var(--bg-primary);
+        color: var(--bg-primary-text);
+        font-size: 1rem;
+    }
 
-.add-site-form {
-    padding: 2rem;
-}
+    .sites-table tr td,
+    .sites-table tr th {
+        border: 0;
+    }
 
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1.5rem;
-}
+    .sites-table {
+        margin: 0;
+    }
 
-.hidden {
-    display: none !important;
-}
+    .add-site-form {
+        padding: 2rem;
+    }
 
-.error-message {
-    color: var(--primary-color);
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-}
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
 
-.success-message {
-    color: var(--success-color);
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-}
+    .hidden {
+        display: none !important;
+    }
+
+    .error-message {
+        color: var(--primary-color);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .success-message {
+        color: var(--success-color);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
     /* 遮罩层 */
     .overlay {
-      display: none; /* 默认隐藏 */
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 999;
+        display: none;
+        /* 默认隐藏 */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
     }
 
     /* 浮层内容 */
     .overlay-content {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: var(--bg-primary);
-      padding: 2rem;
-      border-radius: 8px;
-      max-width: 99%;
-      min-width: 50%;
-    }
-@media (max-width: 768px) {
-    .info-row {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bg-primary);
+        padding: 2rem;
+        border-radius: 8px;
+        max-width: 99%;
+        min-width: 50%;
     }
 
-    .sites-table {
-        font-size: 0.9rem;
-    }
+    @media (max-width: 768px) {
+        .info-row {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
 
-    .sites-table th,
-    .sites-table td {
-        padding: 0.75rem 0.5rem;
-    }
+        .sites-table {
+            font-size: 0.9rem;
+        }
 
-    .edit-actions {
-        flex-direction: column;
+        .sites-table th,
+        .sites-table td {
+            padding: 0.75rem 0.5rem;
+        }
+
+        .edit-actions {
+            flex-direction: column;
+        }
     }
-}
 </style>
 {{end}}
 
@@ -254,88 +260,80 @@
     </div>
 </div>
 <!-- 浮层 -->
-  <div id="overlay" class="overlay">
+<div id="overlay" class="overlay">
     <div class="overlay-content" id="overlayContent">
     </div>
-  </div>
+</div>
 {{end}}
 
 {{define "extra_js"}}
 <script>
-// 全局变量
-let currentUser = null;
-let isEditMode = false;
+    // 全局变量
+    let currentUser = null;
+    let isEditMode = false;
 
-// 初始化页面
-document.addEventListener('DOMContentLoaded', function() {
-    loadUserInfo();
-    loadUserSites();
-});
+    // 初始化页面
+    document.addEventListener('DOMContentLoaded', function () {
+        loadUserInfo();
+        loadUserSites();
+    });
 
-// 加载用户信息
-async function loadUserInfo() {
-    try {
-        const response = await fetch('/api/auth/me', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+    // 加载用户信息
+    async function loadUserInfo() {
+        try {
+            const response = await sendRequest('GET', '/api/auth/me');
+
+            if (response.ok) {
+                const data = await response.json();
+                currentUser = data.data;
+                displayUserInfo(currentUser);
+            } else {
+                window.location.href = '/login';
             }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            currentUser = data.data;
-            displayUserInfo(currentUser);
-        } else {
-            window.location.href = '/login';
+        } catch (error) {
+            console.error('加载用户信息失败:', error);
+            showMessage('加载用户信息失败，请刷新重试', 'error');
         }
-    } catch (error) {
-        console.error('加载用户信息失败:', error);
-        showMessage('加载用户信息失败，请刷新重试', 'error');
     }
-}
 
-// 显示用户信息
-function displayUserInfo(user) {
-    document.getElementById('usernameDisplay').textContent = user.username || '未设置';
-    document.getElementById('emailDisplay').textContent = user.email;
-    document.getElementById('roleDisplay').textContent = user.role === 'admin' ? '管理员' : '普通用户';
-    document.getElementById('createdAtDisplay').textContent = new Date().toLocaleDateString('zh-CN');
+    // 显示用户信息
+    function displayUserInfo(user) {
+        document.getElementById('usernameDisplay').textContent = user.username || '未设置';
+        document.getElementById('emailDisplay').textContent = user.email;
+        document.getElementById('roleDisplay').textContent = user.role === 'admin' ? '管理员' : '普通用户';
+        document.getElementById('createdAtDisplay').textContent = new Date().toLocaleDateString('zh-CN');
 
-    // 设置编辑输入框的默认值
-    document.getElementById('usernameInput').value = user.username || '';
-    document.getElementById('emailInput').value = user.email;
-}
+        // 设置编辑输入框的默认值
+        document.getElementById('usernameInput').value = user.username || '';
+        document.getElementById('emailInput').value = user.email;
+    }
 
-// 加载用户网站列表
-async function loadUserSites() {
-    try {
-        const response = await fetch('/api/sites?limit=50', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+    // 加载用户网站列表
+    async function loadUserSites() {
+        try {
+            const response = await sendRequest('GET', '/api/sites?limit=50');
+
+            if (response.ok) {
+                const data = await response.json();
+                displayUserSites(data.data || []);
             }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            displayUserSites(data.data || []);
+        } catch (error) {
+            console.error('加载网站列表失败:', error);
+            document.getElementById('userSites').innerHTML = '<center>加载网站列表失败，请刷新重试</center>';
         }
-    } catch (error) {
-        console.error('加载网站列表失败:', error);
-        document.getElementById('userSites').innerHTML = '<center>加载网站列表失败，请刷新重试</center>';
-    }
-}
-
-// 显示用户网站列表
-function displayUserSites(sites_list) {
-    const sites = sites_list.list;
-    const container = document.getElementById('userSites');
-
-    if (!sites || sites.length === 0) {
-        container.innerHTML = '<center>暂无网站，点击右上角添加新网站</center>';
-        return;
     }
 
-    container.innerHTML = `
+    // 显示用户网站列表
+    function displayUserSites(sites_list) {
+        const sites = sites_list.list;
+        const container = document.getElementById('userSites');
+
+        if (!sites || sites.length === 0) {
+            container.innerHTML = '<center>暂无网站，点击右上角添加新网站</center>';
+            return;
+        }
+
+        container.innerHTML = `
         <table class="sites-table">
             <thead>
                 <tr>
@@ -360,184 +358,166 @@ function displayUserSites(sites_list) {
             </tbody>
         </table>
     `;
-}
-
-// 切换编辑模式
-function toggleEditMode() {
-    isEditMode = !isEditMode;
-
-    const usernameDisplay = document.getElementById('usernameDisplay');
-    const emailDisplay = document.getElementById('emailDisplay');
-    const usernameInput = document.getElementById('usernameInput');
-    const emailInput = document.getElementById('emailInput');
-    const editActions = document.getElementById('editActions');
-    const editBtn = document.getElementById('editBtn');
-
-    if (isEditMode) {
-        usernameDisplay.classList.add('hidden');
-        emailDisplay.classList.add('hidden');
-        usernameInput.classList.remove('hidden');
-        emailInput.classList.remove('hidden');
-        editActions.classList.remove('hidden');
-        editBtn.textContent = '取消编辑';
-    } else {
-        usernameDisplay.classList.remove('hidden');
-        emailDisplay.classList.remove('hidden');
-        usernameInput.classList.add('hidden');
-        emailInput.classList.add('hidden');
-        editActions.classList.add('hidden');
-        editBtn.textContent = '编辑';
-    }
-}
-
-// 取消编辑
-function cancelEdit() {
-    toggleEditMode();
-    // 恢复原始值
-    document.getElementById('usernameInput').value = currentUser.username || '';
-    document.getElementById('emailInput').value = currentUser.email;
-}
-
-// 保存用户信息
-async function saveProfile() {
-    const username = document.getElementById('usernameInput').value.trim();
-    const email = document.getElementById('emailInput').value.trim();
-
-    if (!username || username.length < 3) {
-        showMessage('用户名至少需要3个字符', 'error');
-        return;
     }
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showMessage('请输入有效的邮箱地址', 'error');
-        return;
-    }
+    // 切换编辑模式
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
 
-    try {
-        const response = await fetch('/api/auth/profile', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ username, email })
-        });
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        const emailDisplay = document.getElementById('emailDisplay');
+        const usernameInput = document.getElementById('usernameInput');
+        const emailInput = document.getElementById('emailInput');
+        const editActions = document.getElementById('editActions');
+        const editBtn = document.getElementById('editBtn');
 
-        if (response.ok) {
-            const data = await response.json();
-            currentUser = data.data;
-            displayUserInfo(currentUser);
-            toggleEditMode();
-            showMessage('用户信息更新成功', 'success');
+        if (isEditMode) {
+            usernameDisplay.classList.add('hidden');
+            emailDisplay.classList.add('hidden');
+            usernameInput.classList.remove('hidden');
+            emailInput.classList.remove('hidden');
+            editActions.classList.remove('hidden');
+            editBtn.textContent = '取消编辑';
         } else {
-            const error = await response.json();
-            showMessage(error.message || '更新失败，请重试', 'error');
+            usernameDisplay.classList.remove('hidden');
+            emailDisplay.classList.remove('hidden');
+            usernameInput.classList.add('hidden');
+            emailInput.classList.add('hidden');
+            editActions.classList.add('hidden');
+            editBtn.textContent = '编辑';
         }
-    } catch (error) {
-        console.error('更新用户信息失败:', error);
-        showMessage('网络错误，请重试', 'error');
-    }
-}
-
-// 修改密码
-async function changePassword() {
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-        showMessage('请填写所有密码字段', 'error');
-        return;
     }
 
-    if (newPassword.length < 6) {
-        showMessage('新密码至少需要6个字符', 'error');
-        return;
+    // 取消编辑
+    function cancelEdit() {
+        toggleEditMode();
+        // 恢复原始值
+        document.getElementById('usernameInput').value = currentUser.username || '';
+        document.getElementById('emailInput').value = currentUser.email;
     }
 
-    if (newPassword !== confirmPassword) {
-        showMessage('两次输入的新密码不一致', 'error');
-        return;
+    // 保存用户信息
+    async function saveProfile() {
+        const username = document.getElementById('usernameInput').value.trim();
+        const email = document.getElementById('emailInput').value.trim();
+
+        if (!username || username.length < 3) {
+            showMessage('用户名至少需要3个字符', 'error');
+            return;
+        }
+
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showMessage('请输入有效的邮箱地址', 'error');
+            return;
+        }
+
+        try {
+            const response = await sendRequest('PUT', '/api/auth/profile', {
+                username: username,
+                email: email
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                currentUser = data.data;
+                displayUserInfo(currentUser);
+                toggleEditMode();
+                showMessage('用户信息更新成功', 'success');
+            } else {
+                const error = await response.json();
+                showMessage(error.message || '更新失败，请重试', 'error');
+            }
+        } catch (error) {
+            console.error('更新用户信息失败:', error);
+            showMessage('网络错误，请重试', 'error');
+        }
     }
 
-    try {
-        const response = await fetch('/api/auth/password', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
+    // 修改密码
+    async function changePassword() {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            showMessage('请填写所有密码字段', 'error');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showMessage('新密码至少需要6个字符', 'error');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showMessage('两次输入的新密码不一致', 'error');
+            return;
+        }
+
+        try {
+            const response = await sendRequest('PUT', '/api/auth/password', {
                 old_password: currentPassword,
                 new_password: newPassword
-            })
-        });
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok) {
-            showMessage('密码修改成功', 'success');
-            // 清空表单
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
-        } else {
-            showMessage(data.msg || '密码修改失败', 'error');
+            if (response.ok) {
+                showMessage('密码修改成功', 'success');
+                // 清空表单
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+            } else {
+                showMessage(data.msg || '密码修改失败', 'error');
+            }
+        } catch (error) {
+            console.error('修改密码失败:', error);
+            showMessage('网络错误，请重试', 'error');
         }
-    } catch (error) {
-        console.error('修改密码失败:', error);
-        showMessage('网络错误，请重试', 'error');
-    }
-}
-
-// 添加新网站
-async function addNewSite() {
-    const name = document.getElementById('siteName').value.trim();
-    const domain = document.getElementById('siteDomain').value.trim();
-
-    if (!name || name.length < 1) {
-        showMessage('网站名称至少需要1个字符', 'error');
-        return;
     }
 
-    if (!domain) {
-        showMessage('请输入有效的域名格式', 'error');
-        return;
-    }
+    // 添加新网站
+    async function addNewSite() {
+        const name = document.getElementById('siteName').value.trim();
+        const domain = document.getElementById('siteDomain').value.trim();
 
-    try {
-        const response = await fetch('/api/sites', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
+        if (!name || name.length < 1) {
+            showMessage('网站名称至少需要1个字符', 'error');
+            return;
+        }
+
+        if (!domain) {
+            showMessage('请输入有效的域名格式', 'error');
+            return;
+        }
+
+        try {
+            const response = await sendRequest('POST', '/api/sites', {
                 name: name,
                 domain: domain,
-            })
-        });
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok) {
-            showMessage('网站添加成功', 'success');
-            toggleDiv('addSiteForm');
-            loadUserSites(); // 重新加载网站列表
-        } else {
-            showMessage(data.msg || '添加网站失败', 'error');
+            if (response.ok) {
+                showMessage('网站添加成功', 'success');
+                toggleDiv('addSiteForm');
+                loadUserSites(); // 重新加载网站列表
+            } else {
+                showMessage(data.msg || '添加网站失败', 'error');
+            }
+        } catch (error) {
+            console.error('添加网站失败:', error);
+            showMessage('网络错误，请重试', 'error');
         }
-    } catch (error) {
-        console.error('添加网站失败:', error);
-        showMessage('网络错误，请重试', 'error');
     }
-}
 
-const overlay = document.getElementById('overlay');
-const overlayContent = document.getElementById('overlayContent');
-// 显示网站详情
-function showSiteDetail(site) {
-    overlayContent.innerHTML = `
+    const overlay = document.getElementById('overlay');
+    const overlayContent = document.getElementById('overlayContent');
+    // 显示网站详情
+    function showSiteDetail(site) {
+        overlayContent.innerHTML = `
         <h3>网站详情</h3>
         <p><strong>SiteID:</strong> ${site.id}</p>
         <p><strong>名称:</strong> ${site.name}</p>
@@ -553,18 +533,18 @@ function showSiteDetail(site) {
             <button onclick="closeOverlay()">取消</button>
         </div>
     `;
-    overlay.style.display = "block";
-}
+        overlay.style.display = "block";
+    }
 
-// 关闭遮罩面板
-function closeOverlay() {
-    overlay.style.display = 'none';
-    overlayContent.innerHTML = "";
-}
+    // 关闭遮罩面板
+    function closeOverlay() {
+        overlay.style.display = 'none';
+        overlayContent.innerHTML = "";
+    }
 
-// 编辑网站
-function editSite(siteName, siteDomain, siteId) {
-    overlayContent.innerHTML = `
+    // 编辑网站
+    function editSite(siteName, siteDomain, siteId) {
+        overlayContent.innerHTML = `
         <div class="add-site-form" id="editSiteForm">
             <div class="form-group">
                 <label>网站名称</label>
@@ -580,111 +560,93 @@ function editSite(siteName, siteDomain, siteId) {
             </div>
         </div>
     `
-}
+    }
 
-// 更新网站信息
-async function updateSite(siteId) {
-    try {
-        const name = document.getElementById('editsiteName').value.trim();
-        const domain = document.getElementById('editsiteDomain').value.trim();
+    // 更新网站信息
+    async function updateSite(siteId) {
+        try {
+            const name = document.getElementById('editsiteName').value.trim();
+            const domain = document.getElementById('editsiteDomain').value.trim();
 
-        if (!name || name.length < 1) {
-            showMessage('网站名称至少需要1个字符', 'error');
-            return;
-        }
+            if (!name || name.length < 1) {
+                showMessage('网站名称至少需要1个字符', 'error');
+                return;
+            }
 
-        if (!domain) {
-            showMessage('请输入有效的域名格式', 'error');
-            return;
-        }
+            if (!domain) {
+                showMessage('请输入有效的域名格式', 'error');
+                return;
+            }
 
-        const response = await fetch(`/api/sites/${siteId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
+            const response = await sendRequest('PUT', `/api/sites/${siteId}`, {
                 name: name,
                 domain: domain,
-            })
-        });
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok) {
-            showMessage('网站信息更新成功', 'success');
-            closeOverlay();
-            loadUserSites(); // 重新加载网站列表
-        } else {
-            showMessage(data.msg || '更新失败，请重试', 'error');
-        }
-    } catch (error) {
-        console.error('更新网站失败:', error);
-        showMessage('网络错误，请重试', 'error');
-    }
-}
-
-// 删除网站
-function deleteSite(siteName, id) {
-    if (confirm(`确定要删除网站 "${siteName}" 吗？此操作不可恢复！`)) {
-        deleteSiteConfirmed(id);
-    }
-}
-
-// 确认删除网站
-async function deleteSiteConfirmed(siteId) {
-    try {
-        const response = await fetch(`/api/sites/${siteId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            if (response.ok) {
+                showMessage('网站信息更新成功', 'success');
+                closeOverlay();
+                loadUserSites(); // 重新加载网站列表
+            } else {
+                showMessage(data.msg || '更新失败，请重试', 'error');
             }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            showMessage('网站删除成功', 'success');
-            closeOverlay();
-            loadUserSites(); // 重新加载网站列表
-        } else {
-            showMessage(data.msg || '删除失败，请重试', 'error');
+        } catch (error) {
+            console.error('更新网站失败:', error);
+            showMessage('网络错误，请重试', 'error');
         }
-    } catch (error) {
-        console.error('删除网站失败:', error);
-        showMessage('网络错误，请重试', 'error');
     }
-}
 
-// 清空网站数据
-function clearSiteData(siteName, siteId) {
-    if (confirm(`确定要清空网站 "${siteName}" 的所有统计数据吗？此操作不可恢复！`)) {
-        clearSiteDataConfirmed(siteId);
+    // 删除网站
+    function deleteSite(siteName, id) {
+        if (confirm(`确定要删除网站 "${siteName}" 吗？此操作不可恢复！`)) {
+            deleteSiteConfirmed(id);
+        }
     }
-}
 
-// 确认清空网站数据
-async function clearSiteDataConfirmed(siteId) {
-    try {
-        const response = await fetch(`/api/sites/${siteId}/stats`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+    // 确认删除网站
+    async function deleteSiteConfirmed(siteId) {
+        try {
+            const response = await sendRequest('DELETE', `/api/sites/${siteId}`);
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage('网站删除成功', 'success');
+                closeOverlay();
+                loadUserSites(); // 重新加载网站列表
+            } else {
+                showMessage(data.msg || '删除失败，请重试', 'error');
             }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            showMessage('网站数据清空成功', 'success');
-        } else {
-            showMessage(data.msg || '清空数据失败，请重试', 'error');
+        } catch (error) {
+            console.error('删除网站失败:', error);
+            showMessage('网络错误，请重试', 'error');
         }
-    } catch (error) {
-        console.error('清空网站数据失败:', error);
-        showMessage('网络错误，请重试', 'error');
     }
-}
+
+    // 清空网站数据
+    function clearSiteData(siteName, siteId) {
+        if (confirm(`确定要清空网站 "${siteName}" 的所有统计数据吗？此操作不可恢复！`)) {
+            clearSiteDataConfirmed(siteId);
+        }
+    }
+
+    // 确认清空网站数据
+    async function clearSiteDataConfirmed(siteId) {
+        try {
+            const response = await sendRequest('DELETE', `/api/sites/${siteId}/stats`);
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage('网站数据清空成功', 'success');
+            } else {
+                showMessage(data.msg || '清空数据失败，请重试', 'error');
+            }
+        } catch (error) {
+            console.error('清空网站数据失败:', error);
+            showMessage('网络错误，请重试', 'error');
+        }
+    }
 </script>
 {{end}}

@@ -27,26 +27,12 @@ func (wc *WebController) Index(c *gin.Context) {
 }
 
 func (wc *WebController) Login(c *gin.Context) {
-	// 判断是否登录，已登录跳转个人中心页面
-	userInfo := middleware.GetCurrentUser(c)
-	if userInfo != nil {
-		c.Redirect(http.StatusFound, "/profile")
-		c.Abort()
-		return
-	}
 	c.HTML(http.StatusOK, "login", OutputCommonSession(c, gin.H{
 		"Title": "登录",
 	}))
 }
 
 func (wc *WebController) Register(c *gin.Context) {
-	// 判断是否登录，已登录跳转个人中心页面
-	userInfo := middleware.GetCurrentUser(c)
-	if userInfo != nil {
-		c.Redirect(http.StatusFound, "/profile")
-		c.Abort()
-		return
-	}
 	c.HTML(http.StatusOK, "register", OutputCommonSession(c, gin.H{
 		"Title": "注册",
 	}))

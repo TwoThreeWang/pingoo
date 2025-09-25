@@ -2,19 +2,70 @@
 
 {{define "head"}}
 <style>
-.auth-container{min-height:80vh;display:flex;align-items:center;justify-content:center}
-.auth-card{width:100%;max-width:600px;overflow:hidden}
-.auth-header{padding:1rem;text-align:center}
-.auth-form{padding:2rem}
-.error-message{color:var(--primary-color);font-size:0.875rem;margin-top:0.25rem;display:none}
-.error-message.show{display:block}
-.auth-footer{text-align:center;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border-primary)}
-.auth-footer a{color:var(--primary-color);text-decoration:none;font-weight:600}
-.auth-footer a:hover{text-decoration:underline}
-@media (max-width:480px){.auth-container{padding:1rem}
-.auth-card{border-radius:8px}
-.auth-header,.auth-form{padding:1.5rem}
-}
+    .auth-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 600px;
+        overflow: hidden
+    }
+
+    .auth-header {
+        padding: 1rem;
+        text-align: center
+    }
+
+    .auth-form {
+        padding: 2rem
+    }
+
+    .error-message {
+        color: var(--primary-color);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: none
+    }
+
+    .error-message.show {
+        display: block
+    }
+
+    .auth-footer {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-primary)
+    }
+
+    .auth-footer a {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 600
+    }
+
+    .auth-footer a:hover {
+        text-decoration: underline
+    }
+
+    @media (max-width:480px) {
+        .auth-container {
+            padding: 1rem
+        }
+
+        .auth-card {
+            border-radius: 8px
+        }
+
+        .auth-header,
+        .auth-form {
+            padding: 1.5rem
+        }
+    }
 </style>
 {{end}}
 
@@ -54,84 +105,77 @@
 
 {{define "extra_js"}}
 <script>
-document.getElementById('loginForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
 
-    const email = document.getElementById('email');
-    const password = document.getElementById('password');
-    const loginButton = document.getElementById('loginButton');
-    const buttonText = document.getElementById('buttonText');
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        const loginButton = document.getElementById('loginButton');
+        const buttonText = document.getElementById('buttonText');
 
-    // 清除之前的错误
-    document.querySelectorAll('.error-message').forEach(msg => msg.classList.remove('show'));
-    document.querySelectorAll('input').forEach(input => input.classList.remove('error'));
+        // 清除之前的错误
+        document.querySelectorAll('.error-message').forEach(msg => msg.classList.remove('show'));
+        document.querySelectorAll('input').forEach(input => input.classList.remove('error'));
 
-    // 简单验证
-    let hasError = false;
+        // 简单验证
+        let hasError = false;
 
-    if (!email.value || !email.validity.valid) {
-        document.getElementById('emailError').classList.add('show');
-        email.classList.add('error');
-        hasError = true;
-    }
+        if (!email.value || !email.validity.valid) {
+            document.getElementById('emailError').classList.add('show');
+            email.classList.add('error');
+            hasError = true;
+        }
 
-    if (!password.value || password.value.length < 6) {
-        document.getElementById('passwordError').classList.add('show');
-        password.classList.add('error');
-        hasError = true;
-    }
+        if (!password.value || password.value.length < 6) {
+            document.getElementById('passwordError').classList.add('show');
+            password.classList.add('error');
+            hasError = true;
+        }
 
-    if (hasError) return;
+        if (hasError) return;
 
-    // 显示加载状态
-    loginButton.disabled = true;
-    buttonText.innerHTML = '<span class="loading"></span>登录中...';
+        // 显示加载状态
+        loginButton.disabled = true;
+        buttonText.innerHTML = '<span class="loading"></span>登录中...';
 
-    try {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+        try {
+            const response = await sendRequest('POST', '/api/auth/login', {
                 email: email.value,
                 password: password.value
-            })
-        });
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok) {
-            // 保存token到localStorage
-            localStorage.setItem('token', data.data.token);
-            localStorage.setItem('refresh_token', data.data.refresh_token);
+            if (response.ok) {
+                // 保存token到localStorage
+                localStorage.setItem('token', data.data.token);
+                localStorage.setItem('refresh_token', data.data.refresh_token);
+                // 显示成功消息
+                showMessage('欢迎登录，' + data.data.user.username, 'success');
+                // 跳转到仪表板
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 800);
 
-            // 显示成功消息
-            showMessage('登录成功！正在跳转...', 'success');
-
-            // 跳转到仪表板
-            setTimeout(() => {
-                window.location.href = '/dashboard';
-            }, 1000);
-        } else {
-            // 显示错误消息
-            showMessage(data.msg || '登录失败，请重试', 'error');
+            } else {
+                // 显示错误消息
+                showMessage(data.msg || '登录失败，请重试', 'error');
+                loginButton.disabled = false;
+                buttonText.textContent = '登录';
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showMessage('网络错误，请稍后重试', 'error');
             loginButton.disabled = false;
             buttonText.textContent = '登录';
         }
-    } catch (error) {
-        console.error('Login error:', error);
-        showMessage('网络错误，请稍后重试', 'error');
-        loginButton.disabled = false;
-        buttonText.textContent = '登录';
-    }
-});
+    });
 
-// 回车键提交表单
-document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && !e.target.matches('button')) {
-        document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-    }
-});
+    // 回车键提交表单
+    document.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !e.target.matches('button')) {
+            document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+        }
+    });
 </script>
 {{end}}
