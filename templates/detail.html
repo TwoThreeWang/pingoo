@@ -1,420 +1,636 @@
-{{define "title"}}事件详情 - {{.Site.Name}}{{end}}
-
-{{define "extra_css"}}
-<style>
-/* 事件详情页面样式 */
-.event-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.event-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.event-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #1f2937;
-    margin: 0;
-}
-
-.event-controls {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-
-.date-selector {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 14px;
-    background: white;
-}
-
-.event-list {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-}
-
-.event-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #f3f4f6;
-    transition: background-color 0.2s;
-}
-
-.event-item:hover {
-    background-color: #f9fafb;
-}
-
-.event-item:last-child {
-    border-bottom: none;
-}
-
-.event-info {
-    flex: 1;
-}
-
-.event-name {
-    font-size: 16px;
-    font-weight: 500;
-    color: #1f2937;
-    margin-bottom: 4px;
-}
-
-.event-meta {
-    font-size: 14px;
-    color: #6b7280;
-}
-
-.event-count {
-    font-size: 18px;
-    font-weight: 600;
-    color: #3b82f6;
-    min-width: 60px;
-    text-align: right;
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-top: 30px;
-}
-
-.pagination-btn {
-    padding: 8px 16px;
-    border: 1px solid #d1d5db;
-    background: white;
-    color: #374151;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 14px;
-}
-
-.pagination-btn:hover:not(:disabled) {
-    background-color: #f3f4f6;
-    border-color: #9ca3af;
-}
-
-.pagination-btn:disabled {
-    background-color: #f9fafb;
-    color: #9ca3af;
-    cursor: not-allowed;
-    border-color: #e5e7eb;
-}
-
-.pagination-btn.active {
-    background-color: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
-}
-
-.pagination-info {
-    font-size: 14px;
-    color: #6b7280;
-    margin: 0 15px;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: #6b7280;
-}
-
-.empty-state svg {
-    width: 48px;
-    height: 48px;
-    margin-bottom: 16px;
-    opacity: 0.5;
-}
-
-.loading {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #f3f4f6;
-    border-top: 2px solid #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 8px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@media (max-width: 768px) {
-    .event-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-
-    .event-controls {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .event-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-
-    .event-count {
-        align-self: flex-end;
-    }
-
-    .pagination {
-        flex-wrap: wrap;
-    }
-}
-</style>
-{{end}}
+{{template "base" .}}
 
 {{define "content"}}
-<div class="dashboard-header">
-    <h2 id="dashboard-title">事件详情</h2>
-    <p class="dashboard-subtitle">查看网站事件统计明细</p>
-</div>
+<div class="dashboard-container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">首页</a></li>
+            <li class="breadcrumb-item"><a href="/dashboard">仪表盘</a></li>
+            <li class="breadcrumb-item active" aria-current="page">事件详情</li>
+        </ol>
+    </nav>
 
-<div class="event-container">
-    <div class="event-header">
-        <h1 class="event-title">{{.Site.Name}} - 事件列表</h1>
-        <div class="event-controls">
-            <input type="date" class="date-selector" id="date-selector" value="{{.Today}}" onchange="loadEvents()">
-            <button class="date-nav-btn" onclick="changeDay(-1)">◄</button>
-            <button class="date-nav-btn" onclick="changeDay(1)">►</button>
+    <div class="dashboard-header">
+        <h2>事件详情分析</h2>
+        <p class="dashboard-subtitle">查看指定类型的事件统计数据和详情</p>
+    </div>
+
+    <!-- 网站概览 -->
+    <div class="site-item">
+        <div class="site-header">
+            <h3 class="site-name">‣ {{.Site.Name}}</h3>
+            <a href="{{.Site.Domain}}" target="_balnk" class="site-url">{{.Site.Domain}}</a>
+            <span>
+                <input type="date" class="date-selector" id="date-selector" value="{{.Today}}" onchange="dateChange()"
+                    style="width:auto;">
+                <button class="date-nav-btn" id="prev-day" onclick="changeDay(-1)">◄</button>
+                <button class="date-nav-btn" id="next-day" onclick="changeDay(1)">►</button>
+            </span>
+        </div>
+        <div class="site-metrics">
+            <div class="metric">
+                <div class="metric-label">浏览量</div>
+                <div class="metric-value" id="pv">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">访问次数</div>
+                <div class="metric-value" id="uv">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">访客</div>
+                <div class="metric-value" id="ip">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">跳出率</div>
+                <div class="metric-value" id="bounce_rate">0%</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">平均访问时长</div>
+                <div class="metric-value" id="avg_duration">0s</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">事件数量</div>
+                <div class="metric-value" id="event_count">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">本周访客</div>
+                <div class="metric-value" id="week_ip">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">本周浏览量</div>
+                <div class="metric-value" id="week_pv">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">本月访客</div>
+                <div class="metric-value" id="month_ip">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">本月浏览量</div>
+                <div class="metric-value" id="month_pv">0</div>
+            </div>
         </div>
     </div>
 
-    <div class="event-list" id="event-list">
-        <div class="loading" style="text-align: center; padding: 40px;">
-            <span class="loading"></span>正在加载事件数据...
+    <div class="detail-container">
+        <!-- 左侧事件类型选择 -->
+        <div class="event-sidebar">
+            <h3>事件类型</h3>
+            <div class="event-type-list">
+                <button class="event-type-btn active" data-type="url" data-event="page_view">
+                    <span class="event-icon">📊</span>
+                    <span class="event-name">页面浏览量</span>
+                </button>
+                <button class="event-type-btn" data-type="url" data-event="click">
+                    <span class="event-icon">🖱️</span>
+                    <span class="event-name">点击事件</span>
+                </button>
+                <button class="event-type-btn" data-type="url" data-event="scroll">
+                    <span class="event-icon">📜</span>
+                    <span class="event-name">滚动事件</span>
+                </button>
+                <button class="event-type-btn" data-type="url" data-event="form_submit">
+                    <span class="event-icon">📝</span>
+                    <span class="event-name">表单提交</span>
+                </button>
+                <button class="event-type-btn" data-type="browser" data-event="page_view">
+                    <span class="event-icon">🌐</span>
+                    <span class="event-name">浏览器统计</span>
+                </button>
+                <button class="event-type-btn" data-type="country" data-event="page_view">
+                    <span class="event-icon">🌍</span>
+                    <span class="event-name">国家地区</span>
+                </button>
+            </div>
         </div>
-    </div>
 
-    <div class="pagination" id="pagination">
-        <!-- 分页按钮将通过JavaScript动态生成 -->
+        <!-- 右侧内容区域 -->
+        <div class="event-content">
+            <!-- 事件列表 -->
+            <div class="stat-card">
+                <h3>页面浏览量统计</h3>
+                <ol class="stat-list" id="event-list">
+                    <center><span class="loading"></span>加载中...</center>
+                </ol>
+                <!-- 分页控件 -->
+                <div class="pagination" id="pagination">
+                    <button class="pagination-btn" id="prev-page" disabled>上一页</button>
+                    <span class="pagination-current" id="current-page">1</span>
+                    <button class="pagination-btn" id="next-page" disabled>下一页</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {{end}}
 
 {{define "extra_js"}}
 <script>
-const siteId = "{{.SiteID}}";
-const dateInput = document.getElementById('date-selector');
-let currentPage = 1;
-const pageSize = 20;
-let totalEvents = 0;
-let allEvents = [];
-let detailType = 'events'; // 默认显示事件详情
+    const siteId = "{{.Site.ID}}";
+    const dateInput = document.getElementById('date-selector');
+    let currentPage = 1;
+    let totalPages = 0;
+    let currentStatType = 'url';
+    let currentEventType = 'page_view';
 
-// 获取URL参数中的type
-function getUrlParameter(name) {
-    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-    const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-    const results = regex.exec(location.search);
-    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-}
+    // 获取网站summary信息并填充到site-metrics容器
+    async function loadSiteMetrics() {
+        const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+        // 调用API获取summary
+        try {
+            const statsResponse = await sendRequest('GET', `/api/events/${siteId}/summary?date=${date}`);
+            let stats = {
+                pv: 0,
+                uv: 0,
+                ip_count: 0,
+                event_count: 0,
+                bounce_rate: 0,
+                avg_duration: 0,
+                week_ip: 0,
+                week_pv: 0,
+                month_ip: 0,
+                month_pv: 0,
+                hourly_stats: {},
+            };
+            if (statsResponse.ok) {
+                const statsResult = await statsResponse.json();
+                if (statsResult.code == 0) {
+                    stats = statsResult.data;
+                } else {
+                    showMessage(statsResult.data.msg, 'error');
+                }
+            } else {
+                showMessage('站点概览数据请求失败', 'error');
+            }
+            // 创建网站项
+            createSiteElement(stats);
+        } catch (error) {
+            console.error(`获取网站 {{.Site.Name}} 统计数据失败:`, error);
+            showMessage(`获取网站 {{.Site.Name}} 统计数据失败`, "error");
+        }
+    }
 
-// 设置详情类型
-detailType = getUrlParameter('type') || 'events';
+    // 渲染网站指标数据
+    function createSiteElement(stats) {
+        // 格式化平均访问时长
+        const formatDuration = (seconds) => {
+            if (!seconds || seconds < 60) return `${seconds || 0}s`;
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}m${remainingSeconds}s`;
+        };
+        document.getElementById('pv').innerHTML = stats.pv || 0;
+        document.getElementById('uv').innerHTML = stats.uv || 0;
+        document.getElementById('ip').innerHTML = stats.ip_count || 0;
+        document.getElementById('event_count').innerHTML = stats.event_count || 0;
+        document.getElementById('bounce_rate').innerHTML = (stats.bounce_rate || 0).toFixed(1);
+        document.getElementById('avg_duration').innerHTML = formatDuration(Math.floor(stats.avg_duration || 0));
+        document.getElementById('week_ip').innerHTML = stats.week_ip || 0;
+        document.getElementById('week_pv').innerHTML = stats.week_pv || 0;
+        document.getElementById('month_ip').innerHTML = stats.month_ip || 0;
+        document.getElementById('month_pv').innerHTML = stats.month_pv || 0;
+    }
 
-// 更新页面标题
-const titleMap = {
-    'events': '事件详情',
-    'pages': '访问页面详情',
-    'sources': '来源详情',
-    'devices': '设备详情'
-};
-const subtitleMap = {
-    'events': '查看网站事件统计明细',
-    'pages': '查看网站访问页面详情',
-    'sources': '查看网站来源统计详情',
-    'devices': '查看网站设备统计详情'
-};
-document.querySelector('.event-title').textContent = `${document.querySelector('.event-title').textContent.split(' - ')[0]} - ${titleMap[detailType] || '事件列表'}`;
-document.getElementById('dashboard-title').textContent = titleMap[detailType] || '事件详情';
-document.querySelector('.dashboard-subtitle').textContent = subtitleMap[detailType] || '查看网站事件统计明细';
 
-// 加载事件数据
-async function loadEvents() {
-    const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+    // 加载事件统计数据
+    async function loadEventStats() {
+        try {
+            const eventList = document.getElementById('event-list');
+            if (!eventList) return;
+            const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
 
-    try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            throw new Error('请先登录');
+            // 构建API URL
+            const apiUrl = `/api/events/1/stats?` +
+                `date=${date}&` +
+                `page=${currentPage}&` +
+                `stat_type=${currentStatType}&` +
+                `event_type=${currentEventType}`;
+
+            const response = await sendRequest('GET', apiUrl);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.code !== 0) {
+                throw new Error(result.msg || '获取事件统计数据失败');
+            }
+
+            const data = result.data;
+
+            // 更新事件列表
+            renderEventList(data.list);
+
+            // 更新分页信息
+            updatePagination(data.total, data.page_size);
+
+        } catch (error) {
+            console.error('加载事件统计数据失败:', error);
+            showMessage('加载事件统计数据失败: ' + error.message, 'error');
+
+            const eventList = document.getElementById('event-list');
+            if (eventList) {
+                eventList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--bg-secondary-text);">
+                        <h3>加载失败</h3>
+                        <p>无法加载事件数据，${error.message}</p>
+                        <button onclick="loadEventStats()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: var(--primary-text); border: none; border-radius: 4px; cursor: pointer;">
+                            重新加载
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // 渲染事件列表
+    function renderEventList(events) {
+        const eventList = document.getElementById('event-list');
+        if (!events || events.length === 0) {
+            eventList.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--bg-secondary-text);">
+                    <h3>暂无数据</h3>
+                    <p>当前筛选条件下没有找到事件数据</p>
+                </div>
+            `;
+            return;
         }
 
-        const response = await fetch(`/api/sites/${siteId}/${detailType}?date=${date}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
+        let html = '';
+        events.forEach((event, index) => {
+            html += `
+                <li class="stat-item">
+                    <div>
+                        <div class="event-rank">${index + 1}</div>
+                        <span class="stat-item-label">${event.key || '未知'}</span>
+                    </div>
+                    <span class="stat-item-value">${event.count}</span>
+                </li>
+            `;
+        });
+
+        eventList.innerHTML = html;
+    }
+
+    // 更新分页信息
+    function updatePagination(total, pageSize) {
+        totalPages = Math.ceil(total / pageSize);
+
+        const paginationInfo = document.getElementById('pagination-info');
+        const currentPageSpan = document.getElementById('current-page');
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+
+        if (paginationInfo) {
+            paginationInfo.textContent = `第 ${currentPage} 页，共 ${totalPages} 页`;
+        }
+        if (currentPageSpan) {
+            currentPageSpan.textContent = currentPage;
+        }
+        if (prevBtn) {
+            prevBtn.disabled = currentPage <= 1;
+        }
+        if (nextBtn) {
+            nextBtn.disabled = currentPage >= totalPages;
+        }
+    }
+
+    // 切换事件类型
+    function switchEventType(statType, eventType, eventName) {
+        // 更新按钮状态
+        document.querySelectorAll('.event-type-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        // 更新当前类型
+        currentStatType = statType;
+        currentEventType = eventType;
+        currentPage = 1;
+
+        // 更新标题
+        const title = document.getElementById('current-event-title');
+        if (title) {
+            title.textContent = eventName + '统计';
+        }
+
+        // 重新加载数据
+        loadEventStats();
+    }
+
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function () {
+        // 绑定事件类型切换
+        document.querySelectorAll('.event-type-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const statType = this.getAttribute('data-type');
+                const eventType = this.getAttribute('data-event');
+                const eventName = this.querySelector('.event-name').textContent;
+                switchEventType(statType, eventType, eventName);
+            });
+        });
+
+        // 绑定分页按钮
+        document.getElementById('prev-page')?.addEventListener('click', function () {
+            if (currentPage > 1) {
+                currentPage--;
+                loadEventStats();
             }
         });
 
-        if (!response.ok) {
-            throw new Error(`获取${titleMap[detailType] || '事件'}数据失败`);
-        }
+        document.getElementById('next-page')?.addEventListener('click', function () {
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadEventStats();
+            }
+        });
 
-        const result = await response.json();
-        if (result.code === 0 && result.data) {
-            allEvents = result.data[detailType] || result.data.events || [];
-            totalEvents = allEvents.length;
-            currentPage = 1;
-            renderEvents();
-            renderPagination();
-        } else {
-            throw new Error(result.message || '获取数据失败');
-        }
-    } catch (error) {
-        console.error(`获取${titleMap[detailType] || '事件'}数据失败:`, error);
-        showEventError(error.message);
-    }
-}
-
-// 渲染事件列表
-function renderEvents() {
-    const container = document.getElementById('event-list');
-
-    if (!allEvents || allEvents.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <p>暂无事件数据</p>
-            </div>
-        `;
-        return;
-    }
-
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = Math.min(startIndex + pageSize, totalEvents);
-    const pageEvents = allEvents.slice(startIndex, endIndex);
-
-    let html = '';
-    pageEvents.forEach(event => {
-        const eventTime = new Date(event.created_at).toLocaleString('zh-CN');
-        html += `
-            <div class="event-item">
-                <div class="event-info">
-                    <div class="event-name">${event.event || '未知事件'}</div>
-                    <div class="event-meta">
-                        ${eventTime} · ${event.ip || '未知IP'} · ${event.location || '未知位置'}
-                        ${event.referrer ? `· 来源: ${event.referrer}` : ''}
-                    </div>
-                </div>
-                <div class="event-count">${event.count || 1}</div>
-            </div>
-        `;
+        // 初始化数据
+        loadSiteMetrics();
+        loadEventStats();
     });
-
-    container.innerHTML = html;
-}
-
-// 渲染分页
-function renderPagination() {
-    const container = document.getElementById('pagination');
-    const totalPages = Math.ceil(totalEvents / pageSize);
-
-    if (totalPages <= 1) {
-        container.innerHTML = '';
-        return;
-    }
-
-    let html = '';
-
-    // 上一页按钮
-    html += `<button class="pagination-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
-
-    // 页码按钮
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage < maxVisiblePages - 1) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
-    }
-
-    // 下一页按钮
-    html += `<button class="pagination-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
-
-    // 分页信息
-    const startIndex = (currentPage - 1) * pageSize + 1;
-    const endIndex = Math.min(currentPage * pageSize, totalEvents);
-    html += `<span class="pagination-info">${startIndex}-${endIndex} / ${totalEvents}</span>`;
-
-    container.innerHTML = html;
-}
-
-// 切换页面
-function changePage(page) {
-    const totalPages = Math.ceil(totalEvents / pageSize);
-    if (page < 1 || page > totalPages) return;
-
-    currentPage = page;
-    renderEvents();
-    renderPagination();
-
-    // 滚动到顶部
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// 显示错误信息
-function showEventError(message) {
-    const container = document.getElementById('event-list');
-    container.innerHTML = `
-        <div class="empty-state">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p>${message}</p>
-            <button class="pagination-btn" onclick="loadEvents()" style="margin-top: 16px;">重试</button>
-        </div>
-    `;
-}
-
-// 切换日期
-function changeDay(offset) {
-    const dateSelector = document.getElementById('date-selector');
-    const currentDate = new Date(dateSelector.value);
-    currentDate.setDate(currentDate.getDate() + offset);
-    const year = currentDate.getFullYear();
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const day = String(currentDate.getDate()).padStart(2, '0');
-    const newDate = `${year}-${month}-${day}`;
-    dateSelector.value = newDate;
-    loadEvents();
-}
-
-// 每60秒自动刷新数据
-setInterval(() => {
-    loadEvents();
-}, 60000);
-
-// 初始加载
-loadEvents();
 </script>
+
+<style>
+    .detail-container {
+        display: flex;
+        gap: 2rem;
+        margin-top: 1rem;
+    }
+
+    .event-sidebar {
+        flex: 0 0 250px;
+        background: var(--bg-secondary);
+        border-radius: 8px;
+        padding: 1.5rem;
+        height: fit-content;
+    }
+
+    .event-sidebar h3 {
+        margin: 0 0 1rem 0;
+        color: var(--bg-primary-text);
+        font-size: 1.1rem;
+    }
+
+    .event-type-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .event-type-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: left;
+        width: 100%;
+    }
+
+    .event-type-btn:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(201, 100, 66, 0.1);
+    }
+
+    .event-type-btn.active {
+        background: var(--primary-color);
+        color: var(--primary-text);
+        border-color: var(--primary-color);
+    }
+
+    .event-icon {
+        font-size: 1.2rem;
+    }
+
+    .event-name {
+        font-weight: 500;
+    }
+
+    .event-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .date-selector-container {
+        margin-bottom: 1.5rem;
+    }
+
+    .date-selector-container label {
+        font-weight: 600;
+        color: var(--bg-primary-text);
+        margin-right: 0.5rem;
+    }
+
+    .stats-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--bg-secondary-text);
+    }
+
+    .event-list-container {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .event-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-primary);
+        background: var(--bg-primary);
+    }
+
+    .event-list-header h3 {
+        margin: 0;
+        color: var(--bg-primary-text);
+        font-size: 1.2rem;
+    }
+
+    .pagination-info {
+        color: var(--bg-secondary-text);
+        font-size: 0.9rem;
+    }
+
+    .event-list {
+        padding: 1.5rem;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .event-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border-secondary);
+        gap: 1rem;
+    }
+
+    .event-item:last-child {
+        border-bottom: none;
+    }
+
+    .event-rank {
+        flex: 0 0 40px;
+        text-align: center;
+        font-weight: bold;
+        color: var(--primary-color);
+        font-size: 1.1rem;
+    }
+
+    .event-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .event-key {
+        font-weight: 500;
+        color: var(--bg-primary-text);
+        margin-bottom: 0.25rem;
+        word-break: break-all;
+    }
+
+    .event-count {
+        font-size: 0.9rem;
+        color: var(--bg-secondary-text);
+    }
+
+    .event-bar {
+        flex: 0 0 100px;
+        height: 8px;
+        background: var(--border-secondary);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .event-bar-fill {
+        height: 100%;
+        background: var(--primary-color);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.5rem;
+        border-top: 1px solid var(--border-primary);
+        background: var(--bg-primary);
+    }
+
+    .pagination-btn {
+        padding: 0.5rem 1rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        color: var(--bg-primary-text);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+        background: var(--primary-color);
+        color: var(--primary-text);
+        border-color: var(--primary-color);
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination-current {
+        font-weight: 600;
+        color: var(--primary-color);
+        padding: 0.5rem 1rem;
+    }
+
+    .date-selector {
+        padding: 0.5rem;
+        border: 1px solid var(--border-primary);
+        border-radius: 4px;
+        background: var(--bg-primary);
+        color: var(--bg-primary-text);
+    }
+
+    .date-selector:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(201, 100, 66, 0.1);
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .detail-container {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .event-sidebar {
+            flex: none;
+            width: 100%;
+        }
+
+        .stats-summary {
+            grid-template-columns: 1fr;
+        }
+
+        .event-list-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .event-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .event-bar {
+            flex: none;
+            width: 100%;
+        }
+    }
+</style>
 {{end}}

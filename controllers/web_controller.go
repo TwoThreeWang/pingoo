@@ -123,11 +123,34 @@ func (wc *WebController) Detail(c *gin.Context) {
 
 	// 默认事件为当天
 	today := time.Now().Format("2006-01-02")
+	// 从数据库中查询网站信息
+	siteService := services.NewSiteService()
+	// 将字符串类型的 siteID 转换为 uint64
+	siteIDUint, err := strconv.ParseUint(siteID, 10, 64)
+	if err != nil {
+		c.HTML(http.StatusOK, "404", OutputCommonSession(c, gin.H{
+			"Title":        "无效的网站ID",
+			"errorCode":    "ERROR",
+			"errorTitle":   "无效的网站ID",
+			"errorMessage": "检查网站ID是否正确或者返回首页",
+		}))
+		return
+	}
+	site, err := siteService.GetSiteByID(siteIDUint)
+	if err != nil {
+		c.HTML(http.StatusOK, "404", OutputCommonSession(c, gin.H{
+			"Title":        "网站不存在",
+			"errorCode":    "ERROR",
+			"errorTitle":   "网站不存在",
+			"errorMessage": "检查网站ID是否正确或者返回首页",
+		}))
+		return
+	}
 
 	c.HTML(http.StatusOK, "detail", OutputCommonSession(c, gin.H{
-		"Title":  "详情分析",
-		"SiteID": siteID,
-		"Today":  today,
+		"Title": "详情分析",
+		"Site":  site,
+		"Today": today,
 	}))
 }
 

@@ -1,5 +1,11 @@
 {{template "base.html" .}}
 
 {{define "content"}}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">首页</a></li>
+        <li class="breadcrumb-item active" aria-current="page">文档</li>
+    </ol>
+</nav>
 <article class="content">{{.Content | safeHTML}}</article>
 {{end}}
