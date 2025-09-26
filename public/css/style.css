@@ -110,7 +110,16 @@ footer{background-color:var(--bg-secondary);color:var(--bg-secondary-text);font-
     line-height: 1;
     font-family: var(--font-mono);
 }
-
+.side-container {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    gap: 1rem;
+}
+.sidebar {
+    display: flex;
+    flex-direction: column; /* 默认竖排 */
+    gap: 0.5rem;
+}
 /* 响应式设计 */
 @media (max-width: 768px) {
     .dashboard-header h1 {
@@ -145,6 +154,15 @@ footer{background-color:var(--bg-secondary);color:var(--bg-secondary-text);font-
 
     .metric-label {
         margin-bottom: 0;
+    }
+    .side-container {
+        grid-template-columns: 1fr; /* 单列 */
+    }
+    .sidebar {
+        flex-direction: row; /* 横向 */
+        flex-wrap: wrap;
+        justify-content: center;
+        order: -1; /* 目录在正文上方 */
     }
 }
 

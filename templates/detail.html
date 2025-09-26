@@ -1,11 +1,57 @@
 {{template "base" .}}
 
 {{define "content"}}
+<style>
+    /* 统计卡片网格 */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.1rem 0;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+
+    .stat-item-label {
+        font-size: 0.875rem;
+        color: var(--bg-primary-text);
+        max-width: 70%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .stat-item-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .date-nav-btn {
+        padding: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
 <div class="dashboard-container">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/">首页</a></li>
             <li class="breadcrumb-item"><a href="/dashboard">仪表盘</a></li>
+            <li class="breadcrumb-item"><a href="/websites/{{.Site.ID}}">网站概览</a></li>
             <li class="breadcrumb-item active" aria-current="page">事件详情</li>
         </ol>
     </nav>
@@ -71,43 +117,24 @@
         </div>
     </div>
 
-    <div class="detail-container">
+    <div class="side-container">
         <!-- 左侧事件类型选择 -->
-        <div class="event-sidebar">
+        <div class="sidebar">
             <h3>事件类型</h3>
-            <div class="event-type-list">
-                <button class="event-type-btn active" data-type="url" data-event="page_view">
-                    <span class="event-icon">📊</span>
-                    <span class="event-name">页面浏览量</span>
-                </button>
-                <button class="event-type-btn" data-type="url" data-event="click">
-                    <span class="event-icon">🖱️</span>
-                    <span class="event-name">点击事件</span>
-                </button>
-                <button class="event-type-btn" data-type="url" data-event="scroll">
-                    <span class="event-icon">📜</span>
-                    <span class="event-name">滚动事件</span>
-                </button>
-                <button class="event-type-btn" data-type="url" data-event="form_submit">
-                    <span class="event-icon">📝</span>
-                    <span class="event-name">表单提交</span>
-                </button>
-                <button class="event-type-btn" data-type="browser" data-event="page_view">
-                    <span class="event-icon">🌐</span>
-                    <span class="event-name">浏览器统计</span>
-                </button>
-                <button class="event-type-btn" data-type="country" data-event="page_view">
-                    <span class="event-icon">🌍</span>
-                    <span class="event-name">国家地区</span>
-                </button>
-            </div>
+            <a href="javascript:void(0);" data-type="url" data-event="page_view" class="event-type-btn">📊 受访页面</a>
+            <a href="javascript:void(0);" data-type="referrer" data-event="page_view" class="event-type-btn">📊 访问来源</a>
+            <a href="javascript:void(0);" data-type="os" data-event="page_view" class="event-type-btn">📊 操作系统</a>
+            <a href="javascript:void(0);" data-type="device" data-event="page_view" class="event-type-btn">📊 设备类型</a>
+            <a href="javascript:void(0);" data-type="country" data-event="page_view" class="event-type-btn">🌍 国家地区</a>
+            <a href="javascript:void(0);" data-type="isp" data-event="page_view" class="event-type-btn">📊 运营商分布</a>
+            <a href="javascript:void(0);" data-type="event_type" data-event="page_view" class="event-type-btn">🖱️ 自定义事件</a>
         </div>
 
         <!-- 右侧内容区域 -->
-        <div class="event-content">
+        <div class="content">
             <!-- 事件列表 -->
             <div class="stat-card">
-                <h3>页面浏览量统计</h3>
+                <h3 id="current-event-title">📊 受访页面统计</h3>
                 <ol class="stat-list" id="event-list">
                     <center><span class="loading"></span>加载中...</center>
                 </ol>
@@ -260,10 +287,7 @@
         events.forEach((event, index) => {
             html += `
                 <li class="stat-item">
-                    <div>
-                        <div class="event-rank">${index + 1}</div>
-                        <span class="stat-item-label">${event.key || '未知'}</span>
-                    </div>
+                    <span class="stat-item-label">${event.key || '未知'}</span>
                     <span class="stat-item-value">${event.count}</span>
                 </li>
             `;
@@ -325,7 +349,7 @@
             btn.addEventListener('click', function () {
                 const statType = this.getAttribute('data-type');
                 const eventType = this.getAttribute('data-event');
-                const eventName = this.querySelector('.event-name').textContent;
+                const eventName = this.textContent;
                 switchEventType(statType, eventType, eventName);
             });
         });
@@ -350,287 +374,4 @@
         loadEventStats();
     });
 </script>
-
-<style>
-    .detail-container {
-        display: flex;
-        gap: 2rem;
-        margin-top: 1rem;
-    }
-
-    .event-sidebar {
-        flex: 0 0 250px;
-        background: var(--bg-secondary);
-        border-radius: 8px;
-        padding: 1.5rem;
-        height: fit-content;
-    }
-
-    .event-sidebar h3 {
-        margin: 0 0 1rem 0;
-        color: var(--bg-primary-text);
-        font-size: 1.1rem;
-    }
-
-    .event-type-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .event-type-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        background: var(--bg-primary);
-        border: 1px solid var(--border-primary);
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-align: left;
-        width: 100%;
-    }
-
-    .event-type-btn:hover {
-        border-color: var(--primary-color);
-        box-shadow: 0 2px 8px rgba(201, 100, 66, 0.1);
-    }
-
-    .event-type-btn.active {
-        background: var(--primary-color);
-        color: var(--primary-text);
-        border-color: var(--primary-color);
-    }
-
-    .event-icon {
-        font-size: 1.2rem;
-    }
-
-    .event-name {
-        font-weight: 500;
-    }
-
-    .event-content {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .date-selector-container {
-        margin-bottom: 1.5rem;
-    }
-
-    .date-selector-container label {
-        font-weight: 600;
-        color: var(--bg-primary-text);
-        margin-right: 0.5rem;
-    }
-
-    .stats-summary {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .stat-card {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-primary);
-        border-radius: 8px;
-        padding: 1.5rem;
-        text-align: center;
-    }
-
-    .stat-value {
-        font-size: 2rem;
-        font-weight: bold;
-        color: var(--primary-color);
-        margin-bottom: 0.5rem;
-    }
-
-    .stat-label {
-        font-size: 0.9rem;
-        color: var(--bg-secondary-text);
-    }
-
-    .event-list-container {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-primary);
-        border-radius: 8px;
-        overflow: hidden;
-    }
-
-    .event-list-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--border-primary);
-        background: var(--bg-primary);
-    }
-
-    .event-list-header h3 {
-        margin: 0;
-        color: var(--bg-primary-text);
-        font-size: 1.2rem;
-    }
-
-    .pagination-info {
-        color: var(--bg-secondary-text);
-        font-size: 0.9rem;
-    }
-
-    .event-list {
-        padding: 1.5rem;
-        max-height: 500px;
-        overflow-y: auto;
-    }
-
-    .event-item {
-        display: flex;
-        align-items: center;
-        padding: 1rem 0;
-        border-bottom: 1px solid var(--border-secondary);
-        gap: 1rem;
-    }
-
-    .event-item:last-child {
-        border-bottom: none;
-    }
-
-    .event-rank {
-        flex: 0 0 40px;
-        text-align: center;
-        font-weight: bold;
-        color: var(--primary-color);
-        font-size: 1.1rem;
-    }
-
-    .event-details {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .event-key {
-        font-weight: 500;
-        color: var(--bg-primary-text);
-        margin-bottom: 0.25rem;
-        word-break: break-all;
-    }
-
-    .event-count {
-        font-size: 0.9rem;
-        color: var(--bg-secondary-text);
-    }
-
-    .event-bar {
-        flex: 0 0 100px;
-        height: 8px;
-        background: var(--border-secondary);
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-    .event-bar-fill {
-        height: 100%;
-        background: var(--primary-color);
-        border-radius: 4px;
-        transition: width 0.3s ease;
-    }
-
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 1rem;
-        padding: 1.5rem;
-        border-top: 1px solid var(--border-primary);
-        background: var(--bg-primary);
-    }
-
-    .pagination-btn {
-        padding: 0.5rem 1rem;
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-primary);
-        border-radius: 4px;
-        color: var(--bg-primary-text);
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .pagination-btn:hover:not(:disabled) {
-        background: var(--primary-color);
-        color: var(--primary-text);
-        border-color: var(--primary-color);
-    }
-
-    .pagination-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .pagination-current {
-        font-weight: 600;
-        color: var(--primary-color);
-        padding: 0.5rem 1rem;
-    }
-
-    .date-selector {
-        padding: 0.5rem;
-        border: 1px solid var(--border-primary);
-        border-radius: 4px;
-        background: var(--bg-primary);
-        color: var(--bg-primary-text);
-    }
-
-    .date-selector:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(201, 100, 66, 0.1);
-    }
-
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-
-        100% {
-            transform: rotate(360deg);
-        }
-    }
-
-    /* 响应式设计 */
-    @media (max-width: 768px) {
-        .detail-container {
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .event-sidebar {
-            flex: none;
-            width: 100%;
-        }
-
-        .stats-summary {
-            grid-template-columns: 1fr;
-        }
-
-        .event-list-header {
-            flex-direction: column;
-            gap: 1rem;
-            text-align: center;
-        }
-
-        .event-item {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-
-        .event-bar {
-            flex: none;
-            width: 100%;
-        }
-    }
-</style>
 {{end}}
