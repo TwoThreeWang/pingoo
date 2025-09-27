@@ -7,5 +7,3 @@ DOCKER_BUILDKIT=1 docker build -t pingoo:latest .
 echo '启动容器'
 docker-compose down
 docker-compose up --force-recreate -d --remove-orphans
-echo '清理不再使用的镜像、容器和数据卷'
-docker system prune --all --force --volumes --filter "label!=keep=true"
