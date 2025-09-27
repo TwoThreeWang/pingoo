@@ -201,16 +201,14 @@ func (ec *EventController) TrackCustomEvent(c *gin.Context) {
 
 	// 验证站点存在
 	siteService := services.NewSiteService()
-	if _, err := siteService.GetSiteByID(SiteID); err != nil {
+	if _, err = siteService.GetSiteByID(SiteID); err != nil {
 		utils.Fail(c, "站点不存在")
 		return
 	}
 	UserAgent := c.GetHeader("User-Agent")
 	// 从UserAgent中提取Device、Browser、OS、IsBot
 	device, browser, os, isBot := utils.ParseUserAgent(UserAgent)
-	ip := "36.112.118.66"
-	// ip := "64.69.36.11"
-	// ip := c.ClientIP()
+	ip := c.ClientIP()
 	// 从ip提取国家等信息
 	ipInfo, err := utils.QueryIP(ip)
 	if err != nil {
