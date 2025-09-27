@@ -15,7 +15,7 @@ type IPInfo struct {
 // QueryIP 查询 IP 的国家、省/州、城市、运营商
 func QueryIP(ipStr string) (*IPInfo, error) {
 	// 从文件加载IP数据库
-	if err := qqwry.LoadFile("utils/qqwry.ipdb"); err != nil {
+	if err := qqwry.LoadFile("public/qqwry.ipdb"); err != nil {
 		return nil, err
 	}
 	location, err := qqwry.QueryIP(ipStr)
