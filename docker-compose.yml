@@ -9,6 +9,7 @@ services:
       - ./templates:/templates
       - ./public:/public
       - ./.env:/.env
+      - ./docs:./docs
     restart: always
     logging:
       driver: "json-file"
