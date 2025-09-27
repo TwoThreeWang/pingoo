@@ -136,7 +136,10 @@ func (ec *EventController) GetEventsRank(c *gin.Context) {
 	pageSize := 10
 	statType := c.DefaultQuery("stat_type", "url")
 	eventType := c.DefaultQuery("event_type", "page_view")
-
+	if eventType == "custom" || statType == "event_type" {
+		statType = "event_value"
+		eventType = "custom"
+	}
 	stats, total, err := ec.eventService.GetEventsRank(siteID, dateStr, dateStr, statType, eventType, pageInt, pageSize)
 	if err != nil {
 		utils.ServerError(c, err.Error())

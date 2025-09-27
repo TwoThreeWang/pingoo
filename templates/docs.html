@@ -7,5 +7,47 @@
         <li class="breadcrumb-item active" aria-current="page">文档</li>
     </ol>
 </nav>
-<article class="content">{{.Content | safeHTML}}</article>
+<div class="side-container">
+    <!-- 左侧目录 -->
+    <div class="sidebar-container">
+        <h3>目录</h3>
+        <div class="sidebar" id="toc">
+        <span class="loading"></span>目录加载中...
+        </div>
+    </div>
+
+    <!-- 右侧内容区域 -->
+    <article class="content">{{.Content | safeHTML}}</article>
+</div>
+<script>
+function generateTOC() {
+  const tocContainer = document.getElementById('toc');
+  const headers = document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6');
+
+  if (!headers.length) return;
+
+  const ul = document.createElement('ul');
+
+  headers.forEach(header => {
+    // 给每个标题一个唯一 id，方便锚点跳转
+    if (!header.id) header.id = header.textContent.replace(/\s+/g, '-');
+
+    const li = document.createElement('li');
+    li.style.marginLeft = (parseInt(header.tagName[1]) - 1) * 16 + 'px'; // 缩进
+
+    const a = document.createElement('a');
+    a.href = '#' + header.id;
+    a.textContent = header.textContent;
+
+    li.appendChild(a);
+    ul.appendChild(li);
+  });
+  tocContainer.innerHTML = "";
+  tocContainer.appendChild(ul);
+}
+// 页面加载完成后执行
+document.addEventListener('DOMContentLoaded', function () {
+    generateTOC();
+})
+</script>
 {{end}}

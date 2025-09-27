@@ -57,7 +57,10 @@ function toggleDiv(id){
   const el = document.getElementById(id);
   if(el) el.style.display = el.style.display === 'none' ? '' : 'none';
 };
-
+function getUrlParam(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
+}
 async function sendRequest(method, url, data, options = {}) {
     const token = localStorage.getItem('token');
     const headers = {

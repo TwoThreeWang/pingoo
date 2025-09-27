@@ -2,11 +2,6 @@
 
 {{define "head"}}
 <style>
-    /* 网站概览样式 */
-    .site-item {
-        border: 1px solid var(--border-primary);
-    }
-
     /* 图表区域 */
     .chart-section {
         border: 1px solid var(--border-primary);
@@ -264,7 +259,7 @@
 <div class="stats-grid">
     <!-- 访问网页Top10 -->
     <div class="stat-card">
-        <h3>访问网页Top10</h3>
+        <b>访问网页Top10</b>
         <ol class="stat-list" id="url-list">
             <center><span class="loading"></span>加载中...</center>
         </ol>
@@ -272,7 +267,7 @@
 
     <!-- 来源Top10 -->
     <div class="stat-card">
-        <h3>来源Top10</h3>
+        <b>来源Top10</b>
         <ol class="stat-list" id="referrer-list">
             <center><span class="loading"></span>加载中...</center>
         </ol>
@@ -280,7 +275,7 @@
 
     <!-- 操作系统Top10 -->
     <div class="stat-card">
-        <h3>操作系统Top10</h3>
+        <b>操作系统Top10</b>
         <ol class="stat-list" id="os-list">
             <center><span class="loading"></span>加载中...</center>
         </ol>
@@ -288,7 +283,7 @@
 
     <!-- 设备类型分布 -->
     <div class="stat-card">
-        <h3>设备类型分布</h3>
+        <b>设备类型分布</b>
         <ol class="stat-list" id="device-list">
             <center><span class="loading"></span>加载中...</center>
         </ol>
@@ -296,7 +291,7 @@
 
     <!-- 访问地区分布 -->
     <div class="stat-card">
-        <h3>访问地区分布</h3>
+        <b>访问地区分布</b>
         <ol class="stat-list" id="country-list">
             <center><span class="loading"></span>加载中...</center>
         </ol>
@@ -304,7 +299,7 @@
 
     <!-- 运营商分布 -->
     <div class="stat-card">
-        <h3>运营商分布</h3>
+        <b>网络分布</b>
         <ol class="stat-list" id="isp-list">
             <center><span class="loading"></span>加载中...</center>
         </ol>
@@ -312,7 +307,7 @@
 
     <!-- 事件 -->
     <div class="stat-card">
-        <h3>事件统计</h3>
+        <b>事件统计</b>
         <ol class="stat-list" id="event_type-list">
             <center><span class="loading"></span>加载中...</center>
         </ol>
@@ -457,7 +452,7 @@
                 </li>
             `;
             });
-            html += `<center><a href="/detail/${siteId}?type=${containerId}">查看更多</a><center>`
+            html += `<center><br><a href="/detail/${siteId}?type=${containerId}">查看更多</a><center>`
             container.innerHTML = html;
         } else {
             container.innerHTML = `<center>暂无数据</center>`;

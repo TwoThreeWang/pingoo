@@ -37,13 +37,12 @@ type SiteUpdate struct {
 
 // SiteResponse 站点响应结构体
 type SiteResponse struct {
-	ID         uint64    `json:"id"`
-	UserID     uint64    `json:"user_id"`
-	Name       string    `json:"name"`
-	Domain     string    `json:"domain"`
-	TrackingID string    `json:"tracking_id"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID        uint64    `json:"id"`
+	UserID    uint64    `json:"user_id"`
+	Name      string    `json:"name"`
+	Domain    string    `json:"domain"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 
 	EventCount  int64 `json:"event_count,omitempty"`  // 事件总数
 	UserCount   int64 `json:"user_count,omitempty"`   // 用户数

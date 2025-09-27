@@ -119,15 +119,17 @@
 
     <div class="side-container">
         <!-- 左侧事件类型选择 -->
-        <div class="sidebar">
+        <div class="sidebar-container">
             <h3>事件类型</h3>
-            <a href="javascript:void(0);" data-type="url" data-event="page_view" class="event-type-btn">📊 受访页面</a>
-            <a href="javascript:void(0);" data-type="referrer" data-event="page_view" class="event-type-btn">📊 访问来源</a>
-            <a href="javascript:void(0);" data-type="os" data-event="page_view" class="event-type-btn">📊 操作系统</a>
-            <a href="javascript:void(0);" data-type="device" data-event="page_view" class="event-type-btn">📊 设备类型</a>
-            <a href="javascript:void(0);" data-type="country" data-event="page_view" class="event-type-btn">🌍 国家地区</a>
-            <a href="javascript:void(0);" data-type="isp" data-event="page_view" class="event-type-btn">📊 运营商分布</a>
-            <a href="javascript:void(0);" data-type="event_type" data-event="page_view" class="event-type-btn">🖱️ 自定义事件</a>
+            <div class="sidebar">
+            <a href="javascript:void(0)" data-type="url" data-event="page_view" onclick="switchEventType(this)">📊 受访页面</a>
+            <a href="javascript:void(0)" data-type="referrer" data-event="page_view" onclick="switchEventType(this)">🌐 访问来源</a>
+            <a href="javascript:void(0)" data-type="os" data-event="page_view" onclick="switchEventType(this)">🖥️ 操作系统</a>
+            <a href="javascript:void(0)" data-type="device" data-event="page_view" onclick="switchEventType(this)">📱 设备类型</a>
+            <a href="javascript:void(0)" data-type="country" data-event="page_view" onclick="switchEventType(this)">🌍 国家地区</a>
+            <a href="javascript:void(0)" data-type="isp" data-event="page_view" onclick="switchEventType(this)">📶 网络分布</a>
+            <a href="javascript:void(0)" data-type="event_type" data-event="custom" onclick="switchEventType(this)">🎯 互动事件</a>
+            </div>
         </div>
 
         <!-- 右侧内容区域 -->
@@ -140,9 +142,9 @@
                 </ol>
                 <!-- 分页控件 -->
                 <div class="pagination" id="pagination">
-                    <button class="pagination-btn" id="prev-page" disabled>上一页</button>
-                    <span class="pagination-current" id="current-page">1</span>
-                    <button class="pagination-btn" id="next-page" disabled>下一页</button>
+                    <button class="pagination-btn" id="prev-page" disabled>◄</button>
+                    <button class="pagination-current" id="current-page">1</button>
+                    <button class="pagination-btn" id="next-page" disabled>►</button>
                 </div>
             </div>
         </div>
@@ -156,7 +158,7 @@
     const dateInput = document.getElementById('date-selector');
     let currentPage = 1;
     let totalPages = 0;
-    let currentStatType = 'url';
+    var currentStatType = 'url';
     let currentEventType = 'page_view';
 
     // 获取网站summary信息并填充到site-metrics容器
@@ -217,7 +219,6 @@
         document.getElementById('month_pv').innerHTML = stats.month_pv || 0;
     }
 
-
     // 加载事件统计数据
     async function loadEventStats() {
         try {
@@ -240,7 +241,7 @@
 
             const result = await response.json();
             if (result.code !== 0) {
-                throw new Error(result.msg || '获取事件统计数据失败');
+                throw new Error(result.msg || '获取统计数据失败');
             }
 
             const data = result.data;
@@ -320,40 +321,26 @@
     }
 
     // 切换事件类型
-    function switchEventType(statType, eventType, eventName) {
-        // 更新按钮状态
-        document.querySelectorAll('.event-type-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        event.target.classList.add('active');
-
-        // 更新当前类型
-        currentStatType = statType;
-        currentEventType = eventType;
+    function switchEventType(el) {
+        // 获取目标元素
+        const target = el.target || el;
+        currentStatType = target.getAttribute('data-type');
+        currentEventType = target.getAttribute('data-event');
+        const eventName = target.textContent;
         currentPage = 1;
-
+        document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+        target.classList.add('active');
         // 更新标题
         const title = document.getElementById('current-event-title');
         if (title) {
             title.textContent = eventName + '统计';
         }
-
         // 重新加载数据
         loadEventStats();
     }
 
     // 页面加载完成后执行
     document.addEventListener('DOMContentLoaded', function () {
-        // 绑定事件类型切换
-        document.querySelectorAll('.event-type-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const statType = this.getAttribute('data-type');
-                const eventType = this.getAttribute('data-event');
-                const eventName = this.textContent;
-                switchEventType(statType, eventType, eventName);
-            });
-        });
-
         // 绑定分页按钮
         document.getElementById('prev-page')?.addEventListener('click', function () {
             if (currentPage > 1) {
@@ -368,10 +355,31 @@
                 loadEventStats();
             }
         });
-
         // 初始化数据
         loadSiteMetrics();
-        loadEventStats();
+        currentStatType = getUrlParam('type') || 'url';
+        const currentTypeLink = document.querySelector(`a[data-type="${currentStatType}"]`);
+        if (currentTypeLink) {
+            switchEventType(currentTypeLink);
+        }else{
+            loadEventStats();
+        }
     });
+    // 监听日期选择器变化
+    function dateChange() {
+        loadSiteMetrics();
+        loadEventStats();
+    }
+    function changeDay(offset) {
+        const dateSelector = document.getElementById('date-selector');
+        const currentDate = new Date(dateSelector.value);
+        currentDate.setDate(currentDate.getDate() + offset);
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const newDate = `${year}-${month}-${day}`;
+        dateSelector.value = newDate;
+        dateChange();
+    }
 </script>
 {{end}}

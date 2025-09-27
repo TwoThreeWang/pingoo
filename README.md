@@ -1,44 +1,67 @@
-# Pingoo - 轻量的网站统计分析系统
+# Pingoo 🐧 - 轻量、隐私友好的网站统计分析系统
 
-基于 Gin 框架的轻量级网站统计分析系统，提供事件追踪、页面浏览统计和用户行为分析功能。专为中小型网站设计，易于部署和集成。
+**嗨，欢迎来到 Pingoo！**
 
-## 功能特性
+Pingoo 是一款轻量、高效、易用、隐私友好的网站流量统计工具，专为希望快速了解网站访问情况的开发者、博主和小型网站打造。我们相信，统计数据应该简单、清晰、快速，而不是繁琐、复杂、臃肿。
 
-### 数据追踪
-- ✅ 页面浏览（PV）和访客（UV）统计
-- ✅ 自定义事件追踪（点击、表单提交等）
-- ✅ 会话（Session）管理和用户行为分析
-- ✅ 访问来源和引荐网站统计
-- ✅ 设备、浏览器和操作系统分析
+基于 Gin 框架构建，提供事件追踪、页面浏览统计和用户行为分析功能。专为中小型网站设计，易于部署和集成。
 
-### 实时分析
-- ✅ 实时访问数据统计和展示
-- ✅ 自定义时间范围数据分析
-- ✅ 数据可视化图表和报表
-- ✅ 热门页面和访问路径分析
-- ✅ 用户行为漏斗分析
+## ✨ 核心特点
 
-### 系统功能
-- ✅ RESTful API 设计，支持第三方集成
-- ✅ JWT 认证和权限控制
-- ✅ 多站点管理和数据隔离
-- ✅ 响应式 Web 界面
+### 🚀 轻量快速
+- **体积小、部署快**：资源占用极低，不拖慢网站加载速度
+- **零依赖**：简单配置即可运行，无需复杂环境
+- **快速响应**：实时数据处理，即时查看统计数据
 
-### 易用性
-- ✅ 一键部署，支持 Docker 容器化
-- ✅ 简单的 JavaScript 埋点代码
-- ✅ 自动生成站点统计代码
-- ✅ 完善的 API 文档和使用指南
-- ✅ 支持自主删除数据
+### 📊 实时统计
+- **PV/UV 统计**：页面浏览量和独立访客数一目了然
+- **访问来源分析**：搜索引擎、社交媒体、直接访问等来源统计
+- **访客地理位置**：全球访客分布可视化
+- **自定义时间范围**：灵活查看任意时间段的数据
 
-## 技术栈
+### 👥 访客分析
+- **设备类型**：桌面、平板、手机设备统计
+- **操作系统**：Windows、macOS、Linux、iOS、Android
+- **浏览器分析**：Chrome、Firefox、Safari、Edge 等
+- **网络类型**：移动、联通、电信等网络环境统计
 
-- **后端框架**: Gin (Go)
-- **数据库**: GORM（支持SQLite、MySQL、PostgreSQL）
-- **配置管理**: 环境变量 + godotenv
-- **API文档**: RESTful设计
+### 🔍 事件追踪
+- **页面浏览追踪**：自动记录每个页面的访问
+- **自定义事件**：点击、表单提交等关键操作追踪
+- **用户行为分析**：会话管理和访问路径分析
 
-## 快速开始
+### 🔒 隐私友好
+- **不收集个人数据**：完全匿名统计，保护用户隐私
+- **数据自主控制**：支持自主删除数据
+- **开源透明**：代码完全开源，数据安全可控
+
+## 🛠️ 系统功能
+
+- **RESTful API**：支持第三方集成和自定义开发
+- **JWT 认证**：安全的用户认证和权限控制
+- **多站点管理**：支持多个网站的数据隔离统计
+- **响应式界面**：适配桌面和移动设备的现代化界面
+- **Docker 支持**：一键容器化部署
+
+## 🛠️ 技术栈
+
+Pingoo 采用现代化的技术栈构建，确保系统的高性能和易维护性：
+
+### 🔧 后端技术
+- **Go 1.21+** - 高性能的编译型语言
+- **Gin 框架** - 轻量级 Web 框架，快速路由处理
+- **GORM** - 强大的 ORM 库，支持多种数据库
+
+### ⚙️ 配置管理
+- **环境变量** - 灵活的配置方式
+- **godotenv** - 优雅的 .env 文件支持
+
+### 📡 API 设计
+- **RESTful API** - 标准的 REST 接口设计
+- **JWT 认证** - 安全的用户认证机制
+- **CORS 支持** - 跨域资源共享支持
+
+## 🚀 快速开始
 
 ### 1. 克隆项目
 
@@ -49,8 +72,8 @@ cd pingoo
 
 ### 2. 环境要求
 
-- Go 1.21+
-- PostgreSQL
+- **Go 1.21+** - 确保已安装最新版本的 Go
+- **PostgreSQL** - 推荐使用 PostgreSQL 数据库
 
 ### 3. 安装依赖
 
@@ -66,19 +89,20 @@ go mod download
 cp .env.example .env
 ```
 
-编辑 `.env` 文件，设置配置：
+编辑 `.env` 文件，根据你的环境进行配置：
+
 ```bash
 # 服务器配置
-SERVER_PORT=5004    # 运行端口
-GIN_MODE=debug      # 运行模式
+SERVER_PORT=5004    # 服务运行端口
+GIN_MODE=debug      # 运行模式（debug/release）
 
 # 网站配置
-SITE_NAME=Pingoo                  # 网站名称
-SITE_DOMAIN=http://localhost:5004 # 网站域名
+SITE_NAME=Pingoo                  # 网站显示名称
+SITE_DOMAIN=http://localhost:5004 # 网站访问域名
 VERSION=1.0.0                     # 程序版本
-TRACKER_SCRIPT_NAME=pingoo.js     # 追踪JS文件自定义名称（防止被广告拦截）
+TRACKER_SCRIPT_NAME=pingoo.js     # 追踪脚本名称（防止被广告拦截）
 
-# PostgreSQL配置
+# PostgreSQL 数据库配置
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
@@ -86,34 +110,39 @@ DB_PASSWORD=postgres
 DB_NAME=pingoo
 DB_SSLMODE=disable
 
-# JWT配置
-JWT_SECRET_KEY=your-secret-key-here
+# JWT 认证配置
+JWT_SECRET_KEY=your-secret-key-here  # 请修改为强密码
 JWT_EXPIRE_HOURS=72
 JWT_REFRESH_EXPIRE=168
 ```
 
-### 5. 运行项目
+### 5. 启动服务
 
 ```bash
 go run main.go
 ```
 
-服务将在 `http://localhost:5004` 启动
+🎉 **恭喜！** 服务将在 `http://localhost:5004` 启动，你可以访问 Pingoo 的管理界面了。
 
-### 6. 使用教程
+### 6. 🎯 使用教程
 
-1. 通过页面或者 API 接口创建用户
-2. 添加要统计的网站，获取 SiteID
-3. 在对应网站上添加统计代码
-4. 访问你的网站，然后在Pingoo仪表盘中查看实时数据
+只需简单几步，即可开始使用 Pingoo 统计你的网站：
 
-将追踪代码添加到你的网站 `<head>` 标签内：
+1. **创建账户**：通过网页界面或 API 注册用户账户
+2. **添加网站**：在管理后台添加要统计的网站，获取唯一的 SiteID
+3. **集成代码**：将生成的统计代码添加到你的网站中
+4. **查看数据**：访问你的网站，然后在 Pingoo 仪表盘中查看实时统计数据
+
+#### 📝 统计代码集成
+
+将以下代码添加到你的网站 `<head>` 标签内：
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-    <script src='http://localhost:8080/pingoo.js' site-id='1'></script>
+    <!-- Pingoo 统计代码 -->
+    <script src='http://localhost:5004/pingoo.js' site-id='你的站点ID'></script>
     <title>我的网站</title>
 </head>
 <body>
@@ -121,6 +150,8 @@ go run main.go
 </body>
 </html>
 ```
+
+💡 **提示**：将 `你的站点ID` 替换为你在 Pingoo 后台获取的实际 SiteID。
 
 ## API文档
 
@@ -132,7 +163,9 @@ go run main.go
 - **前端埋点代码**：自动生成的追踪代码集成指南
 - **错误处理**：各种错误情况的响应格式
 
-## 项目结构
+## 📁 项目结构
+
+Pingoo 采用清晰的分层架构，代码组织规范，便于维护和扩展：
 
 ```
 pingoo/
@@ -191,9 +224,46 @@ pingoo/
 └── deploy.sh              # 部署脚本
 ```
 
-## 开发指南
+### 🏗️ 架构说明
 
-### 添加新功能
+- **控制器层**：处理 HTTP 请求和响应
+- **服务层**：封装业务逻辑和数据处理
+- **模型层**：定义数据结构和数据库操作
+- **中间件**：处理认证、跨域等通用功能
+- **工具函数**：提供通用的辅助功能
+
+## 🔧 开发指南
+
+### 🛠️ 环境搭建
+
+1. **安装 Go 1.21+** - 确保使用最新版本的 Go
+2. **安装 PostgreSQL** - 推荐使用 PostgreSQL 数据库
+3. **配置环境变量** - 复制 `.env.example` 为 `.env` 并修改配置
+4. **启动开发服务器** - 运行 `go run main.go`
+
+### 📝 代码规范
+
+Pingoo 遵循以下代码规范：
+
+- **Go 官方规范** - 严格遵循 Go 语言官方代码规范
+- **代码格式化** - 使用 `gofmt` 自动格式化代码
+- **注释要求** - 为公共函数和复杂逻辑添加必要的注释
+- **错误处理** - 使用 Go 的错误处理最佳实践
+
+### 📦 构建与部署
+
+```bash
+# 🔨 构建可执行文件
+go build -o pingoo main.go
+
+# 🐳 Docker 构建
+docker build -t pingoo .
+
+# 🚀 使用 Docker Compose 部署
+docker-compose up -d
+```
+
+### 🎯 添加新功能
 
 1. **添加新API端点**:
    - 在 `routers/router.go` 中添加路由
@@ -205,19 +275,57 @@ pingoo/
    - 使用GORM标签定义数据库字段
    - 在 `main.go` 中自动迁移数据库
 
-## 贡献指南
+## 🤝 贡献指南
 
-1. Fork项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建Pull Request
+我们热忱欢迎社区贡献！请遵循以下流程：
 
-## 许可证
+### 🚀 贡献流程
 
-MIT License - 详见 [LICENSE](LICENSE) 文件
+1. **Fork 项目** - 在 GitHub 上 Fork 本项目
+2. **创建分支** - 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. **提交更改** - 提交清晰的提交信息 (`git commit -m 'Add some AmazingFeature'`)
+4. **推送分支** - 推送到你的分支 (`git push origin feature/AmazingFeature`)
+5. **创建 PR** - 创建 Pull Request 并描述你的改进
 
-## 联系方式
+### 📋 贡献类型
 
-- 项目地址: [https://github.com/TwoThreeWang/pingoo](https://github.com/TwoThreeWang/pingoo)
-- 问题反馈: [Issues](https://github.com/TwoThreeWang/pingoo/issues)
+- **Bug 修复** - 报告和修复发现的 Bug
+- **功能改进** - 优化现有功能或添加新功能
+- **文档完善** - 改进文档、添加示例
+- **性能优化** - 优化系统性能
+
+## 📄 许可证
+
+本项目采用 **MIT 许可证** - 详见 [LICENSE](LICENSE) 文件
+
+MIT 许可证赋予你使用、复制、修改、合并、发布、分发、再许可和/或销售本软件副本的权利，但需在软件副本中包含上述版权声明和本许可声明。
+
+## 🎯 使用场景
+
+Pingoo 特别适合以下场景：
+
+- **个人博客**：了解读者来源和阅读习惯
+- **小型企业网站**：分析客户访问行为和转化率
+- **开源项目文档**：跟踪文档使用情况和用户需求
+- **产品展示页面**：优化页面设计和用户体验
+
+## 💬 社区与支持
+
+### 📞 联系方式
+
+- **项目地址**: [https://github.com/TwoThreeWang/pingoo](https://github.com/TwoThreeWang/pingoo)
+- **问题反馈**: [Pingoo Issues](https://github.com/TwoThreeWang/pingoo/issues)
+- **讨论交流**: 欢迎在 GitHub Discussions 中交流使用经验
+
+### 🤝 贡献指南
+
+我们欢迎各种形式的贡献！如果你有任何想法或改进建议：
+
+1. **报告问题**：在 Issues 中描述你遇到的问题
+2. **功能建议**：告诉我们你希望看到的新功能
+3. **代码贡献**：提交 Pull Request 来改进代码
+4. **文档完善**：帮助改进文档和示例
+
+### 🌟 致谢
+
+感谢所有使用和支持 Pingoo 的用户！你们的反馈是我们持续改进的动力。

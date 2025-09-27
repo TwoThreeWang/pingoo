@@ -81,8 +81,8 @@ func SetupRouter(router *gin.Engine, db *gorm.DB, cfg *config.Config) *gin.Engin
 	// 健康检查路由
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"status":  "ok",
-			"message": "服务运行正常",
+			"code": 0,
+			"msg":  "服务运行正常",
 		})
 	})
 

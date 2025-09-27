@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 )
 
 type WebController struct {
@@ -179,8 +180,13 @@ func (wc *WebController) RenderMarkdownFile(c *gin.Context) {
 	}
 
 	// 渲染 Markdown 为 HTML
+	markdown := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+		),
+	)
 	var buf bytes.Buffer
-	if err := goldmark.Convert(md, &buf); err != nil {
+	if err := markdown.Convert(md, &buf); err != nil {
 		c.HTML(http.StatusOK, "404", OutputCommonSession(c, gin.H{
 			"Title":        "文档解析错误",
 			"errorCode":    "Error",
