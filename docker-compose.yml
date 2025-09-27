@@ -8,6 +8,7 @@ services:
     volumes:
       - ./templates:/templates
       - ./public:/public
+      - ./.env:/.env
     restart: always
     logging:
       driver: "json-file"
