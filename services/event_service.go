@@ -76,7 +76,7 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 				Pages:     1,
 				Duration:  0,
 			}
-			if err := tx.Create(&newSession).Error; err != nil {
+			if err = tx.Create(&newSession).Error; err != nil {
 				return fmt.Errorf("创建会话失败: %v", err)
 			}
 		} else if err == nil {
@@ -86,7 +86,7 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 				"end_time": AfterthirtyMinutes,
 				"duration": int(now.Sub(session.StartTime).Seconds()),
 			}
-			if err := tx.Model(&session).Updates(updates).Error; err != nil {
+			if err = tx.Model(&session).Updates(updates).Error; err != nil {
 				return fmt.Errorf("更新会话失败: %v", err)
 			}
 		} else if err != nil {
