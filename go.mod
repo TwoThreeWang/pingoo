@@ -10,7 +10,6 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/mssola/user_agent v0.6.0
-	github.com/oschwald/geoip2-golang v1.13.0
 	github.com/xiaoqidun/qqwry v0.0.0-20250711013719-20c61b7efdf7
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/crypto v0.36.0
@@ -41,7 +40,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/oschwald/maxminddb-golang v1.13.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
