@@ -211,7 +211,7 @@
         document.getElementById('uv').innerHTML = stats.uv || 0;
         document.getElementById('ip').innerHTML = stats.ip_count || 0;
         document.getElementById('event_count').innerHTML = stats.event_count || 0;
-        document.getElementById('bounce_rate').innerHTML = (stats.bounce_rate || 0).toFixed(1);
+        document.getElementById('bounce_rate').innerHTML = (stats.bounce_rate || 0).toFixed(1)+"%";
         document.getElementById('avg_duration').innerHTML = formatDuration(Math.floor(stats.avg_duration || 0));
         document.getElementById('week_ip').innerHTML = stats.week_ip || 0;
         document.getElementById('week_pv').innerHTML = stats.week_pv || 0;
