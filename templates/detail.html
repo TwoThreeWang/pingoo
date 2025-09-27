@@ -227,7 +227,7 @@
             const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
 
             // 构建API URL
-            const apiUrl = `/api/events/1/stats?` +
+            const apiUrl = `/api/events/${siteId}/stats?` +
                 `date=${date}&` +
                 `page=${currentPage}&` +
                 `stat_type=${currentStatType}&` +
