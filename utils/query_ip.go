@@ -1,7 +1,14 @@
 package utils
 
 import (
+	"sync"
+
 	"github.com/xiaoqidun/qqwry"
+)
+
+var (
+	ipDBLoaded bool
+	ipDBMutex  sync.Mutex
 )
 
 // IPInfo 存储查询结果
@@ -14,10 +21,17 @@ type IPInfo struct {
 
 // QueryIP 查询 IP 的国家、省/州、城市、运营商
 func QueryIP(ipStr string) (*IPInfo, error) {
-	// 从文件加载IP数据库
-	if err := qqwry.LoadFile("public/qqwry.ipdb"); err != nil {
-		return nil, err
+	// 确保IP数据库只加载一次
+	ipDBMutex.Lock()
+	if !ipDBLoaded {
+		if err := qqwry.LoadFile("public/qqwry.ipdb"); err != nil {
+			ipDBMutex.Unlock()
+			return nil, err
+		}
+		ipDBLoaded = true
 	}
+	ipDBMutex.Unlock()
+	
 	location, err := qqwry.QueryIP(ipStr)
 	if err != nil {
 		return nil, err
