@@ -89,10 +89,6 @@
         margin: 0;
     }
 
-    .add-site-form {
-        padding: 2rem;
-    }
-
     .form-actions {
         display: flex;
         gap: 1rem;
@@ -175,98 +171,99 @@
         <h2>用户中心</h2>
         <p class="dashboard-subtitle">管理您的账户信息和网站</p>
     </div>
+    <div class="content">
+        <!-- 用户信息卡片 -->
+        <div class="profile-card">
+            <div class="card-header">
+                <h3>个人信息</h3>
+                <div>
+                    <button onclick="toggleEditMode()" id="editBtn">编辑</button>
+                    <a href="#passwordCard"><button onclick="toggleDiv('passwordCard')">修改密码</button></a>
+                </div>
+            </div>
 
-    <!-- 用户信息卡片 -->
-    <div class="profile-card">
-        <div class="card-header">
-            <h3>个人信息</h3>
-            <div>
-                <button onclick="toggleEditMode()" id="editBtn">编辑</button>
-                <a href="#passwordCard"><button onclick="toggleDiv('passwordCard')">修改密码</button></a>
+            <div class="user-info" id="userInfo">
+                <div class="info-row">
+                    <label>用户名</label>
+                    <span id="usernameDisplay">加载中...</span>
+                    <input type="text" id="usernameInput" class="hidden" maxlength="50" minlength="3">
+                </div>
+                <div class="info-row">
+                    <label>邮箱</label>
+                    <span id="emailDisplay">加载中...</span>
+                    <input type="email" id="emailInput" class="hidden">
+                </div>
+                <div class="info-row">
+                    <label>角色</label>
+                    <span id="roleDisplay">加载中...</span>
+                </div>
+                <div class="info-row">
+                    <label>注册时间</label>
+                    <span id="createdAtDisplay">加载中...</span>
+                </div>
+            </div>
+
+            <div class="edit-actions hidden" id="editActions">
+                <button onclick="saveProfile()">保存</button>
+                <button onclick="cancelEdit()">取消</button>
             </div>
         </div>
 
-        <div class="user-info" id="userInfo">
-            <div class="info-row">
-                <label>用户名</label>
-                <span id="usernameDisplay">加载中...</span>
-                <input type="text" id="usernameInput" class="hidden" maxlength="50" minlength="3">
+        <!-- 密码修改卡片 -->
+        <div class="profile-card" id="passwordCard" style="display: none;">
+            <div class="card-header">
+                <h3>修改密码</h3>
             </div>
-            <div class="info-row">
-                <label>邮箱</label>
-                <span id="emailDisplay">加载中...</span>
-                <input type="email" id="emailInput" class="hidden">
-            </div>
-            <div class="info-row">
-                <label>角色</label>
-                <span id="roleDisplay">加载中...</span>
-            </div>
-            <div class="info-row">
-                <label>注册时间</label>
-                <span id="createdAtDisplay">加载中...</span>
+            <div class="password-form">
+                <div class="form-group">
+                    <label>当前密码</label>
+                    <input type="password" id="currentPassword" placeholder="请输入当前密码">
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" id="newPassword" placeholder="至少6位字符">
+                </div>
+                <div class="form-group">
+                    <label>确认密码</label>
+                    <input type="password" id="confirmPassword" placeholder="请再次输入新密码">
+                </div>
+                <button onclick="changePassword()">修改密码</button>
+                <button onclick="toggleDiv('passwordCard')">取消</button>
             </div>
         </div>
 
-        <div class="edit-actions hidden" id="editActions">
-            <button onclick="saveProfile()">保存</button>
-            <button onclick="cancelEdit()">取消</button>
-        </div>
-    </div>
+        <!-- 我的网站 -->
+        <div class="profile-card">
+            <div class="card-header">
+                <h3>我的网站</h3>
+                <button onclick="toggleDiv('addSiteForm')">添加新网站</button>
+            </div>
 
-    <!-- 密码修改卡片 -->
-    <div class="profile-card" id="passwordCard" style="display: none;">
-        <div class="card-header">
-            <h3>修改密码</h3>
-        </div>
-        <div class="password-form">
-            <div class="form-group">
-                <label>当前密码</label>
-                <input type="password" id="currentPassword" placeholder="请输入当前密码">
+            <!-- 添加网站表单 -->
+            <div class="add-site-form" id="addSiteForm" style="display: none;">
+                <div class="form-group">
+                    <label>网站名称</label>
+                    <input type="text" id="siteName" placeholder="请输入网站名称" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label>网站域名</label>
+                    <input type="text" id="siteDomain" placeholder="例如: https://example.com" maxlength="255">
+                </div>
+                <div class="form-actions">
+                    <button onclick="addNewSite()">确认添加</button>
+                    <button onclick="toggleDiv('addSiteForm')">取消</button>
+                </div>
+                <div id="addSiteMessage"></div>
             </div>
-            <div class="form-group">
-                <label>新密码</label>
-                <input type="password" id="newPassword" placeholder="至少6位字符">
-            </div>
-            <div class="form-group">
-                <label>确认密码</label>
-                <input type="password" id="confirmPassword" placeholder="请再次输入新密码">
-            </div>
-            <button onclick="changePassword()">修改密码</button>
-            <button onclick="toggleDiv('passwordCard')">取消</button>
-        </div>
-    </div>
 
-    <!-- 我的网站 -->
-    <div class="profile-card">
-        <div class="card-header">
-            <h3>我的网站</h3>
-            <button onclick="toggleDiv('addSiteForm')">添加新网站</button>
-        </div>
-
-        <!-- 添加网站表单 -->
-        <div class="add-site-form" id="addSiteForm" style="display: none;">
-            <div class="form-group">
-                <label>网站名称</label>
-                <input type="text" id="siteName" placeholder="请输入网站名称" maxlength="100">
+            <div class="sites-list" id="userSites">
+                <center><span class="loading"></span>数据加载中...</center>
             </div>
-            <div class="form-group">
-                <label>网站域名</label>
-                <input type="text" id="siteDomain" placeholder="例如: https://example.com" maxlength="255">
-            </div>
-            <div class="form-actions">
-                <button onclick="addNewSite()">确认添加</button>
-                <button onclick="toggleDiv('addSiteForm')">取消</button>
-            </div>
-            <div id="addSiteMessage"></div>
-        </div>
-
-        <div class="sites-list" id="userSites">
-            <center><span class="loading"></span>数据加载中...</center>
         </div>
     </div>
 </div>
 <!-- 浮层 -->
-<div id="overlay" class="overlay">
+<div id="overlay" class="overlay content">
     <div class="overlay-content" id="overlayContent">
     </div>
 </div>
