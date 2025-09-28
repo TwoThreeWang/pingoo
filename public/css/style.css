@@ -8,7 +8,7 @@ header{background:var(--bg-primary);color:var(--bg-primary-text);padding:0.5rem 
 footer{background-color:var(--bg-secondary);color:var(--bg-secondary-text);font-size:0.9rem;padding:0 0.5rem}
 .footer-content{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
 .footer-info{flex:1}
-.footer-menu{display:flex;list-style:none;gap:1.5rem}
+.footer-menu{display:flex;list-style:none;gap:1.5rem;flex-wrap:wrap;justify-content:center;}
 @media (max-width:768px){.header-content{display:flex;flex-direction:column;gap:1rem}
 .header-row{display:flex;align-items:center;width:100%;justify-content:space-between}
 .logo{flex-shrink:0;font-size:1.2rem}
@@ -16,7 +16,7 @@ footer{background-color:var(--bg-secondary);color:var(--bg-secondary-text);font-
 .nav-menu{display:none;flex-direction:column;gap:1rem;padding-top:1rem;border-top:1px solid var(--border-primary);width:100%}
 .nav-menu.active{display:flex}
 .footer-content{flex-direction:column;gap:1rem}
-.footer-menu{order:-1;margin-top:1rem}
+.footer-menu{order:-1;margin-top:1rem;gap:0em 1rem;}
 }
 
 .dashboard-header {
@@ -164,6 +164,12 @@ footer{background-color:var(--bg-secondary);color:var(--bg-secondary-text);font-
         justify-content: space-between;
         order: -1; /* 目录在正文上方 */
     }
+.autoTable{display:inline-flex}
+.autoTable thead{display:none}
+.autoTable tbody{width:100%}
+.autoTable tbody tr{display:block;border:1px solid var(--border-primary);padding:10px}
+.autoTable td{display:block;border:none;padding:5px 0}
+.autoTable td:before{content:attr(data-label) ":";font-weight:bold;display:inline-block;margin-right:10px}
 }
 
 @media (max-width: 480px) {

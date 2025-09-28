@@ -340,7 +340,7 @@
         }
 
         container.innerHTML = `
-        <table class="sites-table">
+        <table class="sites-table autoTable">
             <thead>
                 <tr>
                     <th>网站ID</th>
@@ -352,10 +352,10 @@
             <tbody>
                 ${sites.map(site => `
                     <tr>
-                        <td>${site.id}</td>
-                        <td>${site.name}</td>
-                        <td><a href="${site.domain}" target="_blank">${site.domain}</a></td>
-                        <td>
+                        <td data-label="网站ID">${site.id}</td>
+                        <td data-label="网站名称">${site.name}</td>
+                        <td data-label="网址"><a href="${site.domain}" target="_blank">${site.domain}</a></td>
+                        <td data-label="操作">
                             <a href="javascript:void(0)" onclick="showSiteDetail(${JSON.stringify(site).replace(/"/g, '&quot;')})">网站详情</a>
                             <a href="/websites/${site.id}">查看统计</a>
                         </td>

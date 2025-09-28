@@ -7,22 +7,24 @@
         <li class="breadcrumb-item active" aria-current="page">文档</li>
     </ol>
 </nav>
-<div class="side-container">
-    <!-- 左侧目录 -->
-    <div class="sidebar-container">
-        <h3>目录</h3>
-        <div class="sidebar" id="toc">
-        <span class="loading"></span>目录加载中...
+<div class="content">
+    <div class="side-container">
+        <!-- 左侧目录 -->
+        <div class="sidebar-container">
+            <h3>目录</h3>
+            <div class="sidebar" id="toc">
+            <span class="loading"></span>目录加载中...
+            </div>
         </div>
-    </div>
 
-    <!-- 右侧内容区域 -->
-    <article class="content">{{.Content | safeHTML}}</article>
+        <!-- 右侧内容区域 -->
+        <article class="article-content">{{.Content | safeHTML}}</article>
+    </div>
 </div>
 <script>
 function generateTOC() {
   const tocContainer = document.getElementById('toc');
-  const headers = document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6');
+  const headers = document.querySelectorAll('.article-content h1, .article-content h2, .article-content h3, .article-content h4, .article-content h5, .article-content h6');
 
   if (!headers.length) return;
 
