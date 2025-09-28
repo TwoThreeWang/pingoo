@@ -30,13 +30,6 @@ func main() {
 		log.Fatal("数据库迁移失败:", err)
 	}
 
-	// 添加测试数据（开发环境）
-	if cfg.Server.Mode == "development" {
-		if err := database.SeedData(); err != nil {
-			log.Printf("添加测试数据失败: %v", err)
-		}
-	}
-
 	// 设置Gin模式
 	gin.SetMode(cfg.Server.Mode)
 

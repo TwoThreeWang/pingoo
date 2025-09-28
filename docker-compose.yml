@@ -10,6 +10,7 @@ services:
       - ./public:/public
       - ./.env:/.env
       - ./docs:/docs
+      - ./logs:/logs
     restart: always
     logging:
       driver: "json-file"

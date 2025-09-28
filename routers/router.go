@@ -13,10 +13,8 @@ import (
 // SetupRouter 设置路由
 func SetupRouter(router *gin.Engine, db *gorm.DB, cfg *config.Config) *gin.Engine {
 	// 设置中间件
-	// 恢复中间件，用于捕获HTTP请求处理过程中的panic错误，防止服务崩溃，并返回500错误给客户端
-	router.Use(gin.Recovery())
 	// 日志中间件，用于记录所有HTTP请求的详细信息，包括请求方法、路径、状态码、响应时间等
-	router.Use(gin.Logger())
+	router.Use(gin.Logger(), middleware.CustomRecovery())
 	// 设置CORS
 	router.Use(func(c *gin.Context) {
 		// 允许所有来源
