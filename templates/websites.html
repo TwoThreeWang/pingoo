@@ -323,6 +323,14 @@
                 <center><span class="loading"></span>加载中...</center>
             </ol>
         </div>
+
+        <!-- 爬虫 -->
+        <div class="stat-card">
+            <b>爬虫统计</b>
+            <ol class="stat-list" id="bot-list">
+                <center><span class="loading"></span>加载中...</center>
+            </ol>
+        </div>
     </div>
 </div>
 {{end}}
@@ -420,7 +428,7 @@
     // 获取详细统计数据并展示
     async function loadSiteStats() {
         const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
-        stat_types = ['url', 'referrer', 'os', 'device', 'country', 'isp', 'event_type']
+        stat_types = ['url', 'referrer', 'os', 'device', 'country', 'isp', 'event_type', 'bot']
         for (let i = 0; i < stat_types.length; i++) {
             try {
                 const response = await sendRequest('GET', `/api/events/${siteId}/stats?date=${date}&stat_type=${stat_types[i]}`);

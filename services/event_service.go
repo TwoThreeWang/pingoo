@@ -302,22 +302,26 @@ func (s *EventService) GetEventsRank(siteID uint64, startDate, endDate, statType
 		return &rankStats, 0, fmt.Errorf("结束日期格式错误: %v", err)
 	}
 	end = end.Add(24 * time.Hour).Add(-time.Nanosecond)
+	filters := ""
 	switch statType {
 	case "referrer":
 		statType = "split_part(replace(replace(referrer, 'http://', ''), 'https://', ''), '/', 1)"
 	case "country":
 		statType = "CONCAT(country,subdivision)"
+	case "bot":
+		statType = "browser"
+		filters = " AND is_bot = 't' "
 	}
 
 	// 获取排行数据
 	sql := fmt.Sprintf(`
 		SELECT %s AS key, COUNT(*) as count
 		FROM events
-		WHERE site_id = ? AND event_type = ? AND created_at >= ? AND created_at < ?
+		WHERE site_id = ? AND event_type = ? AND created_at >= ? AND created_at < ? %s
 		GROUP BY key
 		ORDER BY count DESC
 		LIMIT ? OFFSET ?
-	`, statType)
+	`, statType, filters)
 	db.Raw(sql, siteID, eventType, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"), pageSize, (page-1)*pageSize).Scan(&rankStats)
 
 	// 获取总量
@@ -325,8 +329,8 @@ func (s *EventService) GetEventsRank(siteID uint64, startDate, endDate, statType
 	sqlTotal := fmt.Sprintf(`
 		SELECT COUNT(distinct %s)
 		FROM events
-		WHERE site_id = ? AND event_type = ? AND created_at >= ? AND created_at < ?
-	`, statType)
+		WHERE site_id = ? AND event_type = ? AND created_at >= ? AND created_at < ? %s
+	`, statType, filters)
 	db.Raw(sqlTotal, siteID, eventType, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).Scan(&total)
 
 	return &rankStats, total, nil
