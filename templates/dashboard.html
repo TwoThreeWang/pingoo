@@ -18,7 +18,7 @@
         <div class="sites-section">
             <div class="sites-list">
                 <!-- 数据将通过JavaScript动态加载 -->
-                <div style="text-align: center; padding: 2rem;">
+                <div style="text-align: center; padding: 2rem;" id="load">
                     <p style="margin-top: 1rem; color: var(--bg-secondary-text);"><span class="loading"></span>正在加载网站数据...
                     </p>
                 </div>
@@ -32,6 +32,7 @@
 <script>
     // 获取网站列表及其数据概览
     async function loadSitesData() {
+        const load = document.getElementById("load");
         try {
             const sitesListContainer = document.querySelector('.sites-list');
             if (!sitesListContainer) {
@@ -51,9 +52,6 @@
             }
 
             const sites = result.data.list;
-
-            // 清空现有内容
-            sitesListContainer.innerHTML = '';
 
             // 如果没有网站
             if (!sites || sites.length === 0) {
@@ -104,10 +102,11 @@
                     sitesListContainer.appendChild(siteElement);
                 }
             }
-
+            load.style.display = "none";
         } catch (error) {
             console.error('加载网站数据失败:', error);
             showMessage('加载网站数据失败:' + error, "error")
+            load.style.display = "none";
             const sitesListContainer = document.querySelector('.sites-list');
             if (sitesListContainer) {
                 sitesListContainer.innerHTML = `
