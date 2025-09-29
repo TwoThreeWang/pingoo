@@ -9,6 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/joho/godotenv v1.5.1
+	github.com/mileusna/useragent v1.3.5
 	github.com/mssola/user_agent v0.6.0
 	github.com/xiaoqidun/qqwry v0.0.0-20250711013719-20c61b7efdf7
 	github.com/yuin/goldmark v1.7.13

@@ -3,27 +3,48 @@ package utils
 import (
 	"fmt"
 
-	"github.com/mssola/user_agent"
+	"github.com/mileusna/useragent"
 )
 
 // ParseUserAgent 解析UserAgent字符串，提取设备、浏览器、操作系统
 func ParseUserAgent(uaString string) (device, browser, os string, isBot bool) {
-	ua := user_agent.New(uaString)
+	ua := useragent.Parse(uaString)
 
-	// 操作系统
-	os = ua.OS()
-
-	// 浏览器
-	name, version := ua.Browser()
-	browser = fmt.Sprintf("%s %s", name, version)
-
-	// 设备类型（粗分：mobile/desktop/bot）
-	isMobile := ua.Mobile()
-	if isMobile {
-		device = "mobile"
+	// 判断设备类型
+	if ua.Mobile {
+		device = "Mobile"
+	} else if ua.Tablet {
+		device = "Tablet"
+	} else if ua.Desktop {
+		device = "Desktop"
 	} else {
-		device = "desktop"
+		device = "Unknown"
 	}
-	isBot = ua.Bot()
-	return
+
+	// 获取浏览器信息
+	if ua.Name != "" {
+		if ua.Version != "" {
+			browser = fmt.Sprintf("%s %s", ua.Name, ua.Version)
+		} else {
+			browser = ua.Name
+		}
+	} else {
+		browser = "Unknown"
+	}
+
+	// 获取操作系统信息
+	if ua.OS != "" {
+		if ua.OSVersion != "" {
+			os = fmt.Sprintf("%s %s", ua.OS, ua.OSVersion)
+		} else {
+			os = ua.OS
+		}
+	} else {
+		os = "Unknown"
+	}
+
+	// 是否为机器人
+	isBot = ua.Bot
+
+	return device, browser, os, isBot
 }
