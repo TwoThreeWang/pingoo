@@ -26,12 +26,17 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 	if eventCreate.SessionID == "" || eventCreate.URL == "" || eventCreate.EventType == "" {
 		return nil, errors.New("缺少必需参数")
 	}
+	// ip匿名化
+	anonIp, err := utils.AnonymizeIP(eventCreate.IP)
+	if err != nil {
+		log.Println(err.Error())
+	}
 
 	event := &models.Event{
 		SessionID:   eventCreate.SessionID,
 		SiteID:      eventCreate.SiteID,
 		UserID:      eventCreate.UserID,
-		IP:          eventCreate.IP,
+		IP:          anonIp,
 		URL:         eventCreate.URL,
 		Referrer:    eventCreate.Referrer,
 		UserAgent:   eventCreate.UserAgent,
@@ -51,15 +56,15 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 	db := database.GetDB()
 
 	// 使用事务处理
-	err := db.Transaction(func(tx *gorm.DB) error {
+	err = db.Transaction(func(tx *gorm.DB) error {
 		// 创建事件
-		if err := tx.Create(event).Error; err != nil {
+		if err = tx.Create(event).Error; err != nil {
 			return fmt.Errorf("创建事件失败: %v", err)
 		}
 
 		// 查找现有会话
 		var session models.Session
-		err := tx.Where("session_id = ? AND site_id = ?", event.SessionID, event.SiteID).First(&session).Error
+		err = tx.Where("session_id = ? AND site_id = ?", event.SessionID, event.SiteID).First(&session).Error
 
 		now := time.Now()
 		AfterMinutes := now.Add(15 * time.Minute)
@@ -250,16 +255,16 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 		stats.AvgDuration = 0
 	}
 
-	// 本周IP和PV总量（基于传入的日期所在周）
+	// 本周UV和PV总量（基于传入的日期所在周）
 	weekStart := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
 	for weekStart.Weekday() != time.Monday {
 		weekStart = weekStart.AddDate(0, 0, -1)
 	}
 	weekEnd := weekStart.AddDate(0, 0, 7)
 	if err = db.Model(&models.Event{}).
-		Select("COUNT(*) as pv, COUNT(DISTINCT(ip)) as ips").
+		Select("COUNT(*) as pv, COUNT(DISTINCT(session_id)) as uv").
 		Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, weekStart.Format("2006-01-02 15:04:05"), weekEnd.Format("2006-01-02 15:04:05")).Row().
-		Scan(&stats.WeekPv, &stats.WeekIp); err != nil {
+		Scan(&stats.WeekPv, &stats.WeekUv); err != nil {
 		return nil, fmt.Errorf("统计本周数据失败: %v", err.Error())
 	}
 
@@ -267,9 +272,9 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 	monthStart := time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, start.Location())
 	monthEnd := monthStart.AddDate(0, 1, 0)
 	if err = db.Model(&models.Event{}).
-		Select("COUNT(*) as month_pv, COUNT(DISTINCT ip) as month_ip").
+		Select("COUNT(*) as month_pv, COUNT(DISTINCT session_id) as uv").
 		Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, monthStart.Format("2006-01-02 15:04:05"), monthEnd.Format("2006-01-02 15:04:05")).
-		Row().Scan(&stats.MonthPv, &stats.MonthIp); err != nil {
+		Row().Scan(&stats.MonthPv, &stats.MonthUv); err != nil {
 		return nil, fmt.Errorf("统计本月PV和IP失败: %v", err.Error())
 	}
 

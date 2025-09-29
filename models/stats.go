@@ -9,9 +9,9 @@ type SimpleSiteStats struct {
 	EventCount  int64   `json:"event_count"`  // 事件数
 	BounceRate  float64 `json:"bounce_rate"`  // 跳出率
 	AvgDuration float64 `json:"avg_duration"` // 平均访问时长（秒）
-	WeekIp      int64   `json:"week_ip"`      // 本周IP
+	WeekUv      int64   `json:"week_uv"`      // 本周UV
 	WeekPv      int64   `json:"week_pv"`      // 本周PV
-	MonthIp     int64   `json:"month_ip"`     // 本月IP
+	MonthUv     int64   `json:"month_uv"`     // 本月UV
 	MonthPv     int64   `json:"month_pv"`     // 本月PV
 	HourlyStats []struct {
 		Hour  int   `json:"hour"`

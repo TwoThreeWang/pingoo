@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"net"
 	"strings"
 
@@ -125,6 +126,49 @@ func isTrustedProxy(ip string, trustedProxies []string) bool {
 	}
 
 	return false
+}
+
+// AnonymizeIP 匿名化 IP 地址：IPv4 截断到 /24，IPv6 截断到 /64。
+// 返回匿名化后的 IP 字符串。
+func AnonymizeIP(ipStr string) (string, error) {
+	// 1. 解析 IP 地址字符串
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return ipStr, fmt.Errorf("无效的 IP 地址格式: %s", ipStr)
+	}
+
+	// 2. 检查 IP 类型并进行截断 (Masking)
+	// 尝试转换为 IPv4 4字节格式。如果成功，说明是 IPv4。
+	if ip4 := ip.To4(); ip4 != nil {
+		// --- IPv4 截断到 /24 ---
+		// 子网掩码 255.255.255.0
+		mask := net.IPv4Mask(255, 255, 255, 0)
+		// 应用掩码（位与操作）
+		anonIP := ip4.Mask(mask)
+		return anonIP.String(), nil
+	}
+
+	// 如果不是 IPv4，则假设是 IPv6
+	if len(ip) == net.IPv6len {
+		// --- IPv6 截断到 /64 ---
+		// IPv6 地址是 16 字节（128 位）。/64 意味着保留前 8 个字节（64 位）。
+		// 掩码前 8 字节为 255，后 8 字节为 0。
+		maskBytes := make([]byte, net.IPv6len)
+		// 设置前 8 字节为 255 (保留网络前缀)
+		for i := 0; i < 8; i++ {
+			maskBytes[i] = 0xFF
+		}
+
+		// 创建 IPv6 掩码
+		mask := net.IPMask(maskBytes)
+
+		// 应用掩码
+		anonIP := ip.Mask(mask)
+		return anonIP.String(), nil
+	}
+
+	// 既不是标准的 IPv4，也不是标准的 IPv6
+	return ipStr, fmt.Errorf("不支持的 IP 地址类型或长度: %s", ipStr)
 }
 
 // ===== 使用示例 =====

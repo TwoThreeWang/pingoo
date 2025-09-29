@@ -99,19 +99,19 @@
                 <div class="metric-value" id="event_count">0</div>
             </div>
             <div class="metric">
-                <div class="metric-label">本周访客</div>
-                <div class="metric-value" id="week_ip">0</div>
+                <div class="metric-label">本周访客UV</div>
+                <div class="metric-value" id="week_uv">0</div>
             </div>
             <div class="metric">
-                <div class="metric-label">本周浏览量</div>
+                <div class="metric-label">本周浏览量PV</div>
                 <div class="metric-value" id="week_pv">0</div>
             </div>
             <div class="metric">
-                <div class="metric-label">本月访客</div>
-                <div class="metric-value" id="month_ip">0</div>
+                <div class="metric-label">本月访客UV</div>
+                <div class="metric-value" id="month_uv">0</div>
             </div>
             <div class="metric">
-                <div class="metric-label">本月浏览量</div>
+                <div class="metric-label">本月浏览量PV</div>
                 <div class="metric-value" id="month_pv">0</div>
             </div>
         </div>
@@ -176,9 +176,9 @@
                 event_count: 0,
                 bounce_rate: 0,
                 avg_duration: 0,
-                week_ip: 0,
+                week_uv: 0,
                 week_pv: 0,
-                month_ip: 0,
+                month_uv: 0,
                 month_pv: 0,
                 hourly_stats: {},
             };
@@ -215,9 +215,9 @@
         document.getElementById('event_count').innerHTML = stats.event_count || 0;
         document.getElementById('bounce_rate').innerHTML = (stats.bounce_rate || 0).toFixed(1)+"%";
         document.getElementById('avg_duration').innerHTML = formatDuration(Math.floor(stats.avg_duration || 0));
-        document.getElementById('week_ip').innerHTML = stats.week_ip || 0;
+        document.getElementById('week_uv').innerHTML = stats.week_uv || 0;
         document.getElementById('week_pv').innerHTML = stats.week_pv || 0;
-        document.getElementById('month_ip').innerHTML = stats.month_ip || 0;
+        document.getElementById('month_uv').innerHTML = stats.month_uv || 0;
         document.getElementById('month_pv').innerHTML = stats.month_pv || 0;
     }
 
