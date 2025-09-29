@@ -62,7 +62,7 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 		err := tx.Where("session_id = ? AND site_id = ?", event.SessionID, event.SiteID).First(&session).Error
 
 		now := time.Now()
-		AfterthirtyMinutes := now.Add(30 * time.Minute)
+		AfterMinutes := now.Add(15 * time.Minute)
 
 		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 			// 会话不存在，创建新会话
@@ -72,7 +72,7 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 				UserID:    event.UserID,
 				IP:        event.IP,
 				StartTime: now,
-				EndTime:   AfterthirtyMinutes,
+				EndTime:   AfterMinutes,
 				Pages:     1,
 				Duration:  0,
 			}
@@ -83,7 +83,7 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 			// 会话存在，更新现有会话
 			updates := map[string]interface{}{
 				"pages":    session.Pages + 1,
-				"end_time": AfterthirtyMinutes,
+				"end_time": AfterMinutes,
 				"duration": int(now.Sub(session.StartTime).Seconds()),
 			}
 			if err = tx.Model(&session).Updates(updates).Error; err != nil {
