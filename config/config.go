@@ -31,6 +31,7 @@ type SiteConfig struct {
 	SiteName          string
 	VERSION           string
 	TrackerScriptName string
+	RegMode           bool
 }
 
 type DatabaseConfig struct {
@@ -64,6 +65,7 @@ func Load() *Config {
 			SiteName:          getEnv("SITE_NAME", "Pingoo"),
 			VERSION:           getEnv("VERSION", "1.0.0"),
 			TrackerScriptName: getEnv("TRACKER_SCRIPT_NAME", "pingoo.js"),
+			RegMode:           getEnvAsBool("REG_MODE", false),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),

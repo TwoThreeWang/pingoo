@@ -101,6 +101,7 @@ SITE_NAME=Pingoo                  # 网站显示名称
 SITE_DOMAIN=http://localhost:5004 # 网站访问域名
 VERSION=1.0.0                     # 程序版本
 TRACKER_SCRIPT_NAME=pingoo.js     # 追踪脚本名称（防止被广告拦截）
+REG_MODE=false                    # 是否开放注册
 
 # PostgreSQL 数据库配置
 DB_HOST=localhost

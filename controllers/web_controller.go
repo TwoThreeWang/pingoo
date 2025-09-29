@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"pingoo/config"
 	"pingoo/middleware"
 	"pingoo/services"
 	"strconv"
@@ -34,6 +35,16 @@ func (wc *WebController) Login(c *gin.Context) {
 }
 
 func (wc *WebController) Register(c *gin.Context) {
+	cfg := config.GetConfig()
+	if !cfg.Site.RegMode {
+		c.HTML(http.StatusOK, "404", OutputCommonSession(c, gin.H{
+			"Title":        "暂未开放注册",
+			"errorCode":    "403",
+			"errorTitle":   "暂未开放注册",
+			"errorMessage": "网站暂未开放注册功能，请返回首页继续",
+		}))
+		return
+	}
 	c.HTML(http.StatusOK, "register", OutputCommonSession(c, gin.H{
 		"Title": "注册",
 	}))

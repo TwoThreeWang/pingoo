@@ -31,6 +31,11 @@ func NewAuthController(db *gorm.DB, config *config.Config) *AuthController {
 
 // Register 用户注册
 func (ac *AuthController) Register(c *gin.Context) {
+	cfg := config.GetConfig()
+	if !cfg.Site.RegMode {
+		utils.FailWithCode(c, 403, "暂未开放注册功能")
+		return
+	}
 	var input models.UserCreate
 	if err := c.ShouldBindJSON(&input); err != nil {
 		utils.ValidationError(c, err.Error())
