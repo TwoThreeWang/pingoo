@@ -270,7 +270,7 @@
     <div class="stats-grid">
         <!-- 访问网页Top10 -->
         <div class="stat-card">
-            <b>访问网页Top10</b>
+            <b>📊 访问网页Top10</b>
             <ol class="stat-list" id="url-list">
                 <center><span class="loading"></span>加载中...</center>
             </ol>
@@ -278,7 +278,7 @@
 
         <!-- 来源Top10 -->
         <div class="stat-card">
-            <b>来源Top10</b>
+            <b>🔗 来源Top10</b>
             <ol class="stat-list" id="referrer-list">
                 <center><span class="loading"></span>加载中...</center>
             </ol>
@@ -286,7 +286,7 @@
 
         <!-- 操作系统Top10 -->
         <div class="stat-card">
-            <b>操作系统Top10</b>
+            <b>💻 操作系统Top10</b>
             <ol class="stat-list" id="os-list">
                 <center><span class="loading"></span>加载中...</center>
             </ol>
@@ -294,7 +294,7 @@
 
         <!-- 设备类型分布 -->
         <div class="stat-card">
-            <b>设备类型分布</b>
+            <b>📱 设备类型分布</b>
             <ol class="stat-list" id="device-list">
                 <center><span class="loading"></span>加载中...</center>
             </ol>
@@ -302,7 +302,7 @@
 
         <!-- 访问地区分布 -->
         <div class="stat-card">
-            <b>访问地区分布</b>
+            <b>🌍 访问地区分布</b>
             <ol class="stat-list" id="country-list">
                 <center><span class="loading"></span>加载中...</center>
             </ol>
@@ -310,7 +310,7 @@
 
         <!-- 运营商分布 -->
         <div class="stat-card">
-            <b>网络分布</b>
+            <b>📶 网络分布</b>
             <ol class="stat-list" id="isp-list">
                 <center><span class="loading"></span>加载中...</center>
             </ol>
@@ -318,7 +318,7 @@
 
         <!-- 事件 -->
         <div class="stat-card">
-            <b>事件统计</b>
+            <b>🎯 事件统计</b>
             <ol class="stat-list" id="event_type-list">
                 <center><span class="loading"></span>加载中...</center>
             </ol>
@@ -326,7 +326,7 @@
 
         <!-- 爬虫 -->
         <div class="stat-card">
-            <b>爬虫统计</b>
+            <b>🕷️ 爬虫统计</b>
             <ol class="stat-list" id="bot-list">
                 <center><span class="loading"></span>加载中...</center>
             </ol>
@@ -334,8 +334,16 @@
 
         <!-- 屏幕尺寸 -->
         <div class="stat-card">
-            <b>屏幕尺寸</b>
+            <b>🖥️ 屏幕尺寸</b>
             <ol class="stat-list" id="screen-list">
+                <center><span class="loading"></span>加载中...</center>
+            </ol>
+        </div>
+
+        <!-- 浏览器统计 -->
+        <div class="stat-card">
+            <b>🌐 浏览器</b>
+            <ol class="stat-list" id="browser-list">
                 <center><span class="loading"></span>加载中...</center>
             </ol>
         </div>
@@ -436,7 +444,7 @@
     // 获取详细统计数据并展示
     async function loadSiteStats() {
         const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
-        stat_types = ['url', 'referrer', 'os', 'device', 'country', 'isp', 'event_type', 'bot', 'screen']
+        stat_types = ['url', 'referrer', 'os', 'device', 'country', 'isp', 'event_type', 'bot', 'screen', 'browser']
         for (let i = 0; i < stat_types.length; i++) {
             try {
                 const response = await sendRequest('GET', `/api/events/${siteId}/stats?date=${date}&stat_type=${stat_types[i]}`);

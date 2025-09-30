@@ -81,6 +81,12 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 				Item     string
 				PVDelta  int64
 			}{Category: "bot", Item: event.Browser, PVDelta: 1})
+		} else {
+			updates = append(updates, struct {
+				Category string
+				Item     string
+				PVDelta  int64
+			}{Category: "browser", Item: event.Browser, PVDelta: 1})
 		}
 		if event.EventValue != "" {
 			updates = append(updates, struct {

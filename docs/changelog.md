@@ -8,6 +8,7 @@
 - Added
   * 新增 `daily_stats` 表，用于按天聚合各维度（OS、Browser、Device、Page、Referrer）的 PV 数据。
   * 实现批量 Upsert 功能，将事件数据高效写入 `daily_stats`。
+  * 新增浏览器统计指标
 
 - Changed
   * 统计逻辑优化：部分频繁查询直接从 `daily_stats` 表读取，减少事件表全表扫描，提高查询性能。
