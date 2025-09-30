@@ -140,7 +140,7 @@ func (ec *EventController) GetEventsRank(c *gin.Context) {
 		statType = "event_value"
 		eventType = "custom"
 	}
-	stats, total, err := ec.eventService.GetEventsRank(siteID, dateStr, dateStr, statType, eventType, pageInt, pageSize)
+	stats, total, err := ec.eventService.GetEventsRankByStats(siteID, dateStr, dateStr, statType, eventType, pageInt, pageSize)
 	if err != nil {
 		utils.ServerError(c, err.Error())
 		return

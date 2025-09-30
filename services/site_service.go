@@ -114,6 +114,12 @@ func (s *SiteService) DeleteSite(id uint64, userID uint64) error {
 	}
 
 	db := database.GetDB()
+	// 先清空数据
+	err = s.ClearSiteStats(id, userID)
+	if err != nil {
+		return fmt.Errorf("删除站点失败: %v", err)
+	}
+
 	if err := db.Unscoped().Delete(&models.Site{}, id).Error; err != nil {
 		return fmt.Errorf("删除站点失败: %v", err)
 	}
@@ -164,6 +170,12 @@ func (s *SiteService) ClearSiteStats(siteID uint64, userID uint64) error {
 	if err := tx.Unscoped().Where("site_id = ?", siteID).Delete(&models.Session{}).Error; err != nil {
 		tx.Rollback()
 		return errors.New("删除session统计数据失败")
+	}
+
+	// 删除daily_stats
+	if err := tx.Unscoped().Where("site_id = ?", siteID).Delete(&models.DailyStats{}).Error; err != nil {
+		tx.Rollback()
+		return errors.New("删除daily_stats统计数据失败")
 	}
 
 	// 提交事务

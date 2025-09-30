@@ -61,6 +61,38 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 		if err = tx.Create(event).Error; err != nil {
 			return fmt.Errorf("创建事件失败: %v", err)
 		}
+		// 更新DailyStats统计表
+		updates := []struct {
+			Category string
+			Item     string
+			PVDelta  int64
+		}{
+			{Category: "url", Item: event.URL, PVDelta: 1},
+			{"referrer", utils.NormalizeReferrer(event.Referrer), 1},
+			{Category: "os", Item: event.OS, PVDelta: 1},
+			{Category: "device", Item: event.Device, PVDelta: 1},
+			{"country", event.Country + event.Subdivision, 1},
+			{"isp", event.ISP, 1},
+			{"screen", event.Screen, 1},
+		}
+		if event.IsBot {
+			updates = append(updates, struct {
+				Category string
+				Item     string
+				PVDelta  int64
+			}{Category: "bot", Item: event.Browser, PVDelta: 1})
+		}
+		if event.EventValue != "" {
+			updates = append(updates, struct {
+				Category string
+				Item     string
+				PVDelta  int64
+			}{Category: "event_type", Item: event.EventValue, PVDelta: 1})
+		}
+
+		if err = UpsertDailyStatsBatch(tx, event.SiteID, updates, time.Now()); err != nil {
+			return fmt.Errorf("更新DailyStats统计表失败: %v", err)
+		}
 
 		// 查找现有会话
 		var session models.Session
@@ -337,6 +369,39 @@ func (s *EventService) GetEventsRank(siteID uint64, startDate, endDate, statType
 		WHERE site_id = ? AND event_type = ? AND created_at >= ? AND created_at < ? %s
 	`, statType, filters)
 	db.Raw(sqlTotal, siteID, eventType, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).Scan(&total)
+
+	return &rankStats, total, nil
+}
+
+// GetEventsRankByStats 事件概览排行
+func (s *EventService) GetEventsRankByStats(siteID uint64, startDate, endDate, statType, eventType string, page, pageSize int) (*[]models.RankStats, int64, error) {
+	var rankStats []models.RankStats
+	db := database.GetDB()
+
+	// 解析日期
+	start, err := utils.ParseDate(startDate)
+	if err != nil {
+		return &rankStats, 0, fmt.Errorf("开始日期格式错误: %v", err)
+	}
+
+	// 获取排行数据
+	sql := `
+		SELECT item AS key, pv as count
+		FROM daily_stats
+		WHERE site_id = ? AND category = ? AND date = ?
+		ORDER BY pv DESC
+		LIMIT ? OFFSET ?
+	`
+	db.Raw(sql, siteID, statType, start.Format("2006-01-02"), pageSize, (page-1)*pageSize).Scan(&rankStats)
+
+	// 获取总量
+	var total int64
+	sqlTotal := `
+		SELECT COUNT(distinct item)
+		FROM daily_stats
+		WHERE site_id = ? AND category = ? AND date = ?
+	`
+	db.Raw(sqlTotal, siteID, statType, start.Format("2006-01-02")).Scan(&total)
 
 	return &rankStats, total, nil
 }

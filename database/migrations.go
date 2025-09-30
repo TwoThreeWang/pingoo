@@ -17,6 +17,7 @@ func Migrate() error {
 		&models.Site{},
 		&models.Event{},
 		&models.Session{},
+		&models.DailyStats{},
 	); err != nil {
 		return fmt.Errorf("数据库迁移失败: %v", err)
 	}
@@ -89,6 +90,17 @@ func addIndexes(db *gorm.DB) error {
 	// 检查并创建sessions表索引
 	if !db.Migrator().HasIndex("sessions", "idx_sessions_site_start") {
 		if err := db.Exec("CREATE INDEX idx_sessions_site_start ON sessions (start_time) WHERE site_id = 2 AND deleted_at IS NULL").Error; err != nil {
+			return err
+		}
+	}
+	// 检查并创建daily_stats表索引
+	if !db.Migrator().HasIndex("daily_stats", "uniq_daily_stats") {
+		if err := db.Exec("CREATE UNIQUE INDEX uniq_daily_stats ON daily_stats (site_id, date, category, item)").Error; err != nil {
+			return err
+		}
+	}
+	if !db.Migrator().HasIndex("daily_stats", "idx_daily_stats_site_category_date_pv") {
+		if err := db.Exec("CREATE INDEX idx_daily_stats_site_category_date_pv ON daily_stats (site_id, category, date)").Error; err != nil {
 			return err
 		}
 	}

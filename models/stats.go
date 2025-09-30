@@ -1,5 +1,26 @@
 package models
 
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
+// DailyStats 表结构：支持 OS、浏览器、来源、页面等多维度统计
+type DailyStats struct {
+	gorm.Model           // 自动添加 ID、CreatedAt、UpdatedAt、DeletedAt 字段
+	SiteID     uint64    `gorm:"not null"`           // 网站ID
+	Category   string    `gorm:"size:50;not null"`   // 分类 (os, browser, region, referrer, page)
+	Item       string    `gorm:"size:255;not null"`  // 分类下的具体项 (如 "Windows", "Chrome", "CN-Guangdong")
+	PV         int64     `gorm:"not null;default:0"` // 浏览量
+	Date       time.Time `gorm:"type:date;not null"` // 统计日期 (按天)
+}
+
+// 表名
+func (DailyStats) TableName() string {
+	return "daily_stats"
+}
+
 // SimpleSiteStats 详细网站统计信息
 type SimpleSiteStats struct {
 	SiteID      uint64  `json:"site_id"`
