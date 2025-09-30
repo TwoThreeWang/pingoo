@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"fmt"
-
 	"github.com/mileusna/useragent"
 )
 
@@ -23,22 +21,24 @@ func ParseUserAgent(uaString string) (device, browser, os string, isBot bool) {
 
 	// 获取浏览器信息
 	if ua.Name != "" {
-		if ua.Version != "" {
-			browser = fmt.Sprintf("%s %s", ua.Name, ua.Version)
-		} else {
-			browser = ua.Name
-		}
+		browser = ua.Name
+		// if ua.Version != "" {
+		// 	browser = fmt.Sprintf("%s %s", ua.Name, ua.Version)
+		// } else {
+		// 	browser = ua.Name
+		// }
 	} else {
 		browser = "Unknown"
 	}
 
 	// 获取操作系统信息
 	if ua.OS != "" {
-		if ua.OSVersion != "" {
-			os = fmt.Sprintf("%s %s", ua.OS, ua.OSVersion)
-		} else {
-			os = ua.OS
-		}
+		os = ua.OS
+		// if ua.OSVersion != "" {
+		// 	os = fmt.Sprintf("%s %s", ua.OS, ua.OSVersion)
+		// } else {
+		// 	os = ua.OS
+		// }
 	} else {
 		os = "Unknown"
 	}
