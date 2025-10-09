@@ -60,6 +60,12 @@ func (ec *EventController) CreateEvent(c *gin.Context) {
 	}
 	// 从UserAgent中提取Device、Browser、OS、IsBot
 	eventCreate.Device, eventCreate.Browser, eventCreate.OS, eventCreate.IsBot = utils.ParseUserAgent(eventCreate.UserAgent)
+	if eventCreate.Screen != "" {
+		device := utils.DetectDevice(eventCreate.UserAgent, eventCreate.Screen)
+		if device != "Unknown" {
+			eventCreate.Device = device
+		}
+	}
 
 	event, err := ec.eventService.CreateEvent(&eventCreate)
 	if err != nil {
@@ -137,7 +143,7 @@ func (ec *EventController) GetEventsRank(c *gin.Context) {
 	statType := c.DefaultQuery("stat_type", "url")
 	eventType := c.DefaultQuery("event_type", "page_view")
 	if eventType == "custom" || statType == "event_type" {
-		statType = "event_value"
+		statType = "event_type"
 		eventType = "custom"
 	}
 	stats, total, err := ec.eventService.GetEventsRankByStats(siteID, dateStr, dateStr, statType, eventType, pageInt, pageSize)
@@ -213,6 +219,13 @@ func (ec *EventController) TrackCustomEvent(c *gin.Context) {
 	ipInfo, err := utils.QueryIP(ip)
 	if err != nil {
 		log.Println(err)
+	}
+	// 处理设备类型
+	if req.Screen != "" {
+		deviceBak := utils.DetectDevice(UserAgent, req.Screen)
+		if deviceBak != "Unknown" {
+			device = deviceBak
+		}
 	}
 	eventCreate := &models.EventCreate{
 		SiteID:      SiteID,

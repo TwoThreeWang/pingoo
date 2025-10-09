@@ -4,6 +4,22 @@
 
 ![骄傲版本控制](https://cdn.c2v2.com/imgur/KfG7NBr.png)
 
+## [2025-10-09] - v1.0.3
+- Added
+  * 新增基于 UserAgent 和分辨率的设备类型检测功能，用于更精确地检测设备类型
+
+- Changed
+  * 无
+
+- Fixed
+  * 修复 GetEventsRank 中 stat_type 和 event_type 的逻辑错误
+
+- Deprecated
+  * 无
+
+- Removed
+  * 无
+
 ## [2025-09-30] - v1.0.2
 - Added
   * 新增 `daily_stats` 表，用于按天聚合各维度（OS、Browser、Device、Page、Referrer）的 PV 数据。
@@ -35,4 +51,4 @@
 
 ---
 
-最后更新日期：2025年9月30日
+**感谢您选择 Pingoo 分析！我们致力于为您提供最佳的分析体验。如需更多帮助，请随时联系我们。**

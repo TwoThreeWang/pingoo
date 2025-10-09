@@ -23,10 +23,11 @@ func Initialize(config config.DatabaseConfig) (*gorm.DB, error) {
 			config.Host, config.User, config.Password, config.DBName, config.Port, config.SSLMode, config.TimeZone)
 
 		db, e := gorm.Open(postgres.Open(dsn), &gorm.Config{
-			Logger:                 logger.Default.LogMode(logger.Warn), // 开发环境可以改成Info
-			SkipDefaultTransaction: true,                                // 跳过默认事务
-			DisableAutomaticPing:   true,                                // 关闭自动检测
-			AllowGlobalUpdate:      false,                               // 禁止全表操作，防止误删/误更新
+			Logger: logger.Default.LogMode(logger.Warn), // 开发环境可以改成Info
+			// Logger:                 logger.Default.LogMode(logger.Info), // 开发环境可以改成Info
+			SkipDefaultTransaction: true,  // 跳过默认事务
+			DisableAutomaticPing:   true,  // 关闭自动检测
+			AllowGlobalUpdate:      false, // 禁止全表操作，防止误删/误更新
 		})
 		if e != nil {
 			err = fmt.Errorf("无法连接数据库: %w", e)
