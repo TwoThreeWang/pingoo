@@ -67,18 +67,13 @@ func addIndexes(db *gorm.DB) error {
 			return err
 		}
 	}
-	if !db.Migrator().HasIndex("events", "idx_events_site_id") {
-		if err := db.Exec("CREATE INDEX idx_events_site_id ON events(site_id)").Error; err != nil {
+	if !db.Migrator().HasIndex("events", "idx_events_site_session_created") {
+		if err := db.Exec("CREATE INDEX idx_events_site_session_created ON events (site_id, session_id, created_at)").Error; err != nil {
 			return err
 		}
 	}
-	if !db.Migrator().HasIndex("events", "idx_events_session_id") {
-		if err := db.Exec("CREATE INDEX idx_events_session_id ON events(session_id)").Error; err != nil {
-			return err
-		}
-	}
-	if !db.Migrator().HasIndex("events", "idx_events_event_type") {
-		if err := db.Exec("CREATE INDEX idx_events_event_type ON events(event_type)").Error; err != nil {
+	if !db.Migrator().HasIndex("events", "idx_events_site_ip_created") {
+		if err := db.Exec("CREATE INDEX idx_events_site_ip_created ON events (site_id, ip, created_at)").Error; err != nil {
 			return err
 		}
 	}
@@ -89,7 +84,7 @@ func addIndexes(db *gorm.DB) error {
 	}
 	// 检查并创建sessions表索引
 	if !db.Migrator().HasIndex("sessions", "idx_sessions_site_start") {
-		if err := db.Exec("CREATE INDEX idx_sessions_site_start ON sessions (start_time) WHERE site_id = 2 AND deleted_at IS NULL").Error; err != nil {
+		if err := db.Exec("CREATE INDEX idx_sessions_site_start ON sessions (site_id, start_time) INCLUDE (duration, pages) WHERE deleted_at IS NULL").Error; err != nil {
 			return err
 		}
 	}

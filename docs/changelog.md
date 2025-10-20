@@ -4,6 +4,23 @@
 
 ![骄傲版本控制](https://cdn.c2v2.com/imgur/KfG7NBr.png)
 
+## [2025-10-20] - v1.0.4
+- Added
+  * 无
+
+- Changed
+  * 优化数据库索引以提高查询性能
+  * 改进了 dashboard 页面的数据加载方式，使用并发请求站点统计数据，提升页面加载速度
+
+- Fixed
+  * 无
+
+- Deprecated
+  * 无
+
+- Removed
+  * 无
+
 ## [2025-10-09] - v1.0.3
 - Added
   * 新增基于 UserAgent 和分辨率的设备类型检测功能，用于更精确地检测设备类型

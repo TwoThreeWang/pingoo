@@ -65,43 +65,53 @@
             }
 
             // 为每个网站获取统计数据
-            for (const site of sites) {
-                try {
-                    const statsResponse = await sendRequest('GET', `/api/events/${site.id}/summary`);
+            // 创建所有站点的请求数组
+            const requests = sites.map(site => {
+                return new Promise(async (resolve) => {
+                    try {
+                        const statsResponse = await sendRequest('GET', `/api/events/${site.id}/summary`);
+                        let stats = {
+                            pv: 0,
+                            uv: 0,
+                            ip_count: 0,
+                            bounce_rate: 0,
+                            avg_duration: 0
+                        };
 
-                    let stats = {
-                        pv: 0,
-                        uv: 0,
-                        ip_count: 0,
-                        bounce_rate: 0,
-                        avg_duration: 0
-                    };
+                        const statsResult = await statsResponse.json();
+                        if (!statsResponse.ok) { throw new Error(statsResult.msg || '获取网站概览数据失败'); }
 
-                    const statsResult = await statsResponse.json();
-                    if (!statsResponse.ok) { throw new Error(statsResult.msg || '获取网站概览数据失败'); }
+                        if (statsResult.code == 0) {
+                            stats = statsResult.data;
+                        }
 
-                    if (statsResult.code == 0) {
-                        stats = statsResult.data;
+                        resolve({ site, stats, success: true });
+                    } catch (error) {
+                        console.error(`获取网站 ${site.name} 统计数据失败:`, error);
+                        showMessage(`获取网站 ${site.name} 统计数据失败:` + error, "error");
+                        resolve({
+                            site,
+                            stats: {
+                                pv: 0,
+                                uv: 0,
+                                ip_count: 0,
+                                bounce_rate: 0,
+                                avg_duration: 0
+                            },
+                            success: false
+                        });
                     }
+                });
+            });
 
-                    // 创建网站项
-                    const siteElement = createSiteElement(site, stats);
-                    sitesListContainer.appendChild(siteElement);
+            // 并发执行所有请求
+            const results = await Promise.all(requests);
 
-                } catch (error) {
-                    console.error(`获取网站 ${site.name} 统计数据失败:`, error);
-                    showMessage(`获取网站 ${site.name} 统计数据失败:` + error, "error")
-                    // 即使有错误也显示网站基本信息
-                    const siteElement = createSiteElement(site, {
-                        pv: 0,
-                        uv: 0,
-                        ip_count: 0,
-                        bounce_rate: 0,
-                        avg_duration: 0
-                    });
-                    sitesListContainer.appendChild(siteElement);
-                }
-            }
+            // 按原始顺序渲染站点
+            results.forEach(({ site, stats }) => {
+                const siteElement = createSiteElement(site, stats);
+                sitesListContainer.appendChild(siteElement);
+            });
             load.style.display = "none";
         } catch (error) {
             console.error('加载网站数据失败:', error);
