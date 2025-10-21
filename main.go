@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 	"pingoo/config"
 	"pingoo/database"
 	"pingoo/routers"
@@ -44,8 +46,19 @@ func main() {
 
 	// 启动服务器
 	port := cfg.Server.Port
-	log.Printf("服务器启动在端口: %s", port)
-	if err := r.Run(":" + port); err != nil {
-		log.Fatal("服务器启动失败:", err)
+	srv := &http.Server{
+		Addr:              fmt.Sprintf(":%s", port),
+		Handler:           r,
+		ReadTimeout:       30 * time.Second,  // 限制读取完整请求的时间（包括Body）
+		WriteTimeout:      30 * time.Second,  // 限制写入响应的时间
+		IdleTimeout:       120 * time.Second, // 限制空闲连接的保持时间（Keep-Alive）
+		ReadHeaderTimeout: 10 * time.Second,  // 限制读取请求头的时间
+		MaxHeaderBytes:    1 << 20,           // 1MB，限制请求头的最大大小
+	}
+
+	// 启动服务
+	log.Printf("启动http服务,端口:%s,监听请求中...", port)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		panic(err)
 	}
 }
