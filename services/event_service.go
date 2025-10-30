@@ -222,7 +222,7 @@ func (s *EventService) GetEventsDetail(query *models.EventQuery) ([]models.Event
 }
 
 // GetEventsSummary 获取网站下整体流量指标
-func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate string) (*models.SimpleSiteStats, error) {
+func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate string, detail string) (*models.SimpleSiteStats, error) {
 	var stats models.SimpleSiteStats
 	db := database.GetDB()
 
@@ -243,54 +243,33 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 
 	// 同时查询PV（页面浏览量）、UV（独立访客数）和IPCount
 	if err = db.Raw(`
+		WITH session_stats AS (
+			SELECT
+				session_id,
+				ip,
+				COUNT(*) as page_count,
+				MIN(created_at) as first_visit,
+				MAX(created_at) as last_visit
+			FROM events
+			WHERE site_id = ?
+				AND event_type = 'page_view'
+			AND created_at BETWEEN ? AND ?
+			GROUP BY session_id, ip
+		)
 		SELECT
-			COUNT(*) as pv,
-			COUNT(DISTINCT(session_id)) as uv,
-			COUNT(DISTINCT(ip)) as ip_count
-		FROM events
-		WHERE site_id = ? AND event_type = 'page_view' AND created_at BETWEEN ? AND ?
-	`, siteID, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).Row().Scan(&stats.PV, &stats.UV, &stats.IPCount); err != nil {
+			SUM(page_count) as pv,
+			COUNT(DISTINCT ip) as uv,
+			COUNT(DISTINCT session_id) as ses,
+			ROUND(SUM(CASE WHEN page_count = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as bounce_rate,
+			ROUND(AVG(CASE WHEN page_count > 1 THEN EXTRACT(EPOCH FROM (last_visit - first_visit)) END), 2) as avg_session_duration,
+			ROUND(AVG(page_count), 2) as pages_per_session
+		FROM session_stats
+	`, siteID, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).Row().Scan(&stats.PV, &stats.UV, &stats.Ses, &stats.BounceRate, &stats.AvgDuration, &stats.PagesPerSession); err != nil {
 		return nil, fmt.Errorf("统计PV、UV和IP失败: %v", err.Error())
 	}
 
-	// 获取自定义事件数量
-	if err = db.Model(&models.Event{}).
-		Where("site_id = ? AND event_type = 'custom' AND created_at BETWEEN ? AND ?", siteID, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).
-		Count(&stats.EventCount).Error; err != nil {
-		return nil, fmt.Errorf("统计事件数量失败: %v", err.Error())
-	}
-
-	// 获取跳出率和平均访问时长
-	var totalSessions int64
-	var bounceSessions int64
-	var totalDuration int64
-
-	if err = db.Model(&models.Session{}).
-		Select("COUNT(*) as session_count, COALESCE(SUM(duration), 0) as total_duration").
-		Where("site_id = ? AND start_time BETWEEN ? AND ?", siteID, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).Row().
-		Scan(&totalSessions, &totalDuration); err != nil {
-		return nil, fmt.Errorf("统计会话数和访问时长失败: %v", err.Error())
-	}
-
-	// 获取跳出会话数（只访问了一个页面的会话）
-	if err = db.Model(&models.Session{}).
-		Where("site_id = ? AND start_time BETWEEN ? AND ? AND pages = 1", siteID, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).
-		Count(&bounceSessions).Error; err != nil {
-		return nil, fmt.Errorf("统计跳出会话失败: %v", err)
-	}
-
-	// 计算跳出率
-	if totalSessions > 0 {
-		stats.BounceRate = float64(bounceSessions) / float64(totalSessions) * 100
-	} else {
-		stats.BounceRate = 0
-	}
-
-	// 计算平均访问时长
-	if totalSessions > 0 {
-		stats.AvgDuration = float64(totalDuration) / float64(totalSessions)
-	} else {
-		stats.AvgDuration = 0
+	if detail == "false" {
+		return &stats, nil
 	}
 
 	// 本周UV和PV总量（基于传入的日期所在周）

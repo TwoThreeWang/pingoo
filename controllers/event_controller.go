@@ -172,8 +172,10 @@ func (ec *EventController) GetEventsSummary(c *gin.Context) {
 	}
 	// 获取查询日期参数，默认为当天
 	dateStr := c.DefaultQuery("date", time.Now().Format("2006-01-02"))
+	// 是否查询个更详细的信息
+	detail := c.DefaultQuery("detail", "false")
 
-	stats, err := ec.eventService.GetEventsSummary(siteID, dateStr, dateStr)
+	stats, err := ec.eventService.GetEventsSummary(siteID, dateStr, dateStr, detail)
 	if err != nil {
 		utils.ServerError(c, err.Error())
 		return

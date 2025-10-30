@@ -4,6 +4,24 @@
 
 ![骄傲版本控制](https://cdn.c2v2.com/imgur/KfG7NBr.png)
 
+## [2025-10-30] - v1.0.5
+- Added
+  * 无
+
+- Changed
+  * 重构统计指标数据结构
+  * 使用CTE优化SQL查询，一次性获取所有统计指标
+  * 更新前端模板以显示新的指标和加载状态
+
+- Fixed
+  * 无
+
+- Deprecated
+  * 无
+
+- Removed
+  * 无
+
 ## [2025-10-20] - v1.0.4
 - Added
   * 无

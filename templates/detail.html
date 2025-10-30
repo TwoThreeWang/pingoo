@@ -67,6 +67,7 @@
             <h3 class="site-name">‣ {{.Site.Name}}</h3>
             <a href="{{.Site.Domain}}" target="_balnk" class="site-url">{{.Site.Domain}}</a>
             <span>
+                <span class="loading" id="loading"></span>
                 <input type="date" class="date-selector" id="date-selector" value="{{.Today}}" onchange="dateChange()"
                     style="width:auto;">
                 <button class="date-nav-btn" id="prev-day" onclick="changeDay(-1)">◄</button>
@@ -79,12 +80,12 @@
                 <div class="metric-value" id="pv">0</div>
             </div>
             <div class="metric">
-                <div class="metric-label">访客数UV</div>
+                <div class="metric-label">独立访客数UV</div>
                 <div class="metric-value" id="uv">0</div>
             </div>
             <div class="metric">
-                <div class="metric-label">独立IP数</div>
-                <div class="metric-value" id="ip">0</div>
+                <div class="metric-label">访问次数</div>
+                <div class="metric-value" id="session_count">0</div>
             </div>
             <div class="metric">
                 <div class="metric-label">跳出率</div>
@@ -95,8 +96,8 @@
                 <div class="metric-value" id="avg_duration">0s</div>
             </div>
             <div class="metric">
-                <div class="metric-label">事件数量</div>
-                <div class="metric-value" id="event_count">0</div>
+                <div class="metric-label">平均浏览页数</div>
+                <div class="metric-value" id="pages_per_session">0</div>
             </div>
             <div class="metric">
                 <div class="metric-label">本周访客UV</div>
@@ -169,12 +170,12 @@
         const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
         // 调用API获取summary
         try {
-            const statsResponse = await sendRequest('GET', `/api/events/${siteId}/summary?date=${date}`);
+            const statsResponse = await sendRequest('GET', `/api/events/${siteId}/summary?date=${date}&detail=true`);
             let stats = {
                 pv: 0,
                 uv: 0,
-                ip_count: 0,
-                event_count: 0,
+                session_count: 0,
+                pages_per_session: 0,
                 bounce_rate: 0,
                 avg_duration: 0,
                 week_uv: 0,
@@ -195,6 +196,7 @@
             }
             // 创建网站项
             createSiteElement(stats);
+            document.getElementById('loading').style.display = 'none';
         } catch (error) {
             console.error(`获取网站 {{.Site.Name}} 统计数据失败:`, error);
             showMessage(`获取网站 {{.Site.Name}} 统计数据失败`, "error");
@@ -212,8 +214,8 @@
         };
         document.getElementById('pv').innerHTML = stats.pv || 0;
         document.getElementById('uv').innerHTML = stats.uv || 0;
-        document.getElementById('ip').innerHTML = stats.ip_count || 0;
-        document.getElementById('event_count').innerHTML = stats.event_count || 0;
+        document.getElementById('session_count').innerHTML = stats.session_count || 0;
+        document.getElementById('pages_per_session').innerHTML = stats.pages_per_session || 0;
         document.getElementById('bounce_rate').innerHTML = (stats.bounce_rate || 0).toFixed(1)+"%";
         document.getElementById('avg_duration').innerHTML = formatDuration(Math.floor(stats.avg_duration || 0));
         document.getElementById('week_uv').innerHTML = stats.week_uv || 0;
@@ -370,6 +372,7 @@
     });
     // 监听日期选择器变化
     function dateChange() {
+        document.getElementById('loading').style.display = 'inline-block';
         loadSiteMetrics();
         loadEventStats();
     }

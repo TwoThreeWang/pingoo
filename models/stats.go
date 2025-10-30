@@ -23,18 +23,18 @@ func (DailyStats) TableName() string {
 
 // SimpleSiteStats 详细网站统计信息
 type SimpleSiteStats struct {
-	SiteID      uint64  `json:"site_id"`
-	PV          int64   `json:"pv"`           // 页面浏览量
-	UV          int64   `json:"uv"`           // 独立访客数
-	IPCount     int64   `json:"ip_count"`     // 独立IP数
-	EventCount  int64   `json:"event_count"`  // 事件数
-	BounceRate  float64 `json:"bounce_rate"`  // 跳出率
-	AvgDuration float64 `json:"avg_duration"` // 平均访问时长（秒）
-	WeekUv      int64   `json:"week_uv"`      // 本周UV
-	WeekPv      int64   `json:"week_pv"`      // 本周PV
-	MonthUv     int64   `json:"month_uv"`     // 本月UV
-	MonthPv     int64   `json:"month_pv"`     // 本月PV
-	HourlyStats []struct {
+	SiteID          uint64  `json:"site_id"`
+	PV              int64   `json:"pv"`                // 页面浏览量
+	UV              int64   `json:"uv"`                // 独立访客数
+	Ses             int64   `json:"session_count"`     // 访问次数
+	BounceRate      float64 `json:"bounce_rate"`       // 跳出率
+	AvgDuration     float64 `json:"avg_duration"`      // 平均访问时长（秒）
+	PagesPerSession float64 `json:"pages_per_session"` // 平均浏览页数
+	WeekUv          int64   `json:"week_uv"`           // 本周UV
+	WeekPv          int64   `json:"week_pv"`           // 本周PV
+	MonthUv         int64   `json:"month_uv"`          // 本月UV
+	MonthPv         int64   `json:"month_pv"`          // 本月PV
+	HourlyStats     []struct {
 		Hour  int   `json:"hour"`
 		Count int64 `json:"count"`
 	} `json:"hourly_stats"` // 按小时流量分布
