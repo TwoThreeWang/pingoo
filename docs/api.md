@@ -430,6 +430,7 @@ GET /api/events/1?page=1&page_size=20&event_type=page_view
 | 参数 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `date` | `string` | 当天 | 统计日期 |
+| `detail` | `string` | false | 是否返回详细指标 |
 
 **响应示例**
 
@@ -441,8 +442,8 @@ GET /api/events/1?page=1&page_size=20&event_type=page_view
     "site_id": 1,
     "pv": 81,
     "uv": 3,
-    "ip_count": 3,
-    "event_count": 0,
+    "session_count": 3,
+    "pages_per_session": 0,
     "bounce_rate": 0,
     "avg_duration": 2016,
     "week_ip": 3,
@@ -467,8 +468,8 @@ GET /api/events/1?page=1&page_size=20&event_type=page_view
 |------|------|
 | `pv` | 页面浏览量 |
 | `uv` | 独立访客数 |
-| `ip_count` | IP数量 |
-| `event_count` | 事件总数 |
+| `session_count` | 访问次数 |
+| `pages_per_session` | 平均浏览页数 |
 | `bounce_rate` | 跳出率 |
 | `avg_duration` | 平均停留时长（秒） |
 | `week_ip` | 周IP数量 |
