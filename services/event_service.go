@@ -257,12 +257,12 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 			GROUP BY session_id, ip
 		)
 		SELECT
-			SUM(page_count) as pv,
-			COUNT(DISTINCT ip) as uv,
-			COUNT(DISTINCT session_id) as ses,
-			ROUND(SUM(CASE WHEN page_count = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as bounce_rate,
-			ROUND(AVG(CASE WHEN page_count > 1 THEN EXTRACT(EPOCH FROM (last_visit - first_visit)) END), 2) as avg_session_duration,
-			ROUND(AVG(page_count), 2) as pages_per_session
+			COALESCE(SUM(page_count),0) as pv,
+			COALESCE(COUNT(DISTINCT ip),0) as uv,
+			COALESCE(COUNT(DISTINCT session_id),0) as ses,
+			COALESCE(ROUND(SUM(CASE WHEN page_count = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2),0) as bounce_rate,
+			COALESCE(ROUND(AVG(CASE WHEN page_count > 1 THEN EXTRACT(EPOCH FROM (last_visit - first_visit)) END), 2),0) as avg_session_duration,
+			COALESCE(ROUND(AVG(page_count), 2),0) as pages_per_session
 		FROM session_stats
 	`, siteID, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).Row().Scan(&stats.PV, &stats.UV, &stats.Ses, &stats.BounceRate, &stats.AvgDuration, &stats.PagesPerSession); err != nil {
 		return nil, fmt.Errorf("统计PV、UV和IP失败: %v", err.Error())
