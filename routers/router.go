@@ -61,6 +61,7 @@ func SetupRouter(router *gin.Engine, db *gorm.DB, cfg *config.Config) *gin.Engin
 			events.GET("/:site_id", middleware.AuthMiddleware(), eventController.GetEvents)                // 获取网站下事件列表
 			events.GET("/:site_id/stats", middleware.AuthMiddleware(), eventController.GetEventsRank)      // 获取事件统计排行
 			events.GET("/:site_id/summary", middleware.AuthMiddleware(), eventController.GetEventsSummary) // 获取网站下整体流量指标
+			events.GET("/:site_id/online", middleware.AuthMiddleware(), eventController.GetOnlineUsers)    // 获取在线用户数
 		}
 
 		// 站点管理路由

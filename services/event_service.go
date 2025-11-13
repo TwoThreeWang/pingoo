@@ -423,3 +423,26 @@ func (s *EventService) GetEventsRankByStats(siteID uint64, startDate, endDate, s
 
 	return &rankStats, total, nil
 }
+
+// GetOnlineUsers 获取网站在线用户数（过去5分钟内有活动的会话数）
+func (s *EventService) GetOnlineUsers(siteID uint64) (*models.OnlineUsers, error) {
+	db := database.GetDB()
+	var count int64
+
+	// 查询过去5分钟内有活动的会话数
+	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
+
+	err := db.Model(&models.Session{}).
+		Where("site_id = ? AND end_time >= ?", siteID, fiveMinutesAgo).
+		Count(&count).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("查询在线用户数失败: %v", err)
+	}
+
+	return &models.OnlineUsers{
+		SiteID:      siteID,
+		OnlineCount: count,
+		Timestamp:   time.Now().Format("2006-01-02 15:04:05"),
+	}, nil
+}

@@ -46,3 +46,10 @@ type RankStats struct {
 	Key   string `json:"key"`
 	Count int64  `json:"count"`
 }
+
+// OnlineUsers 在线用户统计
+type OnlineUsers struct {
+	SiteID      uint64 `json:"site_id"`
+	OnlineCount int64  `json:"online_count"` // 在线用户数
+	Timestamp   string `json:"timestamp"`    // 查询时间
+}

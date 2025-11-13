@@ -64,7 +64,11 @@
     <!-- 网站概览 -->
     <div class="site-item">
         <div class="site-header">
-            <h3 class="site-name">‣ {{.Site.Name}}</h3>
+            <h3 class="site-name">‣ {{.Site.Name}}
+                <span class="site-status" id="site-status">
+                    当前在线 <span id="online-count">0</span>
+                </span>
+            </h3>
             <a href="{{.Site.Domain}}" target="_balnk" class="site-url">{{.Site.Domain}}</a>
             <span>
                 <span class="loading" id="loading"></span>
@@ -224,6 +228,30 @@
         document.getElementById('month_pv').innerHTML = stats.month_pv || 0;
     }
 
+    // 加载在线用户数
+    async function loadOnlineUsers() {
+        try {
+            const apiUrl = `/api/events/${siteId}/online`;
+            const response = await sendRequest('GET', apiUrl);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.code !== 0) {
+                throw new Error(result.msg || '获取在线用户数失败');
+            }
+
+            const onlineCount = result.data.online_count || 0;
+            document.getElementById('online-count').textContent = onlineCount;
+        } catch (error) {
+            console.error('获取在线用户数失败:', error);
+            // 失败时显示 0
+            document.getElementById('online-count').textContent = '0';
+        }
+    }
+
     // 加载事件统计数据
     async function loadEventStats() {
         try {
@@ -362,6 +390,11 @@
         });
         // 初始化数据
         loadSiteMetrics();
+        loadOnlineUsers(); // 加载在线用户数
+
+        // 每30秒刷新一次在线用户数
+        setInterval(loadOnlineUsers, 30000);
+
         currentStatType = getUrlParam('type') || 'url';
         const currentTypeLink = document.querySelector(`a[data-type="${currentStatType}"]`);
         if (currentTypeLink) {

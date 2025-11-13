@@ -258,3 +258,28 @@ func (ec *EventController) TrackCustomEvent(c *gin.Context) {
 
 	utils.Success(c, event)
 }
+
+// GetOnlineUsers 获取在线用户数
+func (ec *EventController) GetOnlineUsers(c *gin.Context) {
+	userID := middleware.GetCurrentUserID(c)
+
+	siteID, err := strconv.ParseUint(c.Param("site_id"), 10, 64)
+	if err != nil {
+		utils.ValidationError(c, "无效的站点ID")
+		return
+	}
+	// 验证用户是否有权限访问站点
+	ss := services.NewSiteService()
+	if hasAccess, err := ss.CheckUserAccess(siteID, userID); err != nil || !hasAccess {
+		utils.ValidationError(c, err.Error())
+		return
+	}
+
+	stats, err := ec.eventService.GetOnlineUsers(siteID)
+	if err != nil {
+		utils.ServerError(c, err.Error())
+		return
+	}
+
+	utils.Success(c, stats)
+}

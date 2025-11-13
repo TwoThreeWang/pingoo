@@ -174,7 +174,11 @@
     <!-- 网站概览 -->
     <div class="site-item">
         <div class="site-header">
-            <h3 class="site-name">‣ {{.Site.Name}}</h3>
+            <h3 class="site-name">‣ {{.Site.Name}}
+                <span class="site-status" id="site-status">
+                    当前在线 <span id="online-count">0</span>
+                </span>
+            </h3>
             <a href="{{.Site.Domain}}" target="_balnk" class="site-url">{{.Site.Domain}}</a>
             <span>
                 <span class="loading" id="loading"></span>
@@ -495,6 +499,30 @@
         }
     }
 
+    // 加载在线用户数
+    async function loadOnlineUsers() {
+        try {
+            const apiUrl = `/api/events/${siteId}/online`;
+            const response = await sendRequest('GET', apiUrl);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.code !== 0) {
+                throw new Error(result.msg || '获取在线用户数失败');
+            }
+
+            const onlineCount = result.data.online_count || 0;
+            document.getElementById('online-count').textContent = onlineCount;
+        } catch (error) {
+            console.error('获取在线用户数失败:', error);
+            // 失败时显示 0
+            document.getElementById('online-count').textContent = '0';
+        }
+    }
+
     // 监听日期选择器变化
     function dateChange() {
         document.getElementById('loading').style.display = 'inline-block';
@@ -507,11 +535,13 @@
         document.getElementById('loading').style.display = 'inline-block';
         loadSiteMetrics();
         loadSiteStats();
+        loadOnlineUsers(); // 刷新在线用户数
     }, 60000);
     // 页面加载完成后执行
     document.addEventListener('DOMContentLoaded', function () {
         // 初始加载
         loadSiteMetrics();
+        loadOnlineUsers(); // 初始加载在线用户数
         loadSiteStats();
     });
 

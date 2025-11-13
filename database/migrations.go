@@ -88,6 +88,12 @@ func addIndexes(db *gorm.DB) error {
 			return err
 		}
 	}
+	// 添加在线用户查询优化索引
+	if !db.Migrator().HasIndex("sessions", "idx_sessions_site_end") {
+		if err := db.Exec("CREATE INDEX idx_sessions_site_end ON sessions (site_id, end_time) WHERE deleted_at IS NULL").Error; err != nil {
+			return err
+		}
+	}
 	// 检查并创建daily_stats表索引
 	if !db.Migrator().HasIndex("daily_stats", "uniq_daily_stats") {
 		if err := db.Exec("CREATE UNIQUE INDEX uniq_daily_stats ON daily_stats (site_id, date, category, item)").Error; err != nil {
