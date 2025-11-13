@@ -1,5 +1,7 @@
 (function(w, d) {
-    const cfg = {apiUrl: '', siteId: ''};
+    const cfg = {apiUrl: '', siteId: ''}, o = w.location.origin;
+    let curUrl = w.location.href, curRef = d.referrer.startsWith(o) ? '' : d.referrer;
+
     function getScriptConfig() {
         for (const s of d.getElementsByTagName('script')) {
             const siteId = s.getAttribute('site-id');
@@ -16,40 +18,66 @@
             }
         }
     }
+
     function getSessionId(){
-        let k="pingoo_sess",t=18e5,n=Date.now(),d=JSON.parse(localStorage.getItem(k)||"{}");
-        if(!d.id||n-d.t>t)d={id:"s_"+Math.random().toString(36).slice(2)+"_"+n,t:n};
-        else d.t=n;
-        localStorage.setItem(k,JSON.stringify(d));
-        return d.id;
+        try {
+            let k="pingoo_sess",t=18e5,n=Date.now(),d=JSON.parse(localStorage.getItem(k)||"{}");
+            if(!d.id||n-d.t>t)d={id:"s_"+Math.random().toString(36).slice(2)+"_"+n,t:n};
+            else d.t=n;
+            localStorage.setItem(k,JSON.stringify(d));
+            return d.id;
+        } catch {
+            return "s_"+Math.random().toString(36).slice(2);
+        }
     }
+
     function sendEvent(type, value) {
         if (!cfg.siteId) return;
         fetch(cfg.apiUrl, {
             method: 'POST',
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 session_id: getSessionId(),
                 site_id: cfg.siteId,
                 user_id: cfg.userId || '',
-                url: w.location.pathname,
-                referrer: d.referrer,
+                url: curUrl,
+                referrer: curRef,
                 event_type: type,
                 event_value: value || '',
                 screen: screen.width + 'x' + screen.height
             })
-        });
+        }).catch(() => {});
     }
+
     function init() {
         getScriptConfig();
         if (!cfg.siteId) {
             console.error('请配置site-id');
             return;
         }
+
         sendEvent('page_view', '');
+
         d.addEventListener('click', e => {
             const el = e.target.closest('[pingoo-event]');
             if (el) sendEvent('custom', el.getAttribute('pingoo-event'));
         });
+
+        // SPA 支持
+        const push = history.pushState;
+        history.pushState = function(...args) {
+            push.apply(history, args);
+            curRef = curUrl;
+            curUrl = w.location.href;
+            setTimeout(() => sendEvent('page_view', ''), 300);
+        };
+
+        w.addEventListener('popstate', () => {
+            curRef = curUrl;
+            curUrl = w.location.href;
+            sendEvent('page_view', '');
+        });
     }
+
     d.readyState === 'loading' ? d.addEventListener('DOMContentLoaded', init) : init();
 })(window, document);

@@ -4,6 +4,25 @@
 
 ![骄傲版本控制](https://cdn.c2v2.com/imgur/KfG7NBr.png)
 
+## [2025-11-13] - v1.0.6
+- Added
+  * 无
+
+- Changed
+  * 添加对单页应用的路由变化跟踪
+  * 改进referrer处理和错误处理
+  * 移除未使用的user_agent依赖
+  * 优化事件统计服务，使用并行查询提高效率
+
+- Fixed
+  * 无
+
+- Deprecated
+  * 无
+
+- Removed
+  * 无
+
 ## [2025-10-30] - v1.0.5
 - Added
   * 无

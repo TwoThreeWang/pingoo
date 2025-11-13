@@ -260,7 +260,7 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 			COALESCE(SUM(page_count),0) as pv,
 			COALESCE(COUNT(DISTINCT ip),0) as uv,
 			COALESCE(COUNT(DISTINCT session_id),0) as ses,
-			COALESCE(ROUND(SUM(CASE WHEN page_count = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2),0) as bounce_rate,
+			COALESCE(ROUND(SUM(CASE WHEN page_count = 1 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 2),0) as bounce_rate,
 			COALESCE(ROUND(AVG(CASE WHEN page_count > 1 THEN EXTRACT(EPOCH FROM (last_visit - first_visit)) END), 2),0) as avg_session_duration,
 			COALESCE(ROUND(AVG(page_count), 2),0) as pages_per_session
 		FROM session_stats
@@ -272,38 +272,71 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 		return &stats, nil
 	}
 
-	// 本周UV和PV总量（基于传入的日期所在周）
+	// 计算周和月的时间范围
 	weekStart := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
 	for weekStart.Weekday() != time.Monday {
 		weekStart = weekStart.AddDate(0, 0, -1)
 	}
 	weekEnd := weekStart.AddDate(0, 0, 7)
-	if err = db.Model(&models.Event{}).
-		Select("COUNT(*) as pv, COUNT(DISTINCT(session_id)) as uv").
-		Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, weekStart.Format("2006-01-02 15:04:05"), weekEnd.Format("2006-01-02 15:04:05")).Row().
-		Scan(&stats.WeekPv, &stats.WeekUv); err != nil {
-		return nil, fmt.Errorf("统计本周数据失败: %v", err.Error())
-	}
-
-	// 本月IP和PV总量（基于传入的日期所在周）
 	monthStart := time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, start.Location())
 	monthEnd := monthStart.AddDate(0, 1, 0)
-	if err = db.Model(&models.Event{}).
-		Select("COUNT(*) as month_pv, COUNT(DISTINCT session_id) as uv").
-		Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?", siteID, monthStart.Format("2006-01-02 15:04:05"), monthEnd.Format("2006-01-02 15:04:05")).
-		Row().Scan(&stats.MonthPv, &stats.MonthUv); err != nil {
-		return nil, fmt.Errorf("统计本月PV和IP失败: %v", err.Error())
-	}
 
-	// 小时流量分布
-	if err := db.Raw(`
-		SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
-		FROM events
-		WHERE site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?
-		GROUP BY EXTRACT(HOUR FROM created_at)
-		ORDER BY hour
-	`, siteID, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).Scan(&stats.HourlyStats).Error; err != nil {
-		return nil, fmt.Errorf("统计小时流量分布失败: %v", err.Error())
+	// 使用并行查询优化性能
+	type queryError struct {
+		err error
+		msg string
+	}
+	errorChan := make(chan queryError, 3)
+	doneChan := make(chan struct{})
+
+	// 查询1: 本周统计
+	go func() {
+		if err := db.Model(&models.Event{}).
+			Select("COUNT(*) as pv, COUNT(DISTINCT session_id) as uv").
+			Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?",
+				siteID, weekStart.Format("2006-01-02 15:04:05"), weekEnd.Format("2006-01-02 15:04:05")).
+			Row().Scan(&stats.WeekPv, &stats.WeekUv); err != nil {
+			errorChan <- queryError{err: err, msg: "统计本周数据失败"}
+		}
+		doneChan <- struct{}{}
+	}()
+
+	// 查询2: 本月统计
+	go func() {
+		if err := db.Model(&models.Event{}).
+			Select("COUNT(*) as pv, COUNT(DISTINCT session_id) as uv").
+			Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?",
+				siteID, monthStart.Format("2006-01-02 15:04:05"), monthEnd.Format("2006-01-02 15:04:05")).
+			Row().Scan(&stats.MonthPv, &stats.MonthUv); err != nil {
+			errorChan <- queryError{err: err, msg: "统计本月数据失败"}
+		}
+		doneChan <- struct{}{}
+	}()
+
+	// 查询3: 小时流量分布
+	go func() {
+		if err := db.Raw(`
+			SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
+			FROM events
+			WHERE site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?
+			GROUP BY EXTRACT(HOUR FROM created_at)
+			ORDER BY hour
+		`, siteID, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).
+			Scan(&stats.HourlyStats).Error; err != nil {
+			errorChan <- queryError{err: err, msg: "统计小时流量分布失败"}
+		}
+		doneChan <- struct{}{}
+	}()
+
+	// 等待所有查询完成
+	completedCount := 0
+	for completedCount < 3 {
+		select {
+		case qErr := <-errorChan:
+			return nil, fmt.Errorf("%s: %v", qErr.msg, qErr.err)
+		case <-doneChan:
+			completedCount++
+		}
 	}
 
 	return &stats, nil
