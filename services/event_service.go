@@ -105,7 +105,7 @@ func (s *EventService) CreateEvent(eventCreate *models.EventCreate) (*models.Eve
 		err = tx.Where("session_id = ? AND site_id = ?", event.SessionID, event.SiteID).First(&session).Error
 
 		now := time.Now()
-		AfterMinutes := now.Add(15 * time.Minute)
+		AfterMinutes := now.Add(5 * time.Minute)
 
 		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 			// 会话不存在，创建新会话
@@ -433,7 +433,7 @@ func (s *EventService) GetOnlineUsers(siteID uint64) (*models.OnlineUsers, error
 	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
 
 	err := db.Model(&models.Session{}).
-		Where("site_id = ? AND end_time >= ?", siteID, fiveMinutesAgo).
+		Where("site_id = ? AND updated_at >= ?", siteID, fiveMinutesAgo).
 		Count(&count).Error
 
 	if err != nil {
