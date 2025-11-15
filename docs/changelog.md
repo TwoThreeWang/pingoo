@@ -15,7 +15,7 @@
   * 优化事件统计服务，使用并行查询提高效率
 
 - Fixed
-  * 无
+  * 使用pathname和search替代href来跟踪页面URL
 
 - Deprecated
   * 无

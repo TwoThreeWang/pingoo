@@ -1,6 +1,6 @@
 (function(w, d) {
     const cfg = {apiUrl: '', siteId: ''}, o = w.location.origin;
-    let curUrl = w.location.href, curRef = d.referrer.startsWith(o) ? '' : d.referrer;
+    let curUrl = w.location.pathname + w.location.search, curRef = d.referrer.startsWith(o) ? '' : d.referrer;
 
     function getScriptConfig() {
         for (const s of d.getElementsByTagName('script')) {
@@ -68,13 +68,13 @@
         history.pushState = function(...args) {
             push.apply(history, args);
             curRef = curUrl;
-            curUrl = w.location.href;
+            curUrl = w.location.pathname + w.location.search;
             setTimeout(() => sendEvent('page_view', ''), 300);
         };
 
         w.addEventListener('popstate', () => {
             curRef = curUrl;
-            curUrl = w.location.href;
+            curUrl = w.location.pathname + w.location.search;
             sendEvent('page_view', '');
         });
     }
