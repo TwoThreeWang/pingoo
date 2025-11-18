@@ -321,7 +321,7 @@
         events.forEach((event, index) => {
             html += `
                 <li class="stat-item">
-                    <span class="stat-item-label">${event.key || '未知'}</span>
+                    <span class="stat-item-label" title="${event.key}">${event.key || '未知'}</span>
                     <span class="stat-item-value">${event.count}</span>
                 </li>
             `;

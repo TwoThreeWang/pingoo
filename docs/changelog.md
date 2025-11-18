@@ -13,6 +13,7 @@
 
 - Fixed
   * 将SPA页面跳转的referrer标记为'SPA'
+  * 为统计项标签添加title属性以显示完整内容
 
 - Deprecated
   * 无
