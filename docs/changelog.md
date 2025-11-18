@@ -4,6 +4,22 @@
 
 ![骄傲版本控制](https://cdn.c2v2.com/imgur/KfG7NBr.png)
 
+## [2025-11-18] - v1.0.7
+- Added
+  * 无
+
+- Changed
+  * 无
+
+- Fixed
+  * 将SPA页面跳转的referrer标记为'SPA'
+
+- Deprecated
+  * 无
+
+- Removed
+  * 无
+
 ## [2025-11-13] - v1.0.6
 - Added
   * 添加在线用户统计功能

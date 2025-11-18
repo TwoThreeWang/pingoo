@@ -67,13 +67,13 @@
         const push = history.pushState;
         history.pushState = function(...args) {
             push.apply(history, args);
-            curRef = curUrl;
+            curRef = 'SPA';
             curUrl = w.location.pathname + w.location.search;
             setTimeout(() => sendEvent('page_view', ''), 300);
         };
 
         w.addEventListener('popstate', () => {
-            curRef = curUrl;
+            curRef = 'SPA';
             curUrl = w.location.pathname + w.location.search;
             sendEvent('page_view', '');
         });
