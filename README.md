@@ -1,4 +1,16 @@
-# Pingoo 🐧 - 轻量、隐私友好的网站统计分析系统
+<div align="center">
+  <img src="public/img/logo.png" alt="Pingoo Logo" width="180"/>
+  <h1>Pingoo 🐧</h1>
+  <p><b>轻量、隐私友好的网站统计分析系统</b></p>
+
+  [![Go Report Card](https://goreportcard.com/badge/github.com/TwoThreeWang/pingoo)](https://goreportcard.com/report/github.com/TwoThreeWang/pingoo)
+  [![License](https://img.shields.io/github/license/TwoThreeWang/pingoo)](LICENSE)
+  [![Go Version](https://img.shields.io/github/go-mod/go-version/TwoThreeWang/pingoo)](go.mod)
+</div>
+
+---
+
+**Pingoo** 是一款轻量、高效、易用、隐私友好的网站流量统计工具，专为希望快速了解网站访问情况的开发者、博主和小型网站打造。我们相信，统计数据应该简单、清晰、快速，而不是繁琐、复杂、臃肿。
 
 **嗨，欢迎来到 Pingoo！**
 
@@ -48,7 +60,7 @@ Pingoo 是一款轻量、高效、易用、隐私友好的网站流量统计工�
 Pingoo 采用现代化的技术栈构建，确保系统的高性能和易维护性：
 
 ### 🔧 后端技术
-- **Go 1.21+** - 高性能的编译型语言
+- **Go 1.23+** - 高性能的编译型语言
 - **Gin 框架** - 轻量级 Web 框架，快速路由处理
 - **GORM** - 强大的 ORM 库，支持多种数据库
 
@@ -72,7 +84,7 @@ cd pingoo
 
 ### 2. 环境要求
 
-- **Go 1.21+** - 确保已安装最新版本的 Go
+- **Go 1.23+** - 确保已安装最新版本的 Go
 - **PostgreSQL** - 推荐使用 PostgreSQL 数据库
 
 ### 3. 安装依赖
@@ -99,7 +111,7 @@ GIN_MODE=debug      # 运行模式（debug/release）
 # 网站配置
 SITE_NAME=Pingoo                  # 网站显示名称
 SITE_DOMAIN=http://localhost:5004 # 网站访问域名
-VERSION=1.0.0                     # 程序版本
+VERSION=1.0.6                     # 程序版本
 TRACKER_SCRIPT_NAME=pingoo.js     # 追踪脚本名称（防止被广告拦截）
 REG_MODE=false                    # 是否开放注册
 
@@ -164,6 +176,11 @@ go run main.go
 - **前端埋点代码**：自动生成的追踪代码集成指南
 - **错误处理**：各种错误情况的响应格式
 
+更多文档：
+- [更新日志 (Changelog)](docs/changelog.md)
+- [隐私政策 (Privacy)](docs/privacy.md)
+- [使用帮助 (Help)](docs/help.md)
+
 ## 📁 项目结构
 
 Pingoo 采用清晰的分层架构，代码组织规范，便于维护和扩展：
@@ -222,7 +239,7 @@ pingoo/
 ├── LICENSE                # 许可证文件
 ├── Dockerfile             # Docker配置
 ├── docker-compose.yml     # Docker Compose配置
-└── deploy.sh              # 部署脚本
+└── build.sh               # 构建与部署脚本
 ```
 
 ### 🏗️ 架构说明
@@ -237,7 +254,7 @@ pingoo/
 
 ### 🛠️ 环境搭建
 
-1. **安装 Go 1.21+** - 确保使用最新版本的 Go
+1. **安装 Go 1.23+** - 确保使用最新版本的 Go
 2. **安装 PostgreSQL** - 推荐使用 PostgreSQL 数据库
 3. **配置环境变量** - 复制 `.env.example` 为 `.env` 并修改配置
 4. **启动开发服务器** - 运行 `go run main.go`

@@ -1,5 +1,66 @@
 {{template "base" .}}
 
+{{define "head"}}
+<style>
+    /* 骨架屏样式 */
+    .skeleton {
+        background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-primary) 50%, var(--bg-secondary) 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+    }
+
+    @keyframes skeleton-loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .site-item.skeleton-item {
+        min-height: 120px;
+    }
+
+    .skeleton-item .site-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .skeleton-title {
+        height: 24px;
+        width: 200px;
+        border-radius: 4px;
+    }
+
+    .skeleton-url {
+        height: 16px;
+        width: 150px;
+        border-radius: 4px;
+    }
+
+    .skeleton-metrics {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .skeleton-metric {
+        height: 50px;
+        width: 100px;
+        border-radius: 4px;
+    }
+
+    /* 淡入动画 */
+    .site-item.fade-in {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{{end}}
+
 {{define "content"}}
 <div class="dashboard-container">
     <nav aria-label="breadcrumb">
@@ -16,10 +77,10 @@
     <div class="content">
         <!-- 网站列表 -->
         <div class="sites-section">
-            <div class="sites-list">
+            <div class="sites-list" id="sites-list">
                 <!-- 数据将通过JavaScript动态加载 -->
                 <div style="text-align: center; padding: 2rem;" id="load">
-                    <p style="margin-top: 1rem; color: var(--bg-secondary-text);"><span class="loading"></span>正在加载网站数据...
+                    <p style="margin-top: 1rem; color: var(--bg-secondary-text);"><span class="loading"></span>正在加载网站列表...
                     </p>
                 </div>
             </div>
@@ -30,128 +91,63 @@
 
 {{define "extra_js"}}
 <script>
-    // 获取网站列表及其数据概览
-    async function loadSitesData() {
-        const load = document.getElementById("load");
-        try {
-            const sitesListContainer = document.querySelector('.sites-list');
-            if (!sitesListContainer) {
-                throw new Error(`未找到网站列表容器`);
-            }
+    // 存储站点数据，用于懒加载时获取统计
+    let sitesData = [];
+    // IntersectionObserver 实例
+    let statsObserver = null;
 
-            // 获取网站列表
-            const response = await sendRequest('GET', '/api/sites?limit=50');
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.msg}`);
-            }
-
-            const result = await response.json();
-            if (result.code != 0) {
-                throw new Error(result.msg || '获取网站列表失败');
-            }
-
-            const sites = result.data.list;
-
-            // 如果没有网站
-            if (!sites || sites.length === 0) {
-                sitesListContainer.innerHTML = `
-                <div style="text-align: center; padding: 2rem; color: var(--bg-secondary-text);">
-                    <h3>暂无网站数据</h3>
-                    <p>您还没有添加任何网站，请先<a href="/profile">添加网站</a>后再查看数据</p>
+    // 创建骨架屏元素
+    function createSkeletonElement(site) {
+        const siteDiv = document.createElement('div');
+        siteDiv.className = 'site-item skeleton-item';
+        siteDiv.dataset.siteId = site.id;
+        siteDiv.innerHTML = `
+            <div class="site-header">
+                <div>
+                    <h3 class="site-name">‣ ${site.name || '未命名网站'}</h3>
+                    <a href="${site.domain}" target="_blank" class="site-url">${site.domain || '未设置域名'}</a>
                 </div>
-            `;
-                return;
-            }
-
-            // 为每个网站获取统计数据
-            // 创建所有站点的请求数组
-            const requests = sites.map(site => {
-                return new Promise(async (resolve) => {
-                    try {
-                        const statsResponse = await sendRequest('GET', `/api/events/${site.id}/summary`);
-                        let stats = {
-                            pv: 0,
-                            uv: 0,
-                            ip_count: 0,
-                            bounce_rate: 0,
-                            avg_duration: 0
-                        };
-
-                        const statsResult = await statsResponse.json();
-                        if (!statsResponse.ok) { throw new Error(statsResult.msg || '获取网站概览数据失败'); }
-
-                        if (statsResult.code == 0) {
-                            stats = statsResult.data;
-                        }
-
-                        resolve({ site, stats, success: true });
-                    } catch (error) {
-                        console.error(`获取网站 ${site.name} 统计数据失败:`, error);
-                        showMessage(`获取网站 ${site.name} 统计数据失败:` + error, "error");
-                        resolve({
-                            site,
-                            stats: {
-                                pv: 0,
-                                uv: 0,
-                                ip_count: 0,
-                                bounce_rate: 0,
-                                avg_duration: 0
-                            },
-                            success: false
-                        });
-                    }
-                });
-            });
-
-            // 并发执行所有请求
-            const results = await Promise.all(requests);
-
-            // 按原始顺序渲染站点
-            results.forEach(({ site, stats }) => {
-                const siteElement = createSiteElement(site, stats);
-                sitesListContainer.appendChild(siteElement);
-            });
-            load.style.display = "none";
-        } catch (error) {
-            console.error('加载网站数据失败:', error);
-            showMessage('加载网站数据失败:' + error, "error")
-            load.style.display = "none";
-            const sitesListContainer = document.querySelector('.sites-list');
-            if (sitesListContainer) {
-                sitesListContainer.innerHTML = `
-                <div style="text-align: center; padding: 2rem; color: var(--bg-secondary-text);">
-                    <h3>加载失败</h3>
-                    <p>无法加载网站数据，${error}</p>
-                    <button onclick="loadSitesData()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: var(--primary-text); border: none; border-radius: 4px; cursor: pointer;">
-                        重新加载
-                    </button>
+                <a href="/websites/${site.id}"><button>查看更多 ➔</button></a>
+            </div>
+            <div class="site-metrics skeleton-metrics">
+                <div class="metric">
+                    <div class="metric-label">浏览量PV</div>
+                    <div class="metric-value skeleton skeleton-metric" style="height:24px;width:60px;display:inline-block;"></div>
                 </div>
-            `;
-            }
-        }
+                <div class="metric">
+                    <div class="metric-label">独立访客数UV</div>
+                    <div class="metric-value skeleton skeleton-metric" style="height:24px;width:60px;display:inline-block;"></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">访问次数</div>
+                    <div class="metric-value skeleton skeleton-metric" style="height:24px;width:60px;display:inline-block;"></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">跳出率</div>
+                    <div class="metric-value skeleton skeleton-metric" style="height:24px;width:60px;display:inline-block;"></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">平均访问时长</div>
+                    <div class="metric-value skeleton skeleton-metric" style="height:24px;width:60px;display:inline-block;"></div>
+                </div>
+            </div>
+        `;
+        return siteDiv;
     }
 
-    // 创建网站元素
-    function createSiteElement(site, stats) {
-        const siteDiv = document.createElement('div');
-        siteDiv.className = 'site-item';
+    // 格式化平均访问时长
+    function formatDuration(seconds) {
+        if (!seconds || seconds < 60) return `${seconds || 0}s`;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}m${remainingSeconds}s`;
+    }
 
-        // 格式化平均访问时长
-        const formatDuration = (seconds) => {
-            if (!seconds || seconds < 60) return `${seconds || 0}s`;
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = seconds % 60;
-            return `${minutes}m${remainingSeconds}s`;
-        };
-
-        siteDiv.innerHTML = `
-        <div class="site-header">
-            <h3 class="site-name">‣ ${site.name || '未命名网站'}</h3>
-            <a href="${site.domain}" target="_balnk" class="site-url">${site.domain || '未设置域名'}</a>
-            <a href="/websites/${site.id}"><button>查看更多 ➔</button></a>
-        </div>
-        <div class="site-metrics">
+    // 更新站点统计数据（替换骨架屏）
+    function updateSiteWithStats(siteElement, stats) {
+        const metricsContainer = siteElement.querySelector('.site-metrics');
+        metricsContainer.classList.remove('skeleton-metrics');
+        metricsContainer.innerHTML = `
             <div class="metric">
                 <div class="metric-label">浏览量PV</div>
                 <div class="metric-value">${stats.pv || 0}</div>
@@ -172,15 +168,140 @@
                 <div class="metric-label">平均访问时长</div>
                 <div class="metric-value">${formatDuration(Math.floor(stats.avg_duration || 0))}</div>
             </div>
-        </div>
-    `;
+        `;
+        siteElement.classList.remove('skeleton-item');
+        siteElement.classList.add('fade-in');
+        siteElement.dataset.loaded = 'true';
+    }
 
-        return siteDiv;
+    // 加载单个站点的统计数据
+    async function loadSiteStats(siteElement) {
+        const siteId = siteElement.dataset.siteId;
+        if (siteElement.dataset.loaded === 'true' || siteElement.dataset.loading === 'true') {
+            return; // 已加载或正在加载
+        }
+
+        siteElement.dataset.loading = 'true';
+
+        try {
+            const statsResponse = await sendRequest('GET', `/api/events/${siteId}/summary`);
+            let stats = {
+                pv: 0, uv: 0, session_count: 0, bounce_rate: 0, avg_duration: 0
+            };
+
+            if (statsResponse.ok) {
+                const statsResult = await statsResponse.json();
+                if (statsResult.code === 0) {
+                    stats = statsResult.data;
+                }
+            }
+            updateSiteWithStats(siteElement, stats);
+        } catch (error) {
+            console.error(`获取站点 ${siteId} 统计数据失败:`, error);
+            // 失败时显示 0
+            updateSiteWithStats(siteElement, {});
+        }
+
+        siteElement.dataset.loading = 'false';
+    }
+
+    // 设置 IntersectionObserver 进行懒加载
+    function setupLazyLoading() {
+        const options = {
+            root: null, // 使用视口作为根
+            rootMargin: '100px', // 提前 100px 开始加载
+            threshold: 0.1 // 10% 可见时触发
+        };
+
+        statsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const siteElement = entry.target;
+                    loadSiteStats(siteElement);
+                    // 加载后取消观察
+                    statsObserver.unobserve(siteElement);
+                }
+            });
+        }, options);
+
+        // 观察所有站点元素
+        document.querySelectorAll('.site-item').forEach(element => {
+            if (element.dataset.loaded !== 'true') {
+                statsObserver.observe(element);
+            }
+        });
+    }
+
+    // 获取网站列表并显示骨架屏
+    async function loadSitesData() {
+        const loadIndicator = document.getElementById("load");
+        const sitesListContainer = document.getElementById('sites-list');
+
+        try {
+            // 获取网站列表
+            const response = await sendRequest('GET', '/api/sites?limit=50');
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.code !== 0) {
+                throw new Error(result.msg || '获取网站列表失败');
+            }
+
+            const sites = result.data.list;
+            sitesData = sites;
+
+            // 隐藏加载指示器
+            loadIndicator.style.display = "none";
+
+            // 如果没有网站
+            if (!sites || sites.length === 0) {
+                sitesListContainer.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--bg-secondary-text);">
+                    <h3>暂无网站数据</h3>
+                    <p>您还没有添加任何网站，请先<a href="/profile">添加网站</a>后再查看数据</p>
+                </div>
+            `;
+                return;
+            }
+
+            // 先显示所有站点的骨架屏
+            sites.forEach(site => {
+                const siteElement = createSkeletonElement(site);
+                sitesListContainer.appendChild(siteElement);
+            });
+
+            // 设置懒加载
+            setupLazyLoading();
+
+        } catch (error) {
+            console.error('加载网站数据失败:', error);
+            showMessage('加载网站数据失败:' + error, "error");
+            loadIndicator.style.display = "none";
+            sitesListContainer.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--bg-secondary-text);">
+                    <h3>加载失败</h3>
+                    <p>无法加载网站数据，${error}</p>
+                    <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: var(--primary-text); border: none; border-radius: 4px; cursor: pointer;">
+                        重新加载
+                    </button>
+                </div>
+            `;
+        }
     }
 
     // 页面加载完成后执行
     document.addEventListener('DOMContentLoaded', function () {
         loadSitesData();
+    });
+
+    // 清理 observer（页面卸载时）
+    window.addEventListener('beforeunload', function() {
+        if (statsObserver) {
+            statsObserver.disconnect();
+        }
     });
 </script>
 {{end}}
