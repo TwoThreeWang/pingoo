@@ -4,6 +4,24 @@
 
 ![骄傲版本控制](https://cdn.c2v2.com/imgur/KfG7NBr.png)
 
+## [2025-12-28] - v1.0.8
+- Added
+  * 新增定时任务调度器，每天凌晨自动清理60天以前的数据（硬删除）
+  * 仪表盘页面增加骨架屏加载效果
+
+- Changed
+  * 优化仪表盘加载性能：使用 IntersectionObserver 实现懒加载，仅加载可视区域内的站点统计数据
+  * README 优化：添加项目 Logo 和状态徽章，更新 Go 版本要求至 1.23+
+
+- Fixed
+  * 无
+
+- Deprecated
+  * 无
+
+- Removed
+  * 无
+
 ## [2025-11-18] - v1.0.7
 - Added
   * 无

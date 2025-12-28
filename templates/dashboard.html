@@ -10,8 +10,13 @@
     }
 
     @keyframes skeleton-loading {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
     }
 
     .site-item.skeleton-item {
@@ -55,8 +60,15 @@
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 </style>
 {{end}}
@@ -80,7 +92,8 @@
             <div class="sites-list" id="sites-list">
                 <!-- 数据将通过JavaScript动态加载 -->
                 <div style="text-align: center; padding: 2rem;" id="load">
-                    <p style="margin-top: 1rem; color: var(--bg-secondary-text);"><span class="loading"></span>正在加载网站列表...
+                    <p style="margin-top: 1rem; color: var(--bg-secondary-text);"><span
+                            class="loading"></span>正在加载网站列表...
                     </p>
                 </div>
             </div>
@@ -103,10 +116,8 @@
         siteDiv.dataset.siteId = site.id;
         siteDiv.innerHTML = `
             <div class="site-header">
-                <div>
-                    <h3 class="site-name">‣ ${site.name || '未命名网站'}</h3>
-                    <a href="${site.domain}" target="_blank" class="site-url">${site.domain || '未设置域名'}</a>
-                </div>
+                <h3 class="site-name">‣ ${site.name || '未命名网站'}</h3>
+                <a href="${site.domain}" target="_blank" class="site-url">${site.domain || '未设置域名'}</a>
                 <a href="/websites/${site.id}"><button>查看更多 ➔</button></a>
             </div>
             <div class="site-metrics skeleton-metrics">
@@ -298,7 +309,7 @@
     });
 
     // 清理 observer（页面卸载时）
-    window.addEventListener('beforeunload', function() {
+    window.addEventListener('beforeunload', function () {
         if (statsObserver) {
             statsObserver.disconnect();
         }

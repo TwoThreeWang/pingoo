@@ -7,6 +7,7 @@ import (
 	"pingoo/config"
 	"pingoo/database"
 	"pingoo/routers"
+	"pingoo/services"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +32,10 @@ func main() {
 	if err := database.Migrate(); err != nil {
 		log.Fatal("数据库迁移失败:", err)
 	}
+
+	// 启动定时任务（保留最近60天数据，每天凌晨2:00清理）
+	scheduler := services.NewScheduler(60)
+	scheduler.Start()
 
 	// 设置Gin模式
 	gin.SetMode(cfg.Server.Mode)
