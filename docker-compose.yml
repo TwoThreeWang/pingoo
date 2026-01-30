@@ -17,8 +17,8 @@ services:
       options:
         max-size: "10m"
     networks:
-      - docker-app-network
+      - postgres_default
 
 networks:
-  docker-app-network:
+  postgres_default:
     external: true
