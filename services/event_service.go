@@ -247,6 +247,8 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 			SELECT
 				session_id,
 				ip,
+				MAX(user_agent) as ua,
+				MAX(device) as dev,
 				COUNT(*) as page_count,
 				MIN(created_at) as first_visit,
 				MAX(created_at) as last_visit
@@ -258,7 +260,7 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 		)
 		SELECT
 			COALESCE(SUM(page_count),0) as pv,
-			COALESCE(COUNT(DISTINCT ip),0) as uv,
+			COALESCE(COUNT(DISTINCT MD5(CONCAT(ip, ua, dev))),0) as uv,
 			COALESCE(COUNT(DISTINCT session_id),0) as ses,
 			COALESCE(ROUND(SUM(CASE WHEN page_count = 1 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 2),0) as bounce_rate,
 			COALESCE(ROUND(AVG(CASE WHEN page_count > 1 THEN EXTRACT(EPOCH FROM (last_visit - first_visit)) END), 2),0) as avg_session_duration,
