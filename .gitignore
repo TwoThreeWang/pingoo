@@ -28,6 +28,7 @@ go.work.sum
 .env
 .history
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+.claude/
 .DS_Store
