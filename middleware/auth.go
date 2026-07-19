@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
 )
 
 // JWTClaims JWT声明结构体
@@ -21,7 +22,7 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-// AuthMiddleware JWT认证中间件
+// AuthMiddleware JWT认证中间件（支持滑动续期）
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -73,6 +74,24 @@ func AuthMiddleware() gin.HandlerFunc {
 			})
 			c.Abort()
 			return
+		}
+
+		// 滑动续期：当token剩余有效期小于总有效期的一半时，生成新token
+		cfg := config.GetConfig()
+		totalDuration := time.Duration(cfg.JWT.ExpireHours) * time.Hour
+		halfDuration := totalDuration / 2
+		remaining := time.Until(claims.ExpiresAt.Time)
+
+		if remaining < halfDuration {
+			newToken, err := GenerateToken(cfg, &models.User{
+				Model:    gorm.Model{ID: uint(claims.UserID)},
+				Username: claims.Username,
+				Email:    claims.Email,
+				Role:     claims.Role,
+			})
+			if err == nil {
+				c.Header("X-New-Token", newToken)
+			}
 		}
 
 		// 将用户信息存储到上下文中

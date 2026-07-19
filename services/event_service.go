@@ -241,14 +241,14 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 	stats.StartDate = startDate
 	stats.EndDate = endDate
 
-	// 同时查询PV（页面浏览量）、UV（独立访客数）和IPCount
+	// 同时查询PV（页面浏览量）、UV（独立访客数）和会话数
 	if err = db.Raw(`
 		WITH session_stats AS (
 			SELECT
 				session_id,
 				ip,
-				MAX(user_agent) as ua,
-				MAX(device) as dev,
+				COALESCE(MAX(user_agent), '') as ua,
+				COALESCE(MAX(device), '') as dev,
 				COUNT(*) as page_count,
 				MIN(created_at) as first_visit,
 				MAX(created_at) as last_visit
@@ -267,7 +267,7 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 			COALESCE(ROUND(AVG(page_count), 2),0) as pages_per_session
 		FROM session_stats
 	`, siteID, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")).Row().Scan(&stats.PV, &stats.UV, &stats.Ses, &stats.BounceRate, &stats.AvgDuration, &stats.PagesPerSession); err != nil {
-		return nil, fmt.Errorf("统计PV、UV和IP失败: %v", err.Error())
+		return nil, fmt.Errorf("统计PV、UV和会话数失败: %v", err.Error())
 	}
 
 	if detail == "false" {
@@ -291,24 +291,30 @@ func (s *EventService) GetEventsSummary(siteID uint64, startDate string, endDate
 	errorChan := make(chan queryError, 3)
 	doneChan := make(chan struct{})
 
-	// 查询1: 本周统计
+	// 查询1: 本周统计（UV使用与主统计一致的IP+UA+设备去重）
 	go func() {
-		if err := db.Model(&models.Event{}).
-			Select("COUNT(*) as pv, COUNT(DISTINCT session_id) as uv").
-			Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?",
-				siteID, weekStart.Format("2006-01-02 15:04:05"), weekEnd.Format("2006-01-02 15:04:05")).
+		if err := db.Raw(`
+			SELECT
+				COUNT(*) as pv,
+				COUNT(DISTINCT MD5(CONCAT(COALESCE(ip,''), COALESCE(user_agent,''), COALESCE(device,'')))) as uv
+			FROM events
+			WHERE site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?
+		`, siteID, weekStart.Format("2006-01-02 15:04:05"), weekEnd.Format("2006-01-02 15:04:05")).
 			Row().Scan(&stats.WeekPv, &stats.WeekUv); err != nil {
 			errorChan <- queryError{err: err, msg: "统计本周数据失败"}
 		}
 		doneChan <- struct{}{}
 	}()
 
-	// 查询2: 本月统计
+	// 查询2: 本月统计（UV使用与主统计一致的IP+UA+设备去重）
 	go func() {
-		if err := db.Model(&models.Event{}).
-			Select("COUNT(*) as pv, COUNT(DISTINCT session_id) as uv").
-			Where("site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?",
-				siteID, monthStart.Format("2006-01-02 15:04:05"), monthEnd.Format("2006-01-02 15:04:05")).
+		if err := db.Raw(`
+			SELECT
+				COUNT(*) as pv,
+				COUNT(DISTINCT MD5(CONCAT(COALESCE(ip,''), COALESCE(user_agent,''), COALESCE(device,'')))) as uv
+			FROM events
+			WHERE site_id = ? AND event_type = 'page_view' AND created_at >= ? AND created_at < ?
+		`, siteID, monthStart.Format("2006-01-02 15:04:05"), monthEnd.Format("2006-01-02 15:04:05")).
 			Row().Scan(&stats.MonthPv, &stats.MonthUv); err != nil {
 			errorChan <- queryError{err: err, msg: "统计本月数据失败"}
 		}

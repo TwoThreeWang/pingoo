@@ -78,6 +78,11 @@ async function sendRequest(method, url, data, options = {}) {
         fetchOptions.body = JSON.stringify(data);
     }
     const resp = await fetch(`${url}`, fetchOptions);
+    // 滑动续期：检测响应头中的新token并更新存储
+    const newToken = resp.headers.get('X-New-Token');
+    if (newToken) {
+        localStorage.setItem('token', newToken);
+    }
     if (resp.status === 401) {
         const refreshResp = await fetch(`/api/auth/refresh`, {
             method: 'POST',
