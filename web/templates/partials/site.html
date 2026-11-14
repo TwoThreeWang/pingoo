@@ -260,7 +260,7 @@
   <div><div class="kick mono">AI 诊断</div><h2>{{if .D.Title}}{{.D.Title}}{{else}}诊断{{end}}</h2></div>
   <button class="close" data-close aria-label="关闭">×</button>
 </div>
-<div class="dr-b" {{if and .D.ID (not .Done) (not .NoAI) (not .Error)}}hx-get="/diagnoses/{{.D.ID}}" hx-trigger="every 1.5s" hx-target="#drawer-body" hx-swap="innerHTML"{{end}}>
+<div class="dr-b" {{if and .D.ID (not .Done) (not .NoAI) (not .Error)}}data-running="{{.D.ID}}" hx-get="/diagnoses/{{.D.ID}}" hx-trigger="every 1.5s" hx-target="#drawer-body" hx-swap="innerHTML"{{end}}>
   {{if .Example}}<div class="notice" style="margin-bottom:14px">{{icon "info14"}}<span>演示示例：演示账号不能调用 AI，这是预先写好的一份诊断，让你看看诊断是什么样子。<a class="tlink" href="/register">注册</a>后就能诊断自己的网站。</span></div>{{end}}
   {{if .NoAI}}
     <p class="say">{{.Error}}{{if not (contains .Error "演示")}} <a class="tlink" href="/settings#ai">AI 与积分 →</a>{{end}}</p>
@@ -277,13 +277,13 @@
     </div>
   {{else}}
     {{range .D.Steps}}<div class="step"><div class="ic">{{if .Done}}{{icon "ok"}}{{else}}<span class="spin"></span>{{end}}</div><div><div class="s1">{{.Title}}</div>{{if .Detail}}<div class="s2 mono">{{.Detail}}</div>{{end}}</div></div>{{end}}
-    <div class="step"><div class="ic"><span class="spin"></span></div><div><div class="s1">{{if .D.Steps}}继续分析…{{else}}正在理解问题，决定先查什么…{{end}}</div></div></div>
+    <div class="step"><div class="ic"><span class="spin"></span></div><div><div class="s1">{{if .D.Steps}}继续分析…{{else}}正在理解问题，决定先查什么…{{end}}</div><div class="s2">一般要一两分钟。关闭窗口会停止这次诊断，只按已经用掉的部分计费。</div></div></div>
   {{end}}
 </div>
 <div class="dr-f">
   {{if .Result.Conclusion}}<button class="btn" type="button" hx-post="/diagnoses/{{.D.ID}}/save" hx-swap="outerHTML">保存到报告</button>{{end}}
   <a class="btn" href="/chat{{if .D.SiteID}}?site={{.D.SiteID}}{{end}}">继续追问</a>
-  <button class="btn dark" data-close>关闭</button>
+  <button class="btn dark" data-close>{{if and .D.ID (not .Done) (not .NoAI) (not .Error)}}停止并关闭{{else}}关闭{{end}}</button>
 </div>
 {{end}}
 

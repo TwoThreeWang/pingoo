@@ -722,6 +722,20 @@ func (s *Server) diagnosePoll(w http.ResponseWriter, r *http.Request) {
 	s.part(w, "diagnosis", v)
 }
 
+// diagnoseStop 停掉还在跑的诊断。诊断窗口关掉之后结果没有地方再看，继续跑只是白花 token、白扣积分，
+// 所以页面在关窗口、离开页面时会调它。已经结束的诊断不受影响。
+func (s *Server) diagnoseStop(w http.ResponseWriter, r *http.Request) {
+	d, err := s.Store.Diagnosis(r.Context(), pathID(r)) // 只能停自己的诊断
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	if d.Status == "running" {
+		s.Agent.StopDiagnosis(d.ID)
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // ========== 待办 ==========
 
 func (s *Server) todoToggle(w http.ResponseWriter, r *http.Request) {

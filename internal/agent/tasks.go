@@ -279,9 +279,19 @@ func (a *Agent) StartDiagnosis(ctx context.Context, site store.Site, title, ques
 		b.finish(llm.Usage{}, true)
 		return 0, err
 	}
+	// 停止函数在返回前就登记好：页面一拿到诊断 id 就可能来停它
+	bctx, cancel := bg(ctx)
+	ctx, stop := context.WithCancelCause(bctx)
+	a.mu.Lock()
+	a.stops[id] = stop
+	a.mu.Unlock()
 	go func() {
-		ctx, cancel := bg(ctx)
 		defer cancel()
+		defer func() {
+			a.mu.Lock()
+			delete(a.stops, id)
+			a.mu.Unlock()
+		}()
 		defer b.finish(llm.Usage{}, true) // 出错、panic 时全额退回；正常结算后不会重复
 		tr := &stepTracker{save: func(s []store.Step) { a.Store.SetDiagnosisSteps(ctx, id, s) }}
 		finish := func(steps []store.Step, result any, trace, errMsg string) {
@@ -317,6 +327,13 @@ func (a *Agent) StartDiagnosis(ctx context.Context, site store.Site, title, ques
 		if err == nil {
 			out, parsed = parseOrRepair(ctx, c, res, diagnosisFormat, func(x DiagnosisResult) bool { return x.Conclusion != "" })
 		}
+		if errors.Is(context.Cause(ctx), errStopped) {
+			// 用户关掉了诊断窗口：不再往下查。没有结果，但已经跑完的那几轮 token 是实实在在花出去的，按实际用量计费
+			// （正在进行的那一轮被打断，拿不到用量，不算）；刚开始就停的用量是 0，不扣。
+			b.close(res.Usage, false, "中途停止，按已经用掉的 token 计费")
+			finish(tr.snapshot(), nil, joinTrace(res.Trace), StoppedMsg)
+			return
+		}
 		b.settle(res.Usage, err, parsed)
 		if err != nil {
 			finish(tr.snapshot(), nil, joinTrace(res.Trace), err.Error())
@@ -333,6 +350,9 @@ func (a *Agent) StartDiagnosis(ctx context.Context, site store.Site, title, ques
 	}()
 	return id, nil
 }
+
+// StoppedMsg 是用户中途停掉的诊断记下的原因。
+const StoppedMsg = "诊断已停止"
 
 // diagnoseMaxCalls 是一次诊断最多查几次数据。开头必查的几样已经写进提示里了，剩下的次数用来深挖；
 // 没有上限的时候出现过一次诊断查 18 次、其中好几次是同一个维度换日期重查。

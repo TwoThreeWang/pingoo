@@ -26,10 +26,27 @@ type Agent struct {
 
 	mu      sync.Mutex
 	running map[string]bool
+	stops   map[int64]context.CancelCauseFunc // 正在跑的诊断：诊断 id → 让它停下来的函数
+}
+
+// errStopped 是用户自己停掉任务（关掉了诊断窗口）时的取消原因，用来和超时、服务关闭区分开。
+var errStopped = errors.New("已停止")
+
+// StopDiagnosis 让正在跑的诊断停下来（用户关掉了诊断窗口，结果已经没人看了）。诊断不在跑时什么也不做。
+// 只负责发出停止信号：把记录标成“已停止”、结算积分由诊断自己的后台任务收尾时做。
+func (a *Agent) StopDiagnosis(id int64) bool {
+	a.mu.Lock()
+	stop := a.stops[id]
+	a.mu.Unlock()
+	if stop == nil {
+		return false
+	}
+	stop(errStopped)
+	return true
 }
 
 func New(st *store.Store, m *metrics.Svc, sy *syncer.Syncer, log *slog.Logger) *Agent {
-	return &Agent{Store: st, M: m, Sync: sy, Log: log, running: map[string]bool{}}
+	return &Agent{Store: st, M: m, Sync: sy, Log: log, running: map[string]bool{}, stops: map[int64]context.CancelCauseFunc{}}
 }
 
 var ErrNoAI = errors.New("平台还没有可用的 AI 模型，请联系管理员")
@@ -125,6 +142,7 @@ func (a *Agent) begin(ctx context.Context, kind string) (*llm.Client, *bill, err
 	c.Extra = m.Extra()
 	c.Thinking, c.Light = m.Thinking(kind), m.Thinking("repair") // 思考强度按任务类型定
 	c.KeepReasoning = m.KeepReasoning()
+	c.Log = a.Log
 	return c, &bill{a: a, id: id, m: m, budget: budget}, nil
 }
 

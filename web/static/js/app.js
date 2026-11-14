@@ -86,7 +86,19 @@
     d.classList.add('on'); document.getElementById('scrim').classList.add('on');
     var c = d.querySelector('.close'); if (c) c.focus({ preventScroll: true });
   };
+  // 诊断还没出结果就关掉窗口（或者离开页面、又点了另一个诊断）：结果没有地方再看了，让后台停下来，
+  // 不然它会接着跑完、照常扣积分。同时清空抽屉，否则藏起来的抽屉还会每 1.5 秒去查一次进度。
+  // 用 sendBeacon：页面正在关闭时普通请求可能发不出去。
+  function stopDiagnosis() {
+    var b = document.querySelector('#drawer-body [data-running]');
+    if (!b) return;
+    var url = '/diagnoses/' + b.dataset.running + '/stop';
+    if (!(navigator.sendBeacon && navigator.sendBeacon(url))) fetch(url, { method: 'POST', keepalive: true });
+    document.getElementById('drawer-body').innerHTML = '';
+  }
+  window.addEventListener('pagehide', stopDiagnosis);
   window.closeDrawer = function () {
+    stopDiagnosis();
     ['drawer', 'scrim', 'modal'].forEach(function (id) { var e = document.getElementById(id); if (e) e.classList.remove('on'); });
     lockScroll(false);
   };
@@ -145,6 +157,7 @@
       var u = new URL(dg.dataset.diagnose, location.href);
       var body = document.getElementById('drawer-body');
       if (!body) return;
+      stopDiagnosis();
       body.innerHTML = '<div class="loading-block"><div class="skel" style="width:60%"></div><div class="skel" style="width:85%"></div><div class="skel" style="width:40%"></div></div>';
       openDrawer();
       var params = {}; u.searchParams.forEach(function (v, k) { params[k] = v; });

@@ -256,6 +256,7 @@ func (s *Server) Handler() (http.Handler, error) {
 	mux.HandleFunc("POST /sites/{id}/diagnose", s.diagnoseStart)
 	mux.HandleFunc("GET /diagnoses/{id}", s.diagnosePoll)
 	mux.HandleFunc("POST /diagnoses/{id}/save", s.diagnoseSave)
+	mux.HandleFunc("POST /diagnoses/{id}/stop", s.diagnoseStop)
 	mux.HandleFunc("POST /todos/{id}", s.todoToggle)
 	mux.HandleFunc("POST /todos", s.todoAdd)
 

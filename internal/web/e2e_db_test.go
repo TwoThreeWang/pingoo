@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1221,5 +1222,74 @@ func TestE2EInsightRegenShowsProgress(t *testing.T) {
 	rec = e.do("POST", "/part/overview-insight?range=d7", url.Values{})
 	if trig := rec.Header().Get("HX-Trigger"); !strings.Contains(trig, "\\u79ef\\u5206") && !strings.Contains(trig, "积分") {
 		t.Errorf("开始不了时应该弹出原因（积分不足），实际提示头：%q", trig)
+	}
+}
+
+// 诊断还没出结果就关掉窗口：页面会调 /stop，后台要马上停下来，不再接着跑完、照常扣积分。
+func TestE2EDiagnosisStop(t *testing.T) {
+	e := newE2E(t)
+	e.login()
+	uctx := store.WithUser(context.Background(), 1)
+	sid, err := e.st.CreateSite(uctx, store.Site{Name: "甲", Timezone: "UTC"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.aiDelay.Store(4000) // AI 要 4 秒才回答：停止必须不等它
+	body := e.do("POST", fmt.Sprintf("/sites/%d/diagnose", sid), url.Values{"title": {"访客突然下降"}}).Body.String()
+	m := regexp.MustCompile(`data-running="(\d+)"`).FindStringSubmatch(body)
+	if m == nil || !strings.Contains(body, "停止并关闭") || !strings.Contains(body, "关闭窗口会停止这次诊断") {
+		t.Fatalf("进行中的诊断应该带上 data-running，并提示关闭会停止：%.400s", body)
+	}
+	id, _ := strconv.ParseInt(m[1], 10, 64)
+	began := time.Now()
+	if rec := e.do("POST", fmt.Sprintf("/diagnoses/%d/stop", id), url.Values{}); rec.Code != http.StatusNoContent {
+		t.Fatalf("停止诊断应该返回 204，实际 %d", rec.Code)
+	}
+	var d store.Diagnosis
+	for i := 0; i < 60; i++ {
+		if d, err = e.st.Diagnosis(uctx, id); err != nil {
+			t.Fatal(err)
+		}
+		if d.Status != "running" {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if d.Status != "error" || d.Error != agent.StoppedMsg {
+		t.Fatalf("停止后诊断应该标成已停止，实际 status=%q error=%q", d.Status, d.Error)
+	}
+	if took := time.Since(began); took > 2*time.Second {
+		t.Errorf("停止应该马上生效，不用等 AI 答完，实际用了 %v", took)
+	}
+	// 一轮都没跑完，用量是 0：预扣的积分全部退回，账上不留“处理中”
+	if n := e.count(`SELECT count(*) FROM ledger WHERE kind='diagnose' AND (pending OR credits<>0)`); n != 0 {
+		t.Errorf("刚开始就停的诊断不应该扣积分，也不应该还挂着预扣（%d 条）", n)
+	}
+	if n := e.count(`SELECT count(*) FROM ledger WHERE kind='diagnose' AND note LIKE '%中途停止%'`); n != 1 {
+		t.Errorf("流水里应该注明是中途停止的（%d 条）", n)
+	}
+	if body := e.do("GET", fmt.Sprintf("/diagnoses/%d", id), nil).Body.String(); !strings.Contains(body, agent.StoppedMsg) || strings.Contains(body, "data-running") {
+		t.Errorf("停止后不应该再轮询：%.300s", body)
+	}
+
+	// 已经结束的诊断，再调停止什么也不改
+	e.aiDelay.Store(0)
+	body = e.do("POST", fmt.Sprintf("/sites/%d/diagnose", sid), url.Values{"title": {"再来一次"}}).Body.String()
+	if m = regexp.MustCompile(`data-running="(\d+)"`).FindStringSubmatch(body); m == nil {
+		t.Fatalf("第二次诊断没有开始：%.300s", body)
+	}
+	id2, _ := strconv.ParseInt(m[1], 10, 64)
+	for i := 0; i < 100; i++ {
+		if d, _ = e.st.Diagnosis(uctx, id2); d.Status != "running" {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	done := d.Status
+	if rec := e.do("POST", fmt.Sprintf("/diagnoses/%d/stop", id2), url.Values{}); rec.Code != http.StatusNoContent {
+		t.Fatalf("对已结束的诊断调停止应该返回 204，实际 %d", rec.Code)
+	}
+	if d, _ = e.st.Diagnosis(uctx, id2); d.Status != done || d.Error == agent.StoppedMsg {
+		t.Errorf("已经结束的诊断不应该被改成已停止：%q → %q", done, d.Status)
 	}
 }
