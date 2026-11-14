@@ -11,3 +11,13 @@ prototype/
 *.test
 coverage.*
 .DS_Store
+
+# 和编译无关的文件：只改了它们的时候，COPY . . 这一层和后面的编译都能直接用缓存
+*.md
+LICENSE
+Makefile
+build.sh
+Dockerfile
+.dockerignore
+docker-compose*.yml
+**/*_test.go

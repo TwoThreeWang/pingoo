@@ -67,12 +67,15 @@ go run ./cmd/pingoo demo --reset  # 删除后重新生成
 go run ./cmd/pingoo demo --remove # 删除演示账号（后台「设置」里也有按钮）
 ```
 
-用 Docker（自带 PostgreSQL）：
+用 Docker（不自带数据库，连接已有的 PostgreSQL；`docker-compose.yml` 默认加入外部网络 `postgres_default`，按你的环境改）：
 
 ```bash
-cp .env.example .env
+cp .env.example .env   # 填好数据库连接、ADMIN_EMAIL、ADMIN_PASSWORD、APP_SECRET
+docker build -t pingoo:latest .
 docker compose up -d
 ```
+
+服务器上更新用 `bash build.sh`：拉代码、打包镜像、替换容器。
 
 ## 连接 Google
 
