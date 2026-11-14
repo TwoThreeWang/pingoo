@@ -37,6 +37,7 @@ type aiView struct {
 	Holds   map[string]int64 // 用当前模型时各类任务的预扣积分（上限）
 	Usage   usageView
 	PerYuan int
+	BuyURL  string // 购买积分卡密的地址，空表示后台没填
 	// 套餐
 	Plan        store.Plan
 	Expires     *time.Time // 付费套餐的到期时间
@@ -140,7 +141,8 @@ func (s *Server) googleView(ctx context.Context) googleView {
 func (s *Server) aiView(r *http.Request) aiView {
 	ctx := r.Context()
 	u := currentUser(r)
-	v := aiView{Credits: u.Credits, AutoAI: u.AutoAI, Holds: map[string]int64{}, Usage: s.usageView(ctx), PerYuan: store.CreditsPerYuan}
+	v := aiView{Credits: u.Credits, AutoAI: u.AutoAI, Holds: map[string]int64{}, Usage: s.usageView(ctx), PerYuan: store.CreditsPerYuan,
+		BuyURL: s.Store.SettingOr(ctx, store.KeyCreditsBuy, "")}
 	v.Models, _ = s.Store.Models(ctx, true)
 	if m, err := s.Store.ModelFor(ctx, u.ID); err == nil {
 		v.ModelID = m.ID
@@ -239,8 +241,9 @@ type creditsData struct {
 	MonthUsed  int64
 	Rows       []store.LedgerRow
 	More       bool
-	NextBefore int64 // 下一页（更早）的游标
-	Paged      bool  // 是否已经翻到第一页以后（用来显示“回到最新”）
+	NextBefore int64  // 下一页（更早）的游标
+	Paged      bool   // 是否已经翻到第一页以后（用来显示“回到最新”）
+	BuyURL     string // 购买积分卡密的地址，空表示后台没填
 }
 
 const creditsPageSize = 50
@@ -255,7 +258,8 @@ func (s *Server) creditsPage(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, err)
 		return
 	}
-	d := creditsData{Credits: u.Credits, MonthUsed: s.usageView(ctx).Credits, Rows: rows, More: more, Paged: before > 0}
+	d := creditsData{Credits: u.Credits, MonthUsed: s.usageView(ctx).Credits, Rows: rows, More: more, Paged: before > 0,
+		BuyURL: s.Store.SettingOr(ctx, store.KeyCreditsBuy, "")}
 	if more && len(rows) > 0 {
 		d.NextBefore = rows[len(rows)-1].ID
 	}

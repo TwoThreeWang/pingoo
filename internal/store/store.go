@@ -54,6 +54,7 @@ const (
 	KeySignupBonus = "signup_bonus"       // 新用户赠送的积分
 	KeySignupOff   = "signup_closed"      // "true" 表示暂停注册
 	KeyPlans       = "plans"              // 套餐设置（JSON，见 PlanConfig）
+	KeyCreditsBuy  = "credits_buy_url"    // 购买积分卡密的地址（发卡网站、店铺或支付页）；空表示不显示购买链接
 	KeyNightlyDone = "nightly_done"       // 半夜维护最近一次做的日期（重启后不重复做）
 
 	KeySiteURL      = "site_url"         // 对外访问的地址，邮件里的链接用它；https 开头时登录 cookie 加上 Secure

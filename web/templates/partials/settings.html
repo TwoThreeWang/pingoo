@@ -55,7 +55,7 @@
 </div>
 <form class="redeem" hx-post="/settings/redeem" hx-swap="none">
   <div class="field" style="margin:0"><label for="code">兑换卡密<span class="muted" style="font-weight:400">（积分卡密或套餐卡密：开通、续期、升级套餐都在这里）</span></label>
-    <div class="row-actions" style="margin:0"><input class="input mono" id="code" name="code" placeholder="PGO-XXXX-XXXX-XXXX-XXXX" autocomplete="off" required style="max-width:280px"><button class="btn dark" type="submit">兑换</button></div></div>
+    <div class="row-actions" style="margin:0"><input class="input mono" id="code" name="code" placeholder="PGO-XXXX-XXXX-XXXX-XXXX" autocomplete="off" required style="max-width:280px"><button class="btn dark" type="submit">兑换</button>{{if .BuyURL}}<a class="tlink" href="{{.BuyURL}}" target="_blank" rel="noopener">购买积分卡密</a>{{end}}</div></div>
 </form>
 {{if .Models}}
 <form hx-post="/settings/ai" hx-swap="none" style="margin-top:22px">

@@ -61,7 +61,7 @@ func (s *Server) adminPage(w http.ResponseWriter, r *http.Request) {
 	d.RegHour = s.Store.MailCount(ctx, "register", "", "", 0, now.Add(-time.Hour))
 	d.Breaker = d.RegHour > registerAlert
 	d.Settings = map[string]string{}
-	for _, k := range []string{store.KeySignupBonus, store.KeySignupOff, store.KeyAIDailyCap,
+	for _, k := range []string{store.KeySignupBonus, store.KeySignupOff, store.KeyAIDailyCap, store.KeyCreditsBuy,
 		store.KeySiteURL, store.KeySMTPHost, store.KeySMTPPort, store.KeySMTPUser, store.KeySMTPFrom, store.KeySMTPFromName} {
 		d.Settings[k] = s.Store.SettingOr(ctx, k, "")
 	}
@@ -116,6 +116,12 @@ func (s *Server) adminSaveSettings(w http.ResponseWriter, r *http.Request) {
 		v = strings.TrimRight(v, "/")
 		if u, err := url.Parse(v); v != "" && (err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.Path != "") {
 			return "", "站点地址要像 https://pingoo.example.com 这样，只写协议和域名"
+		}
+		return v, ""
+	})
+	text(store.KeyCreditsBuy, func(v string) (string, string) {
+		if u, err := url.Parse(v); v != "" && (err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "") {
+			return "", "积分卡密购买链接要以 https:// 或 http:// 开头"
 		}
 		return v, ""
 	})

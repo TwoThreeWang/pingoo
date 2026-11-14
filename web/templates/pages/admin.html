@@ -154,6 +154,7 @@
             <div class="two">
               <div class="field"><label for="sb">新用户赠送积分</label><input class="input" id="sb" name="signup_bonus" inputmode="numeric" value="{{index $d.Settings "signup_bonus"}}" placeholder="0"><span class="hint">赠送的积分会招来用临时邮箱批量注册“薅羊毛”的人，建议只给够试一两次的量。</span></div>
               <div class="field"><label for="cap">全站每日 token 上限</label><input class="input" id="cap" name="ai_daily_token_cap" inputmode="numeric" value="{{index $d.Settings "ai_daily_token_cap"}}" placeholder="留空不限"><span class="hint">所有用户合计，到了之后当天暂停 AI，防止模型或接口出问题时一直花钱。</span></div>
+              <div class="field"><label for="cbu">积分卡密购买链接</label><input class="input mono" id="cbu" name="credits_buy_url" value="{{index $d.Settings "credits_buy_url"}}" placeholder="https://…"><span class="hint">发卡网站、店铺或支付页。设置页的兑换框旁边和积分明细页会显示“购买积分卡密”；留空就不显示。套餐卡密的购买链接在「套餐」里填。</span></div>
             </div>
             <label class="toggle"><input type="checkbox" class="sw" name="signup_closed" {{if eq (index $d.Settings "signup_closed") "true"}}checked{{end}}><span class="tx"><b>暂停注册</b><span>打开后注册页不再接受新用户，已有用户不受影响。</span></span></label>
             <div class="foot-save"><span class="muted">修改立即生效。</span><button class="btn dark" type="submit">保存</button></div>

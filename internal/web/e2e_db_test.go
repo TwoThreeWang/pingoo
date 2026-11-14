@@ -742,7 +742,18 @@ func TestE2EBilling(t *testing.T) {
 	if e.count(`SELECT count(*) FROM redeem_codes WHERE code_hash=$1`, rows[1][0]) != 0 {
 		t.Error("数据库里不应该存卡密原文")
 	}
+	// 积分卡密购买链接：不是 http(s) 的不保存；填了之后设置页和积分明细页都有“购买积分卡密”
+	e.do("POST", "/admin/settings", url.Values{"credits_buy_url": {"javascript:alert(1)"}})
+	if e.st.SettingOr(ctx, store.KeyCreditsBuy, "") != "" {
+		t.Error("不是 http(s) 的购买链接不应该保存")
+	}
+	e.do("POST", "/admin/settings", url.Values{"credits_buy_url": {"https://shop.example.com/credits"}})
 	e.cookie = userCookie
+	for _, path := range []string{"/settings", "/credits"} {
+		if body := e.do("GET", path, nil).Body.String(); !strings.Contains(body, `href="https://shop.example.com/credits"`) {
+			t.Errorf("%s 应该有积分卡密的购买链接", path)
+		}
+	}
 	code := strings.ToLower(strings.ReplaceAll(rows[1][0], "-", " "))
 	e.do("POST", "/settings/redeem", url.Values{"code": {code}})
 	if credits() != 50 {

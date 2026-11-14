@@ -8,7 +8,8 @@
     <div class="credit-stats">
       <div><div class="k">积分余额</div><div class="n">{{num $d.Credits}}</div></div>
       <div><div class="k">本月消耗</div><div class="n">{{num $d.MonthUsed}}</div></div>
-      <a class="btn" href="/settings#ai">充值 / 卡密</a>
+      {{if $d.BuyURL}}<a class="btn" href="{{$d.BuyURL}}" target="_blank" rel="noopener">购买积分卡密</a>{{end}}
+      <a class="btn" href="/settings#ai">兑换卡密</a>
     </div>
   </div>
 
