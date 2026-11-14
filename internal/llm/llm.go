@@ -3,14 +3,17 @@
 package llm
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 	"unicode"
 )
@@ -113,6 +116,8 @@ type Client struct {
 	Light map[string]any
 	// KeepReasoning 表示这家服务商要求把之前每一轮的思考过程原样传回去（DeepSeek 的思考模式带工具时不传会报 400）。
 	KeepReasoning bool
+	// Log 不是 nil 时，每次调用结束都记一行耗时和用量：回答慢的时候能看出是哪一轮慢、慢在接口还是慢在轮数多。
+	Log *slog.Logger
 
 	noThinking bool // 这次任务里接口因为思考内容对不上拒绝过请求：后面的调用都不思考
 }
@@ -144,8 +149,29 @@ func New(baseURL, apiKey, model string) *Client {
 		BaseURL: strings.TrimRight(strings.TrimSpace(baseURL), "/"),
 		APIKey:  strings.TrimSpace(apiKey),
 		Model:   strings.TrimSpace(model),
-		HTTP:    &http.Client{Timeout: 180 * time.Second},
+		// 不设总时限：回答是流式读的，只要接口还在往外吐字就一直等（见 idleTimeout），整个任务多久算超时由调用方的 ctx 决定
+		HTTP: &http.Client{},
 	}
+}
+
+// idleTimeout 是接口多久没有任何输出就算卡住了（等响应头、等下一段内容都算）。
+// 以前是每次调用总共 180 秒：推理模型想得久一点（实测 MiMo 开着思考答一个问题要 150～250 秒，其中八九成时间在想）
+// 就会被掐断再从头重试，重试同样超时，最后整个任务以 context deadline exceeded 失败，前面等的几分钟全白费。
+// 现在改成流式读取，只要还在输出就不算超时；不流式输出思考过程的模型（例如 OpenAI 的推理模型）会安静很久，所以留得宽一些。
+var idleTimeout = 180 * time.Second
+
+// retryWait 是临时故障后隔多久重试（第二次重试等两倍）。
+var retryWait = 3 * time.Second
+
+// ErrTimeout 表示整个任务的时限到了，AI 还没有答完。
+var ErrTimeout = errors.New("AI 在时限内没有答完。可以把问题问得更具体一些再试；经常这样的话，请管理员在后台把这类任务的思考强度调低，或者换一个更快的模型")
+
+// ctxErr 把“任务时限到了”换成用户看得懂的话（原来直接显示 context deadline exceeded）。
+func ctxErr(ctx context.Context) error {
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return ErrTimeout
+	}
+	return ctx.Err()
 }
 
 type Request struct {
@@ -305,6 +331,9 @@ func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
 	body := map[string]any{
 		"model":    c.Model,
 		"messages": req.Messages,
+		// 流式返回，读完再拼成完整的回答：为的是能区分“还在输出”和“卡住了”，不是为了边出边显示
+		"stream":         true,
+		"stream_options": map[string]any{"include_usage": true}, // 流式默认不带用量，要明说
 	}
 	if req.Temperature > 0 {
 		body["temperature"] = req.Temperature
@@ -345,42 +374,51 @@ func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
 		if attempt > 0 {
 			select {
 			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(attempt*3) * time.Second):
+				return nil, ctxErr(ctx)
+			case <-time.After(time.Duration(attempt) * retryWait):
 			}
 		}
-		hreq, err := http.NewRequestWithContext(ctx, "POST", c.BaseURL+"/chat/completions", bytes.NewReader(raw))
+		began := time.Now()
+		status, data, st, err := c.post(ctx, raw)
 		if err != nil {
-			return nil, err
-		}
-		hreq.Header.Set("Content-Type", "application/json")
-		hreq.Header.Set("Authorization", "Bearer "+c.APIKey)
-		resp, err := c.HTTP.Do(hreq)
-		if err != nil {
-			lastErr = fmt.Errorf("连接 AI 接口失败: %w", err)
+			if ctx.Err() != nil { // 整个任务的时限到了（或者服务在关闭）：再试也没有时间了
+				return nil, ctxErr(ctx)
+			}
+			lastErr = err
+			c.logCall(began, st, nil, err)
 			continue
 		}
-		data, _ := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
-		resp.Body.Close()
-		if resp.StatusCode == 429 || resp.StatusCode >= 500 {
-			lastErr = apiErr(resp.StatusCode, data)
+		if status == 429 || status >= 500 {
+			lastErr = apiErr(status, data)
+			c.logCall(began, st, nil, lastErr)
 			continue
 		}
-		if resp.StatusCode == 400 && body["temperature"] != nil && bytes.Contains(bytes.ToLower(data), []byte("temperature")) {
+		if low := bytes.ToLower(data); status == 400 && body["stream"] != nil && bytes.Contains(low, []byte("stream")) && !bytes.Contains(low, []byte("upstream")) {
+			// 少数接口不认 stream_options，个别连 stream 都不认：先去掉前者，还不行就退回一次性返回
+			if body["stream_options"] != nil {
+				delete(body, "stream_options")
+			} else {
+				delete(body, "stream")
+			}
+			raw, _ = json.Marshal(body)
+			attempt--
+			continue
+		}
+		if status == 400 && body["temperature"] != nil && bytes.Contains(bytes.ToLower(data), []byte("temperature")) {
 			// 有些推理模型（如 OpenAI o 系列）不接受 temperature，去掉后重试
 			delete(body, "temperature")
 			raw, _ = json.Marshal(body)
 			attempt--
 			continue
 		}
-		if resp.StatusCode == 400 && body["tool_choice"] != nil && body["tool_choice"] != "auto" && bytes.Contains(bytes.ToLower(data), []byte("tool_choice")) {
+		if status == 400 && body["tool_choice"] != nil && body["tool_choice"] != "auto" && bytes.Contains(bytes.ToLower(data), []byte("tool_choice")) {
 			// 有的接口只认 auto：退回 auto，由调用方处理模型还要调工具的情况
 			body["tool_choice"] = "auto"
 			raw, _ = json.Marshal(body)
 			attempt--
 			continue
 		}
-		if resp.StatusCode == 400 && !c.noThinking && len(thinking) > 0 && bytes.Contains(bytes.ToLower(data), []byte("reasoning_content")) {
+		if status == 400 && !c.noThinking && len(thinking) > 0 && bytes.Contains(bytes.ToLower(data), []byte("reasoning_content")) {
 			// 接口要求带上之前每一轮的思考过程，而对话里有几轮没有（例如更早的问答只存了回答）：
 			// 这次任务后面的调用都不思考，不思考就没有这个要求。比整个任务失败强。
 			c.noThinking = true
@@ -401,7 +439,7 @@ func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
 			attempt--
 			continue
 		}
-		if resp.StatusCode == 400 && limitKey != "" && bytes.Contains(bytes.ToLower(data), []byte("max_tokens")) {
+		if status == 400 && limitKey != "" && bytes.Contains(bytes.ToLower(data), []byte("max_tokens")) {
 			// 新的推理模型只认 max_completion_tokens；换了还不行就不带上限
 			delete(body, limitKey)
 			if limitKey == "max_tokens" {
@@ -414,8 +452,8 @@ func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
 			attempt--
 			continue
 		}
-		if resp.StatusCode >= 300 {
-			return nil, apiErr(resp.StatusCode, data)
+		if status >= 300 {
+			return nil, apiErr(status, data)
 		}
 		var out struct {
 			Model   string `json:"model"`
@@ -426,10 +464,8 @@ func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
 				ReasoningContent string `json:"reasoning_content"`
 				Reasoning        string `json:"reasoning"`
 			} `json:"choices"`
-			Usage Usage `json:"usage"`
-			Error *struct {
-				Message string `json:"message"`
-			} `json:"error"`
+			Usage Usage     `json:"usage"`
+			Error *apiError `json:"error"`
 		}
 		// 网关或免费模型偶尔返回空内容、半截 JSON，或者状态码 200 但正文是错误：都当作临时故障重试
 		if err := json.Unmarshal(data, &out); err != nil {
@@ -459,9 +495,224 @@ func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
 		if !c.KeepReasoning {
 			m.ReasoningContent = ""
 		}
+		c.logCall(began, st, &u, nil)
 		return &Response{Message: m, FinishReason: ch.FinishReason, Usage: u, Model: out.Model}, nil
 	}
 	return nil, lastErr
+}
+
+// callStat 是一次调用的耗时情况，只用来写日志。
+type callStat struct {
+	stream bool          // 接口是不是流式返回的
+	first  time.Duration // 发出请求到收到第一段输出（思考或正文）
+	answer time.Duration // 发出请求到正文开始输出；之前的时间都在思考
+}
+
+func (c *Client) logCall(began time.Time, st callStat, u *Usage, err error) {
+	if c.Log == nil {
+		return
+	}
+	sec := func(d time.Duration) float64 { return float64(d.Round(100*time.Millisecond)) / float64(time.Second) }
+	args := []any{"model", c.Model, "seconds", sec(time.Since(began)), "stream", st.stream, "first_output", sec(st.first), "answer_start", sec(st.answer)}
+	if u != nil {
+		args = append(args, "prompt_tokens", u.PromptTokens, "completion_tokens", u.CompletionTokens, "cached_tokens", u.Cached())
+	}
+	if err != nil {
+		c.Log.Warn("AI 调用失败", append(args, "err", err.Error())...)
+		return
+	}
+	c.Log.Info("AI 调用", args...)
+}
+
+// post 发出一次请求，返回状态码和响应体。接口流式返回时，把一段段的内容拼成和一次性返回一样的 JSON，
+// 调用方不用区分两种情况。超过 idleTimeout 没有任何输出就放弃。
+func (c *Client) post(ctx context.Context, raw []byte) (status int, data []byte, st callStat, err error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	var stalled atomic.Bool
+	idle := time.AfterFunc(idleTimeout, func() {
+		stalled.Store(true)
+		cancel()
+	})
+	defer idle.Stop()
+	fail := func(e error) (int, []byte, callStat, error) {
+		if stalled.Load() {
+			return 0, nil, st, fmt.Errorf("AI 接口超过 %d 秒没有任何输出", int(idleTimeout.Seconds()))
+		}
+		return 0, nil, st, fmt.Errorf("连接 AI 接口失败: %w", e)
+	}
+	began := time.Now()
+	hreq, err := http.NewRequestWithContext(ctx, "POST", c.BaseURL+"/chat/completions", bytes.NewReader(raw))
+	if err != nil {
+		return 0, nil, st, err
+	}
+	hreq.Header.Set("Content-Type", "application/json")
+	hreq.Header.Set("Authorization", "Bearer "+c.APIKey)
+	resp, err := c.HTTP.Do(hreq)
+	if err != nil {
+		return fail(err)
+	}
+	defer resp.Body.Close()
+	idle.Reset(idleTimeout)
+	if !strings.HasPrefix(resp.Header.Get("Content-Type"), "text/event-stream") {
+		// 出错时、或者接口不支持流式时，是一次性返回的普通 JSON
+		data, err = io.ReadAll(io.LimitReader(resp.Body, maxBody))
+		if err != nil && stalled.Load() {
+			return fail(err)
+		}
+		st.first = time.Since(began)
+		return resp.StatusCode, data, st, nil // 读了半截也交给调用方：解析不出来会按临时故障重试
+	}
+	st.stream = true
+	var (
+		out       assembled
+		choice    assembledChoice
+		finished  bool // 收到了 finish_reason 或 [DONE]：回答是完整的
+		size      int
+		reasoning strings.Builder // OpenRouter 把思考放在 reasoning 字段里
+		thinking  strings.Builder
+		content   strings.Builder
+	)
+	sc := bufio.NewScanner(resp.Body)
+	sc.Buffer(make([]byte, 64<<10), 4<<20)
+	for sc.Scan() {
+		idle.Reset(idleTimeout) // 注释行（有的网关用它保活）也算有输出
+		line := sc.Bytes()
+		if size += len(line); size > maxBody {
+			return 0, nil, st, errors.New("AI 接口返回的内容太长")
+		}
+		if !bytes.HasPrefix(line, []byte("data:")) {
+			continue
+		}
+		payload := bytes.TrimSpace(line[len("data:"):])
+		if bytes.Equal(payload, []byte("[DONE]")) {
+			finished = true
+			break
+		}
+		var ch streamChunk
+		if json.Unmarshal(payload, &ch) != nil {
+			continue
+		}
+		if ch.Error != nil && ch.Error.Message != "" {
+			out.Error = ch.Error
+		}
+		if ch.Model != "" {
+			out.Model = ch.Model
+		}
+		if len(ch.Usage) > 0 && !bytes.Equal(ch.Usage, []byte("null")) {
+			out.Usage = ch.Usage // 有的接口每一段都带累计用量，以最后一次为准
+		}
+		for _, x := range ch.Choices {
+			d := x.Delta
+			if st.first == 0 && (d.Content != "" || d.ReasoningContent != "" || d.Reasoning != "" || len(d.ToolCalls) > 0) {
+				st.first = time.Since(began)
+			}
+			if st.answer == 0 && (d.Content != "" || len(d.ToolCalls) > 0) {
+				st.answer = time.Since(began)
+			}
+			content.WriteString(d.Content)
+			thinking.WriteString(d.ReasoningContent)
+			reasoning.WriteString(d.Reasoning)
+			for _, tc := range d.ToolCalls {
+				choice.Message.ToolCalls = mergeToolCall(choice.Message.ToolCalls, tc)
+			}
+			if x.FinishReason != "" {
+				choice.FinishReason = x.FinishReason
+				finished = true
+			}
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return fail(err)
+	}
+	if out.Error == nil && !finished {
+		return 0, nil, st, errors.New("AI 接口的回答中途断开了")
+	}
+	choice.Message.Role = "assistant"
+	choice.Message.Content = content.String()
+	choice.Message.ReasoningContent = thinking.String()
+	choice.Reasoning = reasoning.String()
+	for i := range choice.Message.ToolCalls {
+		if choice.Message.ToolCalls[i].Type == "" {
+			choice.Message.ToolCalls[i].Type = "function"
+		}
+	}
+	if choice.FinishReason != "" || choice.Message.Content != "" || choice.Message.ReasoningContent != "" || choice.Reasoning != "" || len(choice.Message.ToolCalls) > 0 {
+		out.Choices = []assembledChoice{choice}
+	}
+	data, _ = json.Marshal(out)
+	return resp.StatusCode, data, st, nil
+}
+
+// maxBody 是一次响应最多读多少字节。
+const maxBody = 16 << 20
+
+// streamChunk 是流式返回里的一段。
+type streamChunk struct {
+	Model   string `json:"model"`
+	Choices []struct {
+		Delta struct {
+			Content          string          `json:"content"`
+			ReasoningContent string          `json:"reasoning_content"`
+			Reasoning        string          `json:"reasoning"`
+			ToolCalls        []toolCallDelta `json:"tool_calls"`
+		} `json:"delta"`
+		FinishReason string `json:"finish_reason"`
+	} `json:"choices"`
+	Usage json.RawMessage `json:"usage"`
+	Error *apiError       `json:"error"`
+}
+
+type toolCallDelta struct {
+	Index    *int   `json:"index"`
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	} `json:"function"`
+}
+
+type apiError struct {
+	Message string `json:"message"`
+}
+
+// assembled 是把流式的各段拼起来之后的样子，字段和一次性返回的响应一样。
+type assembled struct {
+	Model   string            `json:"model,omitempty"`
+	Choices []assembledChoice `json:"choices"`
+	Usage   json.RawMessage   `json:"usage,omitempty"`
+	Error   *apiError         `json:"error,omitempty"`
+}
+
+type assembledChoice struct {
+	Message      Message `json:"message"`
+	FinishReason string  `json:"finish_reason"`
+	Reasoning    string  `json:"reasoning,omitempty"`
+}
+
+// mergeToolCall 把一段工具调用的增量并进去。一个调用的名字和参数会分好几段发过来，靠 index 认是哪一个；
+// 没有 index 的接口，带 id 的一段算新的调用，不带的接在上一个后面。
+// 有的接口（Gemini 的兼容层）一次发好几个完整的调用，index 却都是 0：id 对不上时也算新的调用。
+func mergeToolCall(calls []ToolCall, d toolCallDelta) []ToolCall {
+	i := len(calls) - 1
+	switch {
+	case d.Index != nil && *d.Index >= 0 && *d.Index < len(calls) && (d.ID == "" || calls[*d.Index].ID == "" || calls[*d.Index].ID == d.ID):
+		i = *d.Index
+	case d.Index != nil || d.ID != "" || i < 0:
+		calls = append(calls, ToolCall{})
+		i = len(calls) - 1
+	}
+	c := &calls[i]
+	if d.ID != "" {
+		c.ID = d.ID
+	}
+	if d.Type != "" {
+		c.Type = d.Type
+	}
+	c.Function.Name += d.Function.Name
+	c.Function.Arguments += d.Function.Arguments
+	return calls
 }
 
 // StripThinking 去掉部分推理模型写在正文里的 <think>…</think> 思考过程。
