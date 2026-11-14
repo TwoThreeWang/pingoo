@@ -679,9 +679,9 @@ func TestE2ERegisterResetEmail(t *testing.T) {
 		t.Errorf("同一邮箱 1 分钟内第二次应该被拦住（不管存不存在）: %d", rec.Code)
 	}
 	m, _ = e.lastMail("new@example.com")
-	link := regexp.MustCompile(`http://pingoo\.test(/reset\?t=\S+)`).FindStringSubmatch(m.Body)
+	link := regexp.MustCompile(`http://pingoo\.test(/reset\?t=\S+)`).FindStringSubmatch(m.ActionURL)
 	if link == nil {
-		t.Fatalf("重置邮件里没有链接: %q", m.Body)
+		t.Fatalf("重置邮件里没有链接: %q", m.Text())
 	}
 	if body := e.do("GET", link[1], nil).Body.String(); strings.Contains(body, "已经失效") {
 		t.Fatal("新的重置链接不应该失效")

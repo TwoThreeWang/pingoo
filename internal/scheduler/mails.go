@@ -48,11 +48,11 @@ func (s *Scheduler) digests(ctx context.Context) {
 		if s.Store.MailCount(ctx, "digest", "", "", u.ID, midnight) > 0 {
 			continue
 		}
-		subject, body, ok := s.digest(uctx, u, now)
+		msg, ok := s.digest(uctx, u, now)
 		if !ok {
 			continue // 没有任何数据（比如还没连 Google）就不发
 		}
-		if err := s.Mail.Send(ctx, mail.Msg{Kind: "digest", To: u.Email, UserID: u.ID, Subject: subject, Body: body}); err != nil {
+		if err := s.Mail.Send(ctx, msg); err != nil {
 			s.Log.Warn("邮件简报没能发出", "user", u.ID, "err", err)
 		}
 	}
@@ -67,15 +67,15 @@ func signedPct(cur, prev int) string {
 }
 
 // digest 拼出一封简报。ok 为 false 表示没什么可说的。
-func (s *Scheduler) digest(ctx context.Context, u store.User, now time.Time) (subject, body string, ok bool) {
+func (s *Scheduler) digest(ctx context.Context, u store.User, now time.Time) (msg mail.Msg, ok bool) {
 	sites, err := s.Store.Sites(ctx)
 	if err != nil {
-		return "", "", false
+		return msg, false
 	}
 	plan := s.Store.PlanOf(ctx, u.ID)
 	var b strings.Builder
 	yday := now.AddDate(0, 0, -1)
-	fmt.Fprintf(&b, "你好，这是你的网站昨天（%d 月 %d 日）的情况：\n\n", yday.Month(), yday.Day())
+	fmt.Fprintf(&b, "这是你的网站昨天（%d 月 %d 日）的情况。\n\n", yday.Month(), yday.Day())
 	for _, site := range sites {
 		if site.Demo || plan.Paused(site) {
 			continue
@@ -105,7 +105,7 @@ func (s *Scheduler) digest(ctx context.Context, u store.User, now time.Time) (su
 		b.WriteString("\n")
 	}
 	if !ok {
-		return "", "", false
+		return msg, false
 	}
 	base := s.siteURL(ctx)
 	if reps, err := s.Store.Reports(ctx, -1, "", 10); err == nil {
@@ -128,13 +128,13 @@ func (s *Scheduler) digest(ctx context.Context, u store.User, now time.Time) (su
 			b.WriteString("\n")
 		}
 	}
+	b.WriteString("不想再收到这封邮件：在 Pingoo 的「设置 → 报告」里关掉“每日邮件简报”。")
+	title := fmt.Sprintf("每日简报 · %d 月 %d 日", yday.Month(), yday.Day())
+	msg = mail.Msg{Kind: "digest", To: u.Email, UserID: u.ID, Subject: "Pingoo " + title, Title: title, Body: b.String()}
 	if base != "" {
-		fmt.Fprintf(&b, "打开 Pingoo 看详情：%s/overview\n\n不想再收到这封邮件：在「设置 → 报告」里关掉“每日邮件简报”：%s/settings#reports\n", base, base)
-	} else {
-		b.WriteString("不想再收到这封邮件：在 Pingoo 的「设置 → 报告」里关掉“每日邮件简报”。\n")
+		msg.Action, msg.ActionURL = "打开 Pingoo 看详情", base+"/overview"
 	}
-	b.WriteString("\n— Pingoo")
-	return fmt.Sprintf("Pingoo 每日简报 · %d 月 %d 日", yday.Month(), yday.Day()), b.String(), true
+	return msg, true
 }
 
 // planReminders 在付费套餐到期前 3 天提醒一次、到期后提醒一次（说清楚 7 天宽限期之后会怎样）。
@@ -142,22 +142,23 @@ func (s *Scheduler) planReminders(ctx context.Context) {
 	now := time.Now()
 	cfg := s.Store.Plans(ctx)
 	base := s.siteURL(ctx)
-	// 续费链接按用户所在的那一档生成：优先这一档自己的购买地址，再给一条“在设置里兑换”的兜底。
-	linkFor := func(p store.Plan) string {
-		link := ""
+	// 怎么续费：这一档有自己的购买地址就写在正文里；邮件下面的链接通到设置页，在那里兑换新的套餐卡密。
+	buy := func(p store.Plan) string {
+		s := "续费：在「设置 → 套餐与积分」里兑换新的套餐卡密。"
 		if p.BuyURL != "" {
-			link += "\n\n购买" + p.Name + "卡密：" + p.BuyURL
+			s += "\n购买" + p.Name + "卡密：" + p.BuyURL
 		}
-		if base != "" {
-			link += "\n\n续费：在「设置 → 套餐与积分」里兑换新的套餐卡密：" + base + "/settings#ai"
-		}
-		return link
+		return "\n\n" + s
 	}
-	send := func(kind string, u store.User, subject, body string) {
+	send := func(kind string, u store.User, subject, title, body string) {
 		if s.Store.MailCount(ctx, kind, "", "", u.ID, now.AddDate(0, 0, -5)) > 0 {
 			return
 		}
-		if err := s.Mail.Send(ctx, mail.Msg{Kind: kind, To: u.Email, UserID: u.ID, Subject: subject, Body: body}); err != nil {
+		msg := mail.Msg{Kind: kind, To: u.Email, UserID: u.ID, Subject: subject, Title: title, Body: body}
+		if base != "" {
+			msg.Action, msg.ActionURL = "去续费", base+"/settings#ai"
+		}
+		if err := s.Mail.Send(ctx, msg); err != nil {
 			s.Log.Warn("套餐提醒没能发出", "user", u.ID, "err", err)
 		}
 	}
@@ -165,20 +166,20 @@ func (s *Scheduler) planReminders(ctx context.Context) {
 	if users, err := s.Store.ExpiringUsers(ctx, now, now.AddDate(0, 0, 3)); err == nil {
 		for _, u := range users {
 			p := cfg.Get(u.Plan)
-			send("plan_expiring", u, "你的 Pingoo "+p.Name+"快到期了", fmt.Sprintf(
-				"你好，\n\n你的 Pingoo %s将在 %s 到期。到期后会回到%s：只保留 %d 个网站在同步、%d 天的明细数据，不再有每日邮件简报和每月积分。"+
-					"到期后 %d 天内续费，数据一点都不会少。%s\n\n— Pingoo",
-				p.Name, u.PlanExpiresAt.Format("2006-01-02 15:04"), free.Name, free.Sites, free.DetailDays, store.GraceDays, linkFor(p)))
+			send("plan_expiring", u, "你的 Pingoo "+p.Name+"快到期了", p.Name+"快到期了", fmt.Sprintf(
+				"你的 Pingoo %s将在 %s 到期。到期后会回到%s：只保留 %d 个网站在同步、%d 天的明细数据，不再有每日邮件简报和每月积分。"+
+					"到期后 %d 天内续费，数据一点都不会少。%s",
+				p.Name, u.PlanExpiresAt.Format("2006-01-02 15:04"), free.Name, free.Sites, free.DetailDays, store.GraceDays, buy(p)))
 		}
 	}
 	if users, err := s.Store.ExpiringUsers(ctx, now.AddDate(0, 0, -1), now); err == nil {
 		for _, u := range users {
 			p := cfg.Get(u.Plan)
-			send("plan_expired", u, "你的 Pingoo "+p.Name+"已经到期", fmt.Sprintf(
-				"你好，\n\n你的 Pingoo %s已经在 %s 到期，现在按%s使用：超出 %d 个的网站暂停同步（数据还在），不再有每日邮件简报和每月积分。\n\n"+
-					"%d 天内续费，所有数据都会保留；超过 %d 天，超出%s保留期（明细 %d 天、每日总数 %d 天）的数据会被删除。%s\n\n— Pingoo",
+			send("plan_expired", u, "你的 Pingoo "+p.Name+"已经到期", p.Name+"已经到期", fmt.Sprintf(
+				"你的 Pingoo %s已经在 %s 到期，现在按%s使用：超出 %d 个的网站暂停同步（数据还在），不再有每日邮件简报和每月积分。\n\n"+
+					"%d 天内续费，所有数据都会保留；超过 %d 天，超出%s保留期（明细 %d 天、每日总数 %d 天）的数据会被删除。%s",
 				p.Name, u.PlanExpiresAt.Format("2006-01-02 15:04"), free.Name, free.Sites, store.GraceDays, store.GraceDays, free.Name,
-				free.DetailDays, free.TotalDays, linkFor(p)))
+				free.DetailDays, free.TotalDays, buy(p)))
 		}
 	}
 }

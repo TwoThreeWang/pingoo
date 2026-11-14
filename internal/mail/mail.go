@@ -51,9 +51,13 @@ type Msg struct {
 	To      string
 	ReplyTo string // 用户反馈：管理员直接点“回复”就能回给用户
 	Subject string
-	Body    string
-	IP      string
-	UserID  int64
+	// 下面四项填进所有邮件共用的模版（见 html.go）：大标题、正文、正文下面的一个文字链接。
+	Title     string // 正文里的大标题，短一些（“重新设置密码”）；不写就用 Subject
+	Body      string // 正文，纯文本：空行分段。不用写称呼和落款，落款由模版统一加
+	Action    string // 链接上的文字（“重新设置密码”）
+	ActionURL string // 链接地址；没有要用户去做的事就不写
+	IP        string
+	UserID    int64
 }
 
 var (
@@ -103,7 +107,7 @@ func (m *Mailer) deliver(cfg Config, msg Msg) error {
 	raw := build(cfg, msg)
 	if cfg.DryRun {
 		// 只在本地开发时打开：正文里可能有初始密码，正式环境不要用
-		m.Log.Info("【试运行，没有真的发出】", "to", msg.To, "subject", msg.Subject, "body", msg.Body)
+		m.Log.Info("【试运行，没有真的发出】", "to", msg.To, "subject", msg.Subject, "body", msg.Text())
 		return nil
 	}
 	addr := net.JoinHostPort(cfg.Host, cfg.Port)
@@ -158,18 +162,20 @@ func (m *Mailer) deliver(cfg Config, msg Msg) error {
 	return c.Quit()
 }
 
-// build 拼出邮件原文：UTF-8 纯文本，正文 base64 编码。
+// build 拼出邮件原文：纯文本和 HTML 两个版本放在一起（multipart/alternative），邮箱显示 HTML 版，
+// 不显示 HTML 的客户端、通知预览用纯文本版。两个版本的内容一样（见 Msg.Text、Msg.HTML），都是 UTF-8、base64 编码。
 func build(cfg Config, msg Msg) []byte {
 	from := cfg.From
 	if cfg.FromName != "" {
 		from = mime.BEncoding.Encode("UTF-8", cfg.FromName) + " <" + cfg.From + ">"
 	}
-	id := make([]byte, 12)
+	id := make([]byte, 20)
 	_, _ = rand.Read(id)
 	domain := Domain(cfg.From)
 	if domain == "" {
 		domain = "pingoo.local"
 	}
+	boundary := "pingoo-" + hex.EncodeToString(id[12:])
 	var b strings.Builder
 	b.WriteString("From: " + from + "\r\n")
 	b.WriteString("To: " + msg.To + "\r\n")
@@ -178,13 +184,17 @@ func build(cfg Config, msg Msg) []byte {
 	}
 	b.WriteString("Subject: " + mime.BEncoding.Encode("UTF-8", msg.Subject) + "\r\n")
 	b.WriteString("Date: " + time.Now().Format(time.RFC1123Z) + "\r\n")
-	b.WriteString("Message-ID: <" + hex.EncodeToString(id) + "@" + domain + ">\r\n")
-	b.WriteString("MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n")
-	enc := base64.StdEncoding.EncodeToString([]byte(msg.Body))
-	for len(enc) > 76 {
-		b.WriteString(enc[:76] + "\r\n")
-		enc = enc[76:]
+	b.WriteString("Message-ID: <" + hex.EncodeToString(id[:12]) + "@" + domain + ">\r\n")
+	b.WriteString("MIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary=\"" + boundary + "\"\r\n\r\n")
+	for _, part := range [][2]string{{"text/plain", msg.Text()}, {"text/html", msg.HTML()}} { // 顺序有讲究：客户端优先显示最后一个它认得的版本
+		b.WriteString("--" + boundary + "\r\nContent-Type: " + part[0] + "; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n")
+		enc := base64.StdEncoding.EncodeToString([]byte(part[1]))
+		for len(enc) > 76 {
+			b.WriteString(enc[:76] + "\r\n")
+			enc = enc[76:]
+		}
+		b.WriteString(enc + "\r\n")
 	}
-	b.WriteString(enc + "\r\n")
+	b.WriteString("--" + boundary + "--\r\n")
 	return []byte(b.String())
 }

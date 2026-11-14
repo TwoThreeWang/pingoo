@@ -158,8 +158,8 @@ func (s *Server) adminSaveSettings(w http.ResponseWriter, r *http.Request) {
 // adminMailTest 给管理员自己发一封测试邮件，确认发信配置能用。
 func (s *Server) adminMailTest(w http.ResponseWriter, r *http.Request) {
 	u := currentUser(r)
-	err := s.Mail.Send(r.Context(), mail.Msg{Kind: "notice", To: u.Email, IP: rateKey(s.clientIP(r)), UserID: u.ID, Subject: "Pingoo 测试邮件",
-		Body: "你好，\n\n这是一封测试邮件：Pingoo 的发信配置可以正常使用。\n\n站点地址：" + s.siteURL(r.Context()) + "\n\n— Pingoo"})
+	err := s.Mail.Send(r.Context(), mail.Msg{Kind: "notice", To: u.Email, IP: rateKey(s.clientIP(r)), UserID: u.ID, Subject: "Pingoo 测试邮件", Title: "测试邮件",
+		Body: "这是一封测试邮件：Pingoo 的发信配置可以正常使用。", Action: "打开 Pingoo", ActionURL: s.siteURL(r.Context())})
 	if err != nil {
 		toast(w, "没发出去："+err.Error())
 	} else {

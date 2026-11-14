@@ -414,7 +414,8 @@ func (s *Server) registerPost(w http.ResponseWriter, r *http.Request) {
 			s.fail(w, r, err)
 			return
 		}
-		msg.UserID, msg.Subject, msg.Body = id, "欢迎使用 Pingoo：你的初始密码", s.passwordMail(ctx, email, pw)
+		msg.UserID = id
+		s.passwordMail(ctx, &msg, email, pw)
 	case err != nil:
 		s.fail(w, r, err)
 		return
@@ -429,12 +430,13 @@ func (s *Server) registerPost(w http.ResponseWriter, r *http.Request) {
 			s.fail(w, r, err)
 			return
 		}
-		msg.UserID, msg.Subject, msg.Body = u.ID, "欢迎使用 Pingoo：你的初始密码", s.passwordMail(ctx, email, pw)
+		msg.UserID = u.ID
+		s.passwordMail(ctx, &msg, email, pw)
 	default:
-		msg.UserID, msg.Subject, msg.Body = u.ID, "这个邮箱已经注册过 Pingoo", fmt.Sprintf(
-			"你好，\n\n刚才有人用这个邮箱（%s）在 Pingoo 注册。这个邮箱已经有账号了，不需要再注册。\n\n"+
-				"如果是你本人，直接登录就行；忘记密码可以在这里重新设置：\n%s/forgot\n\n如果不是你本人操作，可以忽略这封邮件，你的账号不受影响。\n\n— Pingoo",
-			email, s.siteURL(ctx))
+		msg.UserID, msg.Subject, msg.Title = u.ID, "这个邮箱已经注册过 Pingoo", "这个邮箱已经注册过"
+		msg.Body = fmt.Sprintf("刚才有人用这个邮箱（%s）在 Pingoo 注册。这个邮箱已经有账号了，不需要再注册，直接登录就行；忘记密码可以点下面的链接重新设置。"+
+			"如非本人操作，请忽略此邮件，你的账号不受影响。", email)
+		msg.Action, msg.ActionURL = "重新设置密码", s.siteURL(ctx)+"/forgot"
 	}
 	if err := s.Mail.Send(ctx, msg); err != nil {
 		fail(http.StatusServiceUnavailable, "邮件没能发出去："+err.Error()+"。请稍后再试。")
@@ -443,10 +445,11 @@ func (s *Server) registerPost(w http.ResponseWriter, r *http.Request) {
 	s.registerSent(w, r, email)
 }
 
-func (s *Server) passwordMail(ctx context.Context, email, pw string) string {
-	return fmt.Sprintf("你好，\n\n欢迎使用 Pingoo。你的账号已经开通：\n\n  登录邮箱：%s\n  初始密码：%s\n\n"+
-		"登录地址：%s/login\n\n登录后可以在「设置 → 账号」里修改密码。如果不是你本人注册的，忽略这封邮件即可。\n\n— Pingoo",
-		email, pw, s.siteURL(ctx))
+// passwordMail 填好“初始密码”这封邮件的内容。
+func (s *Server) passwordMail(ctx context.Context, msg *mail.Msg, email, pw string) {
+	msg.Subject, msg.Title = "欢迎使用 Pingoo：你的初始密码", "欢迎使用 Pingoo"
+	msg.Body = fmt.Sprintf("你的账号已经开通，登录后可以在「设置 → 账号」里修改密码。如非本人注册，请忽略此邮件。\n\n    登录邮箱：%s\n    初始密码：%s", email, pw)
+	msg.Action, msg.ActionURL = "登录 Pingoo", s.siteURL(ctx)+"/login"
 }
 
 // registerSent 不管邮箱是不是已经注册过，都显示同样的结果，不暴露邮箱是否存在。
@@ -496,9 +499,9 @@ func (s *Server) forgotPost(w http.ResponseWriter, r *http.Request) {
 	u, err := s.Store.UserByEmail(ctx, email)
 	if err == nil && !u.Demo && !u.Disabled {
 		link := s.siteURL(ctx) + "/reset?t=" + s.resetToken(u, time.Now().Add(30*time.Minute))
-		_ = s.Mail.Send(ctx, mail.Msg{Kind: "reset", To: email, IP: ip, UserID: u.ID, Subject: "重新设置 Pingoo 密码",
-			Body: "你好，\n\n点下面的链接重新设置密码（30 分钟内有效，只能用一次）：\n\n" + link +
-				"\n\n如果不是你本人操作，忽略这封邮件即可，原来的密码仍然有效。\n\n— Pingoo"})
+		_ = s.Mail.Send(ctx, mail.Msg{Kind: "reset", To: email, IP: ip, UserID: u.ID, Subject: "重新设置 Pingoo 密码", Title: "重新设置密码",
+			Body:   "你申请了重新设置密码，请点下面的链接完成操作。链接 30 分钟内有效，只能用一次。如非本人操作，请忽略此邮件，原来的密码仍然有效。",
+			Action: "重新设置密码", ActionURL: link})
 	} else {
 		s.Store.LogMail(ctx, "reset", email, ip, 0) // 没有账号也记一次，计数和有账号时一样
 	}
@@ -657,8 +660,8 @@ func (s *Server) emailCodeRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := s.Mail.Send(ctx, mail.Msg{Kind: "email_code", To: email, IP: rateKey(s.clientIP(r)), UserID: u.ID, Subject: "Pingoo 邮箱验证码",
-		Body: "你好，\n\n你正在把 Pingoo 账号的登录邮箱改成这个邮箱。验证码：\n\n    " + s.emailCode(u.ID, email, time.Now()) +
-			"\n\n10 分钟内有效。如果不是你本人操作，忽略这封邮件即可。\n\n— Pingoo"})
+		Title: "邮箱验证码",
+		Body:  "你正在把 Pingoo 账号的登录邮箱改成这个邮箱，验证码 10 分钟内有效。如非本人操作，请忽略此邮件。\n\n    验证码：" + s.emailCode(u.ID, email, time.Now())})
 	if err != nil {
 		say("验证码没能发出去：" + err.Error())
 		return
@@ -715,8 +718,8 @@ func (s *Server) emailChange(w http.ResponseWriter, r *http.Request) {
 	go func(old string) {
 		cctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		_ = s.Mail.Send(cctx, mail.Msg{Kind: "notice", To: old, UserID: u.ID, Subject: "你的 Pingoo 登录邮箱已修改",
-			Body: "你好，\n\n你的 Pingoo 账号的登录邮箱刚刚从 " + old + " 改成了 " + email + "。\n\n如果不是你本人操作，请尽快联系管理员。\n\n— Pingoo"})
+		_ = s.Mail.Send(cctx, mail.Msg{Kind: "notice", To: old, UserID: u.ID, Subject: "你的 Pingoo 登录邮箱已修改", Title: "登录邮箱已修改",
+			Body: "你的 Pingoo 账号的登录邮箱刚刚从 " + old + " 改成了 " + email + "。如非本人操作，请尽快联系管理员。"})
 	}(u.Email)
 	toast(w, "登录邮箱已改为 "+email)
 	redirect(w, r, "/settings#account")
