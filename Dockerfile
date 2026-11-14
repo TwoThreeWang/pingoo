@@ -1,32 +1,22 @@
-# ---------- builder ----------
-FROM golang:alpine AS builder
-LABEL stage=gobuilder
-
-# 安装必要工具
-RUN apk update --no-cache && apk add --no-cache tzdata
-
+# ---------- 构建 ----------
+FROM golang:1.26-alpine AS builder
+RUN apk add --no-cache tzdata ca-certificates
 WORKDIR /build
-
-# 先复制依赖文件，利用 Docker 层缓存
 COPY go.mod go.sum ./
-
-# 使用 Go 模块缓存加速（需要 BuildKit）
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download
-
-# 复制源代码
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY . .
-
-# 静态编译，去符号，使用缓存加速编译
 ENV CGO_ENABLED=0
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go build -trimpath -ldflags="-s -w" -o /app/main main.go
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    go build -trimpath -ldflags="-s -w" -o /app/pingoo ./cmd/pingoo
 
-# ---------- final ----------
+# ---------- 运行 ----------
+# 模板和静态文件已经打包进二进制，只需要 .env
 FROM scratch
-COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /usr/share/zoneinfo/Asia/Shanghai
-ENV TZ=Asia/Shanghai
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /app/pingoo /pingoo
 WORKDIR /
-COPY --from=builder /app/main /main
-CMD ["/main"]
+# 不用 root 运行（65534 是 nobody）。程序只需要监听 5004 和读挂载进来的 .env / 密钥文件
+USER 65534:65534
+EXPOSE 5004
+ENTRYPOINT ["/pingoo"]

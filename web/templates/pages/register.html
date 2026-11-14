@@ -1,0 +1,18 @@
+{{define "main"}}{{$d := .D}}
+<main class="login">
+  {{template "auth-pitch"}}
+  <section>
+    <form class="form" method="post" action="/register" data-pow>
+      {{template "pow-fields" $d}}
+      <h2>免费注册</h2>
+      <p>只需要一个邮箱。我们会把<b>初始密码</b>发到这个邮箱，请填写你能收到邮件的真实地址。</p>
+      <div class="field"><label for="em">邮箱</label>
+        <input class="input{{if $d.Error}} invalid{{end}}" id="em" name="email" type="email" autocomplete="email" value="{{$d.Email}}" autofocus required></div>
+      {{if $d.Error}}<div class="err-msg" role="alert">{{$d.Error}}</div>{{end}}
+      <button class="btn dark" type="submit">注册并发送初始密码</button>
+      <div class="forgot">注册即表示同意<a class="tlink" href="/terms">服务条款</a>和<a class="tlink" href="/privacy">隐私政策</a>。已经有账号？<a class="tlink" href="/login">登录</a></div>
+    </form>
+  </section>
+</main>
+{{end}}
+{{define "scripts"}}<script src="/static/js/pow.js?v={{.Asset}}"></script>{{end}}

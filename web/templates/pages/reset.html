@@ -1,0 +1,26 @@
+{{define "main"}}{{$d := .D}}
+<main class="login">
+  {{template "auth-pitch"}}
+  <section>
+    {{if $d.Invalid}}
+    <div class="form">
+      <h2>链接已经失效</h2>
+      <p>重置链接 30 分钟内有效、只能用一次。可以重新获取一个。</p>
+      <a class="btn dark" href="/forgot">重新获取</a>
+    </div>
+    {{else}}
+    <form class="form" method="post" action="/reset">
+      <input type="hidden" name="t" value="{{$d.Token}}">
+      <h2>设置新密码</h2>
+      <p>至少 8 个字符。设置好之后，其他设备上的登录会自动退出。</p>
+      <div class="field"><label for="pw">新密码</label>
+        <input class="input{{if $d.Error}} invalid{{end}}" id="pw" name="password" type="password" autocomplete="new-password" minlength="8" autofocus required></div>
+      <div class="field"><label for="pw2">再输一次</label>
+        <input class="input" id="pw2" name="password2" type="password" autocomplete="new-password" minlength="8" required></div>
+      {{if $d.Error}}<div class="err-msg" role="alert">{{$d.Error}}</div>{{end}}
+      <button class="btn dark" type="submit">保存新密码</button>
+    </form>
+    {{end}}
+  </section>
+</main>
+{{end}}

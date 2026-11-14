@@ -1,0 +1,161 @@
+{{define "main"}}{{$d := .D}}
+<main class="wrap">
+  <div class="page-head"><div><h1>设置</h1><p>连接 Google、管理网站，查看积分和 AI 用量，修改账号。</p></div></div>
+  <div class="layout">
+    <nav class="subnav">
+      <a href="#connections">连接</a><a href="#sites">网站</a><a href="#ai">套餐与积分</a><a href="#reports">报告</a><a href="#sync">同步</a><a href="#account">账号</a>
+    </nav>
+    <div>
+      <!-- 连接 -->
+      <section class="spanel" id="p-connections">
+        <div class="sblk">
+          <div class="sec-h"><h2>Google 服务账号<small>用来读取 GA 和 Search Console，只读</small></h2></div>
+          <div id="google-box">{{template "settings-google" $d.Google}}</div>
+        </div>
+      </section>
+
+      <!-- 网站 -->
+      <section class="spanel" id="p-sites">
+        <div class="sblk">
+          <div class="sec-h"><h2>网站<small>{{len $d.Sites}} 个{{if lt $d.MaxSites 100000}}，最多 {{$d.MaxSites}} 个{{end}}</small></h2>
+            <div class="r">
+              <button class="btn sm" hx-get="/settings/sites/0" hx-target="#drawer-body" data-open="drawer">手动添加</button>
+              <button class="btn dark sm" hx-get="/settings/import" hx-target="#modal-body" data-open="modal" {{if not $d.Google.Connected}}disabled title="需要先连接 Google 服务账号"{{end}}>导入网站</button>
+            </div></div>
+          {{if not $d.Sites}}<div class="empty">还没有网站。{{if $d.Google.Connected}}点右上角“导入网站”，会自动列出服务账号能看到的所有 GA 媒体资源。{{else}}先在“连接”里配置 Google 服务账号。{{end}}</div>
+          {{else}}
+          <div class="tbl-wrap"><table class="tbl">
+            <tr><th class="l">网站</th><th class="l ds">数据源</th><th class="l">状态</th><th></th></tr>
+            {{range $d.Sites}}
+            <tr><td class="l"><span class="t1">{{.Site.Name}}{{if .Site.Demo}}<span class="tag-new">演示</span>{{end}}</span><span class="t2">{{.Site.Domain}}</span></td>
+              <td class="l ds" style="line-height:1.9;white-space:normal;overflow-wrap:anywhere">
+                {{if .Site.Demo}}<span class="muted">演示数据，不同步</span>{{else}}
+                <span class="mono"><span class="muted">GA&nbsp;&nbsp;</span>{{if .Site.GAProperty}}{{.Site.GAProperty}}{{else}}<span class="muted">未连接</span>{{end}}</span><br>
+                <span class="mono"><span class="muted">GSC&nbsp;</span>{{if .Site.GSCSite}}{{.Site.GSCSite}}{{else}}<span class="muted">未连接</span>{{end}}</span>{{end}}</td>
+              <td class="l" style="white-space:normal">{{template "sync-status" .}}{{if not .Site.Description}}<span class="muted" style="display:block;font-size:12px;margin-top:2px">还没写给 AI 的背景</span>{{end}}</td>
+              <td><button class="btn sm" hx-get="/settings/sites/{{.Site.ID}}" hx-target="#drawer-body" data-open="drawer" data-edit="{{.Site.ID}}">编辑</button></td></tr>
+            {{end}}
+          </table></div>
+          {{end}}
+          <p class="note">时区跟随 GA 媒体资源的设置，“昨天”“本周”都按各网站自己的时区计算。</p>
+        </div>
+      </section>
+
+      <!-- AI 与积分 -->
+      <section class="spanel" id="p-ai">
+        <div class="sblk">
+          <div class="sec-h"><h2>套餐与积分<small>洞察、诊断、问答、报告在所有套餐里都按用量扣积分</small></h2></div>
+          {{template "settings-ai" $d.AI}}
+        </div>
+      </section>
+
+      <!-- 报告 -->
+      <section class="spanel" id="p-reports">
+        <form hx-post="/settings/reports" hx-swap="none">
+          <div class="sblk">
+            <div class="sec-h"><h2>自动报告</h2></div>
+            <p class="note" style="margin:0 0 8px">自动报告只在「AI 与积分」里打开了“每天自动生成 AI 内容”时才会生成（会消耗积分）；随时可以在「报告」页手动生成。</p>
+            <label class="toggle"><input type="checkbox" class="sw" name="weekly" {{if $d.Reports.Weekly}}checked{{end}}><span class="tx"><b>每周生成周报</b><span>每周一 05:00，总结上周一到周日。</span></span></label>
+            <label class="toggle"><input type="checkbox" class="sw" name="monthly" {{if $d.Reports.Monthly}}checked{{end}}><span class="tx"><b>每月生成月报</b><span>每月 1 日 05:00，总结上个月。</span></span></label>
+            <label class="toggle"><input type="checkbox" class="sw" name="per_site" {{if $d.Reports.PerSite}}checked{{end}}><span class="tx"><b>为每个网站单独生成</b><span>关闭后只生成一份全站汇总。</span></span></label>
+            <label class="toggle"><input type="checkbox" class="sw" name="review" {{if $d.Reports.Review}}checked{{end}}><span class="tx"><b>检查上期建议的效果</b><span>对比你勾选“已完成”的建议在改动前后的数据。</span></span></label>
+            {{if $d.AI.Plan.Digest}}<input type="hidden" name="digest_form" value="1">
+            <label class="toggle"><input type="checkbox" class="sw" name="digest" {{if $d.DigestOn}}checked{{end}}><span class="tx"><b>每日邮件简报</b><span>每天早上 8 点（按下面的报告时区）把各网站昨天的数字、需要关注的变化和新出的报告发到你的邮箱。不用 AI，不扣积分。</span></span></label>
+            {{else}}<p class="note">付费套餐每天早上会把各网站昨天的情况发到你的邮箱。<a class="tlink" href="/help#plans">看看套餐</a></p>{{end}}
+          </div>
+          <div class="sblk">
+            <div class="sec-h"><h2>报告内容</h2></div>
+            <div class="field"><span class="lab">详细程度</span>
+              <div class="seg-ctl">
+                {{range $k := (lines "brief\nstandard\ndetailed")}}<label style="cursor:pointer"><input type="radio" name="detail" value="{{$k}}" {{if eq $d.Reports.Detail $k}}checked{{end}} style="display:none"><span class="seg-btn">{{if eq $k "brief"}}简洁{{else if eq $k "standard"}}标准{{else}}详细{{end}}</span></label>{{end}}
+              </div>
+              <span class="hint">简洁约 1 分钟读完；标准约 3 分钟；详细会给每个网站单独一节。</span>
+            </div>
+            <div class="field" style="max-width:360px"><label for="tz">报告时区</label>
+              <select class="select" id="tz" name="tz">{{range $d.TZs}}<option {{if eq . $d.Reports.TZ}}selected{{end}}>{{.}}</option>{{end}}</select>
+              <span class="hint">决定“周一 05:00”指的是哪个时区。</span></div>
+          </div>
+          <div class="foot-save"><span class="muted">修改从下一份报告开始生效。</span><button class="btn dark" type="submit">保存</button></div>
+        </form>
+        <form hx-post="/settings/signals" hx-trigger="change" hx-swap="none">
+          <div class="sblk">
+            <div class="sec-h"><h2>提醒类型<small>“需要关注”里想看到哪些</small></h2></div>
+            {{range $d.SignalKinds}}<label class="toggle"><input type="checkbox" class="sw" name="kind" value="{{.Key}}" {{if not (index $d.Muted .Key)}}checked{{end}}><span class="tx"><b>{{.Label}}</b><span>{{.Desc}}</span></span></label>
+            {{end}}
+            <p class="note">关掉的类型不会再出现在概览、图表和 AI 的分析里；每个网站的灵敏度在“网站 → 编辑”里调。</p>
+          </div>
+        </form>
+      </section>
+
+      <!-- 同步与用量 -->
+      <section class="spanel" id="p-sync">
+        <div class="sblk">
+          <div class="sec-h"><h2>数据同步<small>自动同步：{{$d.NextSync}}</small></h2>
+            <div class="r"><button class="btn sm" hx-post="/settings/sync" hx-target="#sync-table" hx-swap="outerHTML" {{if not $d.Google.Connected}}disabled{{end}}>立即同步全部</button></div></div>
+          <div hx-get="/settings/sync/table" hx-trigger="load" hx-swap="outerHTML"></div>
+        </div>
+        <div class="sblk">
+          <div class="sec-h"><h2>Google API 配额<small>最近 24 小时</small></h2></div>
+          {{if $d.Quotas}}
+          {{range $d.Quotas}}
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;gap:12px;font-size:13.5px;flex-wrap:wrap"><span>{{if .SiteName}}{{.SiteName}} {{end}}<span class="mono muted">{{.Property}}</span></span><span class="tnum">今天已用 <b>{{num .DayUsed}}</b> / {{num .DayLimit}}</span></div>
+            <div class="meter" role="img" aria-label="今天已用 {{pct0 (div0 .DayUsed .DayLimit)}}"><i style="width:{{widthPct .DayUsed .DayLimit}}"></i></div>
+            <div class="note" style="margin-top:2px">这个小时已用 {{num .HourUsed}} / {{num .HourLimit}} · 更新于 {{ago .UpdatedAt}}</div>
+          </div>
+          {{end}}
+          {{else}}<p class="note" style="margin-top:0">还没有调用过 GA Data API。连接 Google 并同步之后，这里会显示每个媒体资源今天用了多少配额。</p>{{end}}
+          <p class="note">GA 按媒体资源分别计算配额（标准版每天 20 万）。每天的自动同步只用一小部分；问答、诊断时实时查询也会消耗一些。</p>
+        </div>
+      </section>
+
+      <!-- 账号 -->
+      <section class="spanel" id="p-account">
+        <div class="sblk">
+          <div class="sec-h"><h2>登录邮箱</h2></div>
+          <p style="color:var(--ink-2);font-size:13.5px;margin:0 0 14px">现在的登录邮箱：<b class="mono">{{$d.Email}}</b></p>
+          <details class="howto"><summary>修改登录邮箱</summary>
+            <form class="two" hx-post="/settings/email/code" hx-swap="none" style="margin-top:12px">
+              <div class="field"><label for="ne">新邮箱</label><input class="input" id="ne" name="email" type="email" autocomplete="email" required></div>
+              <div class="field"><label for="nep">当前密码</label><input class="input" id="nep" name="password" type="password" autocomplete="current-password" required></div>
+              <div><button class="btn" type="submit">发送验证码到新邮箱</button></div>
+            </form>
+            <form class="two" hx-post="/settings/email" hx-swap="none" style="margin-top:14px">
+              <div class="field"><label for="ne2">新邮箱</label><input class="input" id="ne2" name="email" type="email" required></div>
+              <div class="field"><label for="nec">验证码</label><input class="input mono" id="nec" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></div>
+              <div><button class="btn dark" type="submit">确认修改</button></div>
+            </form>
+          </details>
+        </div>
+        <div class="sblk">
+          <div class="sec-h"><h2>修改密码</h2></div>
+          <form hx-post="/settings/password" hx-swap="none" style="max-width:360px">
+            <div class="field"><label for="pc">当前密码</label><input class="input" id="pc" name="current" type="password" autocomplete="current-password" required></div>
+            <div class="field"><label for="pn">新密码</label><input class="input" id="pn" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+            <div class="field"><label for="pn2">再输一次</label><input class="input" id="pn2" name="password2" type="password" autocomplete="new-password" minlength="8" required></div>
+            <button class="btn dark" type="submit">修改密码</button>
+            <p class="note">改完之后，其他设备上的登录会自动退出。</p>
+          </form>
+        </div>
+        <div class="sblk">
+          <div class="sec-h"><h2>已登录的设备</h2><div class="r"><button class="btn sm" hx-post="/settings/sessions/others" hx-target="#sessions" hx-swap="outerHTML">退出其他所有设备</button></div></div>
+          {{template "sessions" (dict "Sessions" $d.Sessions "Current" $d.Current)}}
+        </div>
+        {{if not $d.IsAdmin}}
+        <div class="sblk">
+          <div class="sec-h"><h2>注销账号</h2></div>
+          <p style="color:var(--ink-2);font-size:13.5px;margin:0 0 12px">注销后，你的网站、同步下来的数据、报告、对话和积分都会被永久删除，不能恢复。剩余积分不退款。</p>
+          <form hx-post="/settings/account/delete" hx-confirm="确定要注销账号吗？所有数据都会被永久删除。" style="max-width:360px">
+            <div class="field"><label for="dp">输入密码确认</label><input class="input" id="dp" name="password" type="password" autocomplete="current-password" required></div>
+            <button class="btn danger" type="submit">永久注销账号</button>
+          </form>
+        </div>
+        {{end}}
+      </section>
+    </div>
+  </div>
+</main>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="编辑网站"><div id="drawer-body" style="display:flex;flex-direction:column;height:100%"></div></aside>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="导入网站"><div id="modal-body" style="display:flex;flex-direction:column;min-height:0;max-height:calc(100vh - 64px)"></div></div>
+{{end}}

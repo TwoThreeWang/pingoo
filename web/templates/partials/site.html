@@ -1,0 +1,312 @@
+{{define "site-insight"}}
+<div {{if .Running}}hx-get="{{.PollURL}}" hx-trigger="every 3s" hx-target="#insight-body" hx-swap="innerHTML"{{end}}>
+{{if and .NoAI (not .Content.Headline)}}
+  <div class="kicker mono"><span class="dia"></span>{{.Range.Kicker}}洞察</div>
+  <h2 class="headline">AI 洞察会告诉你发生了什么、为什么，以及下一步做什么。</h2>
+  <p class="say" style="margin-top:0">{{.AIMsg}} 下面的指标、内容、来源、搜索数据都不依赖 AI，已经可以用了。{{if not (contains .AIMsg "演示")}}<a class="tlink" href="/settings#ai">AI 与积分 →</a>{{end}}</p>
+{{else if .Content.Headline}}
+  <div class="kicker mono"><span class="dia"></span><span>{{.Range.Kicker}}洞察 · {{if hasPrefix .Insight.Model "示例"}}演示示例，不是 AI 生成{{else}}AI 生成于 {{clock .Insight.CreatedAt}}{{end}}{{if .Outdated}} · 基于 {{md .Insight.PeriodStart}} – {{md .Insight.PeriodEnd}} 的数据{{end}}</span>
+    {{if .Running}}<span>· 正在重新生成…</span>{{else if not .NoAI}}<span>·</span><button hx-post="{{.RegenURL}}" hx-target="#insight-body" hx-swap="innerHTML">{{if .Outdated}}按最新数据重新生成{{else}}重新生成{{end}}</button>{{end}}</div>
+  <h2 class="headline">{{.Content.Headline}}</h2>
+  <p class="say" style="margin-top:0">{{bold .Content.Lede}}</p>
+  {{if .Content.Items}}
+  <div class="insights">
+    {{range .Content.Items}}
+    <article class="ins">
+      {{if eq .Type "good"}}<span class="st">{{icon "good"}}亮点</span>{{else if eq .Type "warn"}}<span class="st">{{icon "warn"}}问题</span>{{else}}<span class="st">{{icon "chance"}}机会</span>{{end}}
+      <h3>{{.Title}}</h3>
+      <div class="ev">{{bold .Evidence}}{{if .Guess}}<span class="guess">推测</span>{{end}}</div>
+      <div class="acts">
+        {{if .SignalID}}<button class="act main" data-diagnose="/sites/{{$.SiteID}}/diagnose?signal={{.SignalID}}">深入分析 <span class="arr">→</span></button>
+        {{else}}<button class="act main" data-diagnose="/sites/{{$.SiteID}}/diagnose?question={{q .Title}}&title={{q .Title}}">深入分析 <span class="arr">→</span></button>{{end}}
+        {{if .Section}}<a class="act" href="#{{.Section}}" data-goto="{{.Section}}">查看数据 <span class="arr">→</span></a>{{end}}
+      </div>
+    </article>
+    {{end}}
+  </div>
+  {{end}}
+  {{if .Todos}}
+  <div class="todo">
+    <div class="sec-h" style="border-bottom-color:var(--line)"><h2 style="font-size:15px">接下来做什么<small>AI 建议 · 勾选完成后，下一期报告会检查效果</small></h2></div>
+    <ol>
+      {{range .Todos}}
+      <li><input type="checkbox" name="done" {{if eq .Status "done"}}checked{{end}} hx-post="/todos/{{.ID}}" hx-trigger="change" hx-swap="none" aria-label="标记完成">
+        <span><span class="tx">{{.Text}}</span><span class="why">{{.Why}}</span></span></li>
+      {{end}}
+    </ol>
+  </div>
+  {{end}}
+{{else if .Running}}
+  <div class="kicker mono"><span class="dia"></span>{{.Range.Kicker}}洞察 · AI 正在查数据，大约 30～60 秒</div>
+  {{template "insight-wait"}}
+{{else if .Manual}}
+  <div class="kicker mono"><span class="dia"></span>{{.Range.Kicker}}洞察</div>
+  <h2 class="headline">这段时间还没有 AI 洞察。</h2>
+  <p class="say" style="margin-top:0">为了节省 AI 用量，只有“7 天”的洞察会每天自动生成。下面的指标、内容、来源、搜索数据都已经是这段时间的；需要洞察的话点一下，大约 30～60 秒。</p>
+  <button class="act main" hx-post="{{.RegenURL}}" hx-target="#insight-body" hx-swap="innerHTML">生成洞察 <span class="arr">→</span></button>
+{{else}}
+  <div class="kicker mono"><span class="dia"></span>{{.Range.Kicker}}洞察</div>
+  <h2 class="headline">洞察没能生成。</h2>
+  <p class="say" style="margin-top:0">{{if .Error}}{{.Error}}{{else}}还没有生成过洞察。{{end}}</p>
+  <button class="act main" hx-post="{{.RegenURL}}" hx-target="#insight-body" hx-swap="innerHTML">重新生成 <span class="arr">→</span></button>
+{{end}}
+</div>
+{{end}}
+
+{{define "site-chart"}}
+<div class="chart-head">
+  <h3>每{{if .Range.Hourly}}小时{{else}}日{{end}}{{.Tile.Label}}{{if eq .Tile.Kind "pos"}} · 越靠上排名越好{{end}}</h3>
+  <div class="legend"><span><i style="background:var(--accent)"></i>本期</span><span><i style="background:var(--prev)"></i>{{.Range.PrevName}}</span>{{if .Chart.Markers}}<span><span class="mk"></span>异常点，点击让 AI 诊断</span>{{end}}</div>
+</div>
+<div class="main-chart chart" tabindex="0" aria-label="每日{{.Tile.Label}}趋势，按左右方向键逐天查看" data-chart="{{json .Chart}}"></div>
+{{end}}
+
+{{define "tabs"}}{{$v := .}}
+<div class="tabs" role="tablist">
+  {{range .Tabs}}<button role="tab" aria-selected="{{if eq .Key $v.Tab}}true{{else}}false{{end}}" hx-get="{{$v.URL}}&tab={{.Key}}" hx-target="#{{$v.ID}}" hx-swap="outerHTML">{{.Label}}</button>{{end}}
+</div>
+{{end}}
+
+{{define "site-content"}}{{$v := .}}
+<div id="content-body" class="loading-dim">
+  {{template "tabs" (dict "Tabs" .Tabs "Tab" .Tab "URL" (printf "/sites/%d/part/content?range=%s" .SiteID .Range.Key) "ID" "content-body")}}
+  {{if .Error}}<div class="err">{{.Error}}</div>{{end}}
+  {{if not .Rows}}<div class="empty">{{if eq .Tab "rising"}}这段时间没有明显起势的页面。{{else if eq .Tab "declining"}}没有明显下滑的页面，很好。{{else if eq .Tab "evergreen"}}需要至少 12 周的数据才能判断哪些是常青内容。{{else if eq .Tab "fresh"}}这段时间没有新出现、且有一定浏览的页面。{{else if eq .Tab "optimize"}}没有发现“流量不小但读者没认真看”的页面。{{else}}暂无数据。{{end}}</div>
+  {{else}}
+  <div class="tbl-wrap"><table class="tbl">
+    <tr><th class="l" colspan="2">{{if or (eq .Tab "landing") (eq .Tab "optimize")}}入口页{{else}}页面{{end}}</th>
+      {{if eq .Tab "evergreen"}}<th>周均浏览</th><th>近 12 周</th><th>平均停留</th><th class="l">主要来自</th>
+      {{else if eq .Tab "fresh"}}<th>本期浏览</th><th>首次出现</th><th>平均停留</th><th class="l">主要来自</th>
+      {{else if eq .Tab "landing"}}<th>进入次数</th><th>认真阅读</th><th>人均看几页</th><th class="l">说明</th>
+      {{else if eq .Tab "optimize"}}<th>进入次数</th><th>平均停留</th><th>认真阅读</th><th class="l">为什么值得改</th>
+      {{else}}<th>浏览</th><th>变化</th><th>平均停留</th><th class="l">{{if eq .Tab "declining"}}可能的原因{{else}}主要来自{{end}}</th>{{end}}
+    </tr>
+    {{range $i, $r := .Rows}}
+    <tr class="row" tabindex="0" data-detail="/sites/{{$v.SiteID}}/part/page?range={{$v.Range.Key}}&path={{q $r.Path}}" aria-expanded="false">
+      <td class="i">{{pad2 (add $i 1)}}</td>
+      <td class="pg l"><span class="t1">{{title $r.Title $r.Path}}<span class="chev">▸</span></span><span class="t2">{{$r.Path}}</span></td>
+      <td><span class="bar"><b style="font-weight:600">{{num $r.Views}}</b><span class="track"><span class="fill" style="width:{{widthPct $r.Views $v.Max}}"></span></span></span></td>
+      {{if eq $v.Tab "evergreen"}}<td class="tnum">{{$r.Extra}}</td><td>{{durShort $r.Dwell}}</td>
+      {{else if eq $v.Tab "fresh"}}<td>{{md $r.FirstSeen}}</td><td>{{durShort $r.Dwell}}</td>
+      {{else if eq $v.Tab "landing"}}<td>{{pct0 $r.EngRate}}</td><td>{{printf "%.1f" $r.PPV}}</td>
+      {{else if eq $v.Tab "optimize"}}<td>{{durShort $r.Dwell}}</td><td><span class="d bad">{{pct0 $r.EngRate}}</span></td>
+      {{else}}<td>{{delta $r.Views $r.PrevViews 1}}</td><td>{{durShort $r.Dwell}}</td>{{end}}
+      <td class="why">{{$r.Main}}</td>
+    </tr>
+    <tr class="detail" hidden><td colspan="7" class="detail-slot"></td></tr>
+    {{end}}
+  </table></div>
+  {{end}}
+  {{if eq .Tab "optimize"}}<p class="note">“认真阅读”是停留超过 10 秒、或看了 2 页以上的访问占比。</p>{{end}}
+</div>
+{{end}}
+
+{{define "page-detail"}}
+<div class="det">
+  <div><h4>每日浏览</h4><div class="mini-chart chart" data-chart="{{json .Chart}}"></div></div>
+  <div><h4>访客从哪来</h4>
+    {{if .D.Sources}}
+    <div class="seg">{{range $i, $x := .D.Sources}}<span style="width:{{pct0 $x.Pct}};background:var(--cat-{{add $i 1}})"></span>{{end}}</div>
+    <div class="seg-legend">{{range $i, $x := .D.Sources}}<div><i style="background:var(--cat-{{add $i 1}})"></i>{{$x.Label}}<b>{{pct0 $x.Pct}}</b></div>{{end}}</div>
+    {{else}}<div class="muted" style="font-size:12.5px">这个页面不常作为入口页，没有来源数据。</div>{{end}}
+  </div>
+  <div><h4>带来点击的搜索词</h4>
+    {{if .D.Queries}}<div class="qlist">{{range .D.Queries}}<div><span>{{.Query}}</span><b>{{num .Clicks}} 点击 · 第 {{printf "%.1f" .Pos}} 位</b></div>{{end}}</div>
+    {{else}}<div class="muted" style="font-size:12.5px">没有搜索数据。</div>{{end}}
+    <div style="margin-top:12px;display:flex;gap:18px;flex-wrap:wrap"><a class="act main" href="/sites/{{.SiteID}}/page?range={{.Range.Key}}&path={{.D.Path}}">单页分析 <span class="arr">→</span></a><a class="act" href="/chat?site={{.SiteID}}">问 AI <span class="arr">→</span></a></div>
+  </div>
+</div>
+{{end}}
+
+{{define "site-sources"}}{{$v := .}}
+<div id="sources-body" class="loading-dim">
+  {{template "tabs" (dict "Tabs" .Tabs "Tab" .Tab "URL" (printf "/sites/%d/part/sources?range=%s" .SiteID .Range.Key) "ID" "sources-body")}}
+  {{if .Error}}<div class="err">{{.Error}}</div>{{end}}
+  {{if not .Rows}}
+    {{if eq .Tab "utm"}}<div class="empty">还没有带推广参数的访问。<br>在你发到外部的链接后面加上 <code>?utm_source=twitter&amp;utm_campaign=新文章</code>，这里就能看到每一次推广各带来了多少人、读得怎么样。</div>
+    {{else if eq .Tab "referrers"}}<div class="empty">这段时间没有新出现的外链网站。被别人推荐（比如 Hacker News、Reddit、V2EX、Newsletter）时，这里会第一时间显示。</div>
+    {{else if eq .Tab "ai"}}<div class="empty">还没有来自 AI 助手（ChatGPT、Perplexity、Claude、Gemini 等）的访客。</div>
+    {{else}}<div class="empty">暂无数据。</div>{{end}}
+  {{else}}
+  <div class="tbl-wrap"><table class="tbl">
+    {{if eq .Tab "channels"}}
+      <tr><th class="l">渠道</th><th>访问</th><th>变化</th><th>认真阅读</th><th>人均看几页</th><th>平均停留</th><th class="l">一句话</th></tr>
+      {{range .Rows}}<tr><td class="pg l" style="min-width:140px"><span class="t1">{{.Name}}</span><span class="t2">{{.Sub}}</span></td>
+        <td><span class="bar"><b style="font-weight:600">{{num .Sessions}}</b><span class="track"><span class="fill" style="width:{{widthPct .Sessions $v.Max}}"></span></span></span></td>
+        <td>{{delta .Sessions .Prev 1}}</td><td>{{pct0 .EngRate}}</td><td>{{printf "%.1f" .PPV}}</td><td>{{durShort .Dwell}}</td><td class="why">{{.Note}}</td></tr>{{end}}
+    {{else if eq .Tab "referrers"}}
+      <tr><th class="l">来源网站</th><th>首次出现</th><th>带来访问</th><th>认真阅读</th><th>平均停留</th><th class="l">落在哪里</th></tr>
+      {{range .Rows}}<tr><td class="l"><span class="t1">{{.Name}}<span class="tag-new">新</span></span></td><td>{{md .FirstSeen}}</td><td><b>{{num .Sessions}}</b></td><td>{{pct0 .EngRate}}</td><td>{{durShort .Dwell}}</td><td class="why">{{.Landing}}</td></tr>{{end}}
+    {{else if eq .Tab "utm"}}
+      <tr><th class="l">推广活动</th><th class="l">来源</th><th>访问</th><th>变化</th><th>认真阅读</th><th>平均停留</th></tr>
+      {{range .Rows}}<tr><td class="l"><span class="t1">{{.Name}}</span></td><td class="l mono">{{.Sub}}</td><td><b>{{num .Sessions}}</b></td><td>{{delta .Sessions .Prev 1}}</td><td>{{pct0 .EngRate}}</td><td>{{durShort .Dwell}}</td></tr>{{end}}
+    {{else}}
+      <tr><th class="l">{{if eq .Tab "ai"}}AI 助手{{else}}网站{{end}}</th><th>访问</th><th>变化</th><th>认真阅读</th><th>平均停留</th><th class="l">最常落在</th></tr>
+      {{range .Rows}}<tr><td class="l"><span class="t1">{{.Name}}{{if .IsNew}}<span class="tag-new">新</span>{{end}}</span></td>
+        <td><span class="bar"><b style="font-weight:600">{{num .Sessions}}</b><span class="track"><span class="fill" style="width:{{widthPct .Sessions $v.Max}}"></span></span></span></td>
+        <td>{{if .IsNew}}<span class="d flat">新</span>{{else}}{{delta .Sessions .Prev 1}}{{end}}</td><td>{{pct0 .EngRate}}</td><td>{{durShort .Dwell}}</td><td class="why">{{.Landing}}</td></tr>{{end}}
+    {{end}}
+  </table></div>
+  {{end}}
+  {{if eq .Tab "channels"}}<p class="note">「AI 助手」是 Pingoo 自己的分组：GA 默认把 chatgpt.com、perplexity.ai 等算进“外链”，这里单独拎出来。</p>{{end}}
+</div>
+{{end}}
+
+{{define "site-search"}}{{$v := .}}
+<div id="search-all">
+  {{if .NoGSC}}<div class="empty">这个网站还没有连接 Search Console。<a class="tlink" href="/settings?edit={{.SiteID}}#sites">去连接</a>之后，这里会显示搜索词、排名和点击率。</div>
+  {{else if not .HasData}}<div class="empty">{{if .Range.Hourly}}Search Console 的数据有 2～3 天延迟，选「7 天」或更长的范围查看。{{else}}还没有搜索数据，首次同步完成后会显示。{{end}}</div>
+  {{else}}
+  <div class="smalls">
+    {{range $i, $sm := .Smalls}}
+    <div class="small"><div class="k">{{$sm.Label}}{{if eq $sm.Kind "pos"}}<span class="inv">· 越小越好</span>{{end}}</div>
+      <div class="n">{{fmtTile $sm.Kind $sm.Cur}}{{smallDelta $sm}}</div>
+      <div class="c chart" data-chart="{{json (index $v.Charts $i)}}"></div></div>
+    {{end}}
+  </div>
+  {{template "search-tab" .}}
+  {{end}}
+</div>
+{{end}}
+
+{{define "search-tab"}}{{$v := .}}
+<div id="search-body" class="loading-dim">
+  {{template "tabs" (dict "Tabs" .Tabs "Tab" .Tab "URL" (printf "/sites/%d/part/search?only=tab&range=%s" .SiteID .Range.Key) "ID" "search-body")}}
+  {{if .Error}}<div class="err">{{.Error}}</div>{{end}}
+  {{if eq .Tab "pages"}}
+    {{if not .Pages}}<div class="empty">暂无数据。</div>{{else}}
+    <div class="tbl-wrap"><table class="tbl"><tr><th class="l">页面</th><th>点击</th><th class="l">带来点击最多的搜索词</th></tr>
+      {{range .Pages}}<tr><td class="l mono">{{.Path}}</td><td><b>{{num .Clicks}}</b></td><td class="l" style="white-space:normal">{{range .Queries}}<span style="display:inline-block;margin:0 18px 4px 0">{{.Query}} <b class="tnum">{{num .Clicks}}</b></span>{{end}}</td></tr>{{end}}
+    </table></div>{{end}}
+  {{else if not .Rows}}
+    <div class="empty">{{if eq .Tab "near"}}没有排在第 8～20 位、曝光又不少的搜索词。{{else if eq .Tab "ctr"}}没有发现“曝光高但点击率明显偏低”的搜索词。{{else if eq .Tab "drops"}}没有排名明显下滑的搜索词。{{else if eq .Tab "rising"}}这段时间没有明显上升的搜索词。{{else}}暂无数据。{{end}}</div>
+  {{else}}
+  <div class="tbl-wrap"><table class="tbl">
+    {{if eq .Tab "near"}}
+      <tr><th class="l">搜索词</th><th>曝光</th><th>点击</th><th>排名</th><th class="l">落地页</th><th>进前 3 预计多</th></tr>
+      {{range .Rows}}<tr><td class="l"><span class="t1">{{.Query}}</span></td><td>{{num .Impr}}</td><td>{{num .Clicks}}</td><td><b>{{printf "%.1f" .Pos}}</b></td><td class="l mono">{{.Path}}</td><td><b>约 {{num .Gain}} 次点击</b></td></tr>{{end}}
+    {{else if eq .Tab "ctr"}}
+      <tr><th class="l">搜索词</th><th>曝光</th><th>实际点击率</th><th>同排名平均</th><th>排名</th><th class="l">说明</th></tr>
+      {{range .Rows}}<tr><td class="l"><span class="t1">{{.Query}}</span><span class="t2">{{.Path}}</span></td><td>{{num .Impr}}</td><td><span class="d bad">{{pct .CTR}}</span></td><td>约 {{pct0 .Expected}}</td><td>{{printf "%.1f" .Pos}}</td><td class="why">{{.Note}}</td></tr>{{end}}
+    {{else if eq .Tab "drops"}}
+      <tr><th class="l">搜索词</th><th>排名</th><th>点击</th><th>变化</th><th class="l">落地页</th></tr>
+      {{range .Rows}}<tr><td class="l"><span class="t1">{{.Query}}</span></td><td><span class="posc"><b>{{printf "%.1f" .Pos}}</b><span class="from">{{printf "%.1f" .PrevPos}} →</span><span class="d bad">后退</span></span></td><td>{{num .Clicks}}</td><td>{{delta .Clicks .PrevClicks 1}}</td><td class="l mono">{{.Path}}</td></tr>{{end}}
+    {{else}}
+      <tr><th class="l">搜索词</th><th>点击</th><th>{{if eq .Tab "rising"}}变化{{else}}曝光{{end}}</th><th>点击率</th><th>排名</th><th class="l">落地页</th></tr>
+      {{range .Rows}}<tr><td class="l"><span class="t1">{{.Query}}{{if and (eq $v.Tab "rising") (eq .PrevClicks 0)}}<span class="tag-new">新</span>{{end}}</span></td><td><b>{{num .Clicks}}</b></td>
+        <td>{{if eq $v.Tab "rising"}}{{delta .Clicks .PrevClicks 1}}{{else}}{{num .Impr}}{{end}}</td><td>{{pct .CTR}}</td>
+        <td><span class="posc"><b>{{printf "%.1f" .Pos}}</b>{{if .PrevPos}}<span class="from">{{printf "%.1f" .PrevPos}} →</span>{{if lt (add0 .Pos 0.3) .PrevPos}}<span class="d good">前进</span>{{else if gt .Pos (add0 .PrevPos 0.3)}}<span class="d bad">后退</span>{{end}}{{end}}</span></td>
+        <td class="l mono">{{.Path}}</td></tr>{{end}}
+    {{end}}
+  </table></div>
+  {{end}}
+  {{if eq .Tab "near"}}<p class="note">“进前 3 预计多”按排名第 3 的平均点击率约 11% 估算，只作参考。</p>{{end}}
+</div>
+{{end}}
+
+{{define "site-audience"}}{{$a := .A}}
+<div class="aud">
+  <div>
+    <h3>设备</h3>
+    {{if $a.Devices}}
+    <p class="sub">{{$a.DeviceNote}}</p>
+    <div class="tall" role="img" aria-label="设备占比">{{range $i, $x := $a.Devices}}{{if lt $i 3}}<span style="width:{{pct0 $x.Share}};background:var(--cat-{{add $i 1}})" title="{{$x.Name}} {{pct0 $x.Share}}">{{if ge $x.Share 0.12}}{{$x.Name}} {{pct0 $x.Share}}{{end}}</span>{{end}}{{end}}</div>
+    <table class="cmp"><tr><th>设备</th><th>访问占比</th><th>认真阅读</th><th>平均停留</th></tr>
+      {{range $i, $x := $a.Devices}}<tr><td>{{if lt $i 3}}<span class="k" style="background:var(--cat-{{add $i 1}})"></span>{{end}}{{$x.Name}}</td><td>{{pct0 $x.Share}}</td><td>{{pct0 $x.EngRate}}</td><td>{{durShort $x.Dwell}}</td></tr>{{end}}
+    </table>
+    {{else}}<p class="sub">暂无数据。</p>{{end}}
+    <h3 style="margin-top:32px">地区</h3>
+    {{if $a.Geo}}<p class="sub">{{$a.GeoNote}}</p>
+    <table class="cmp"><tr><th>国家/地区</th><th>访问占比</th><th>认真阅读</th></tr>
+      {{range $a.Geo}}<tr><td>{{.Country}}</td><td><span class="bar"><span>{{pct0 .Share}}</span><span class="track" style="width:90px"><span class="fill" style="width:{{widthPct .Share (index $a.Geo 0).Share}}"></span></span></span></td><td>{{pct0 .EngRate}}</td></tr>{{end}}
+    </table>{{else}}<p class="sub">暂无数据。</p>{{end}}
+    <h3 style="margin-top:32px">语言</h3>
+    {{if $a.Langs}}<p class="sub">{{$a.LangNote}}</p>
+    <table class="cmp"><tr><th>浏览器语言</th><th>访问占比</th><th>认真阅读</th></tr>
+      {{range $a.Langs}}<tr><td>{{.Country}}</td><td><span class="bar"><span>{{pct0 .Share}}</span><span class="track" style="width:90px"><span class="fill" style="width:{{widthPct .Share (index $a.Langs 0).Share}}"></span></span></span></td><td>{{pct0 .EngRate}}</td></tr>{{end}}
+    </table>{{else}}<p class="sub">暂无数据。</p>{{end}}
+  </div>
+  <div>
+    <h3>访问时段 <span class="muted" style="font-weight:400;font-size:12.5px">· 网站时区，近 {{$a.HeatDays}} 天</span></h3>
+    <p class="sub">{{if $a.HeatNote}}{{$a.HeatNote}}{{else}}暂无数据。{{end}}</p>
+    <div class="heat" aria-label="星期与小时的访问热力图">
+      {{range $d, $row := $a.Heat}}<div class="hl">{{weekday $d}}</div>{{range $h, $val := $row}}<div class="cell" style="--a:{{alpha $val $a.HeatMax}}" data-heat="{{weekday $d}} {{pad2 $h}}:00–{{pad2 (add $h 1)}}:00|{{num $val}}|最高时段的 {{pct0 (div0 $val $a.HeatMax)}}"></div>{{end}}{{end}}
+      <div></div>{{range $h := seq 24}}<div class="hx">{{if eq (mod $h 6) 0}}{{pad2 $h}}{{end}}</div>{{end}}
+    </div>
+    <div class="heat-scale"><span>少</span><span class="g"></span><span>多</span></div>
+    {{if $a.HasNew}}
+    <div class="nr">
+      <div><div class="k">新访客</div><div class="n">{{pct0 $a.NewShare}}</div><div class="muted" style="font-size:12.5px">上期 {{pct0 $a.NewPrev}}</div></div>
+      <div><div class="k">回头客</div><div class="n">{{pct0 (sub0 1 $a.NewShare)}}</div><div class="muted" style="font-size:12.5px">上期 {{pct0 (sub0 1 $a.NewPrev)}}</div></div>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}
+
+{{define "site-health"}}
+<div class="sec-h"><h2>健康检查<small>每天同步后自动检查</small></h2><div class="r"><span>{{.Summary}}</span></div></div>
+<div class="checks">
+  {{range .Checks}}
+  <div class="chk">{{checkIcon .Status}}<div><span class="tt1">{{.Title}}</span><span class="tt2">{{.Detail}}</span></div><span></span>
+    {{if .Items}}<details><summary>查看 {{len .Items}} 项</summary>{{range .Items}}<div><span>{{index . 0}}</span><span>{{index . 1}}</span></div>{{end}}</details>{{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
+
+{{define "diagnosis"}}
+<div class="dr-h">
+  <div><div class="kick mono">AI 诊断</div><h2>{{if .D.Title}}{{.D.Title}}{{else}}诊断{{end}}</h2></div>
+  <button class="close" data-close aria-label="关闭">×</button>
+</div>
+<div class="dr-b" {{if and .D.ID (not .Done) (not .NoAI) (not .Error)}}hx-get="/diagnoses/{{.D.ID}}" hx-trigger="every 1.5s" hx-target="#drawer-body" hx-swap="innerHTML"{{end}}>
+  {{if .Example}}<div class="notice" style="margin-bottom:14px">{{icon "info14"}}<span>演示示例：演示账号不能调用 AI，这是预先写好的一份诊断，让你看看诊断是什么样子。<a class="tlink" href="/register">注册</a>后就能诊断自己的网站。</span></div>{{end}}
+  {{if .NoAI}}
+    <p class="say">{{.Error}}{{if not (contains .Error "演示")}} <a class="tlink" href="/settings#ai">AI 与积分 →</a>{{end}}</p>
+  {{else if and .Error (not .Result.Conclusion)}}
+    {{range .D.Steps}}<div class="step"><div class="ic">{{icon "ok"}}</div><div><div class="s1">{{.Title}}</div>{{if .Detail}}<div class="s2 mono">{{.Detail}}</div>{{end}}</div></div>{{end}}
+    <p class="err">{{.Error}}</p>
+  {{else if .Result.Conclusion}}
+    {{range .Result.Steps}}<div class="step"><div class="ic">{{icon "ok"}}</div><div><div class="s1">{{.Title}}</div><div class="s2">{{bold .Detail}}</div></div></div>{{end}}
+    <div class="concl">
+      <div class="lab"><span>结论</span><span class="conf">{{$c := confBars .Result.Confidence}}{{range $i := seq 3}}<i class="{{if lt $i $c}}on{{end}}"></i>{{end}}</span><span>置信度{{confLabel .Result.Confidence}}</span></div>
+      <p>{{.Result.Conclusion}}{{if .Result.Caveat}}<span class="caveat">{{.Result.Caveat}}</span>{{end}}</p>
+      {{if .Result.Suggestions}}<h4>建议</h4><ol>{{range .Result.Suggestions}}<li><span>{{.}}</span></li>{{end}}</ol>{{end}}
+      {{if .D.Trace}}<details class="trace"><summary>AI 查询了 {{len (lines .D.Trace)}} 次数据</summary><pre>{{.D.Trace}}</pre></details>{{end}}
+    </div>
+  {{else}}
+    {{range .D.Steps}}<div class="step"><div class="ic">{{if .Done}}{{icon "ok"}}{{else}}<span class="spin"></span>{{end}}</div><div><div class="s1">{{.Title}}</div>{{if .Detail}}<div class="s2 mono">{{.Detail}}</div>{{end}}</div></div>{{end}}
+    <div class="step"><div class="ic"><span class="spin"></span></div><div><div class="s1">{{if .D.Steps}}继续分析…{{else}}正在理解问题，决定先查什么…{{end}}</div></div></div>
+  {{end}}
+</div>
+<div class="dr-f">
+  {{if .Result.Conclusion}}<button class="btn" type="button" hx-post="/diagnoses/{{.D.ID}}/save" hx-swap="outerHTML">保存到报告</button>{{end}}
+  <a class="btn" href="/chat{{if .D.SiteID}}?site={{.D.SiteID}}{{end}}">继续追问</a>
+  <button class="btn dark" data-close>关闭</button>
+</div>
+{{end}}
+
+{{define "site-ads"}}{{$v := .}}{{$a := .Ads}}
+<div id="ads-body" class="loading-dim">
+  <div class="tiles ad-tiles">
+    {{range .Tiles}}<div class="tile static">
+      <span class="k">{{.Label}}{{if eq .Key "rev"}}{{if $a.Currency}}（{{$a.Currency}}）{{end}}{{end}}<span class="qm" title="{{.Tip}}">?</span></span>
+      <div class="n">{{if eq .Kind "dec"}}{{money .Cur}}{{else}}{{fmtTile .Kind .Cur}}{{end}}</div>
+      <div class="m">{{tileDelta .}}<span>{{$v.Range.PrevName}} {{if eq .Kind "dec"}}{{money .Prev}}{{else}}{{fmtTile .Kind .Prev}}{{end}}</span></div>
+    </div>{{end}}
+  </div>
+  <div class="chart-box" hx-get="/sites/{{.SiteID}}/part/chart?range={{.Range.Key}}&metric=rev" hx-trigger="load"><div class="main-chart"></div></div>
+  {{template "tabs" (dict "Tabs" .Tabs "Tab" .Tab "URL" (printf "/sites/%d/part/ads?range=%s" .SiteID .Range.Key) "ID" "ads-body")}}
+  {{if not $a.Pages}}
+    <div class="empty">{{if eq .Tab "low"}}浏览量排前 50 的页面，广告收入都不低于全站平均水平的一半。{{else}}这段时间还没有按页面的广告数据。{{end}}</div>
+  {{else}}
+  <div class="tbl-wrap"><table class="tbl">
+    <tr><th class="l">页面</th><th>广告收入</th><th>变化</th><th>浏览</th><th>每千次浏览收入</th>{{if eq .Tab "low"}}<th>是全站的</th>{{end}}</tr>
+    {{range $a.Pages}}<tr><td class="pg l"><span class="t1">{{if .Title}}{{truncate .Title 40}}{{else}}{{.Path}}{{end}}</span><span class="t2">{{.Path}}</span></td>
+      <td><b>{{money .Revenue}}</b></td><td>{{if .HasPrevValue}}{{decDelta .Revenue .PrevRevenue}}{{else}}<span class="d flat">新</span>{{end}}</td>
+      <td>{{num .Views}}</td><td>{{money .RPM}}</td>{{if eq $v.Tab "low"}}<td>{{printf "%.0f%%" (mul .RPMVsSite 100)}}</td>{{end}}</tr>{{end}}
+  </table></div>
+  {{end}}
+  <p class="note">数据来自 GA4 关联的广告平台（AdSense 等），金额单位是 GA 媒体资源的货币{{if $a.Currency}}（{{$a.Currency}}）{{end}}，通常晚一天、和 AdSense 后台可能有小的出入，结算以 AdSense 为准。{{if eq .Tab "low"}}“流量大、收入低”：浏览量排前 50、每千次浏览收入不到全站一半的页面——可以检查广告位够不够、广告有没有正常加载。{{end}}</p>
+</div>{{end}}

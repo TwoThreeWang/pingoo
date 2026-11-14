@@ -5,5 +5,5 @@ git pull origin main
 echo '打包镜像'
 DOCKER_BUILDKIT=1 docker build -t pingoo:latest .
 echo '启动容器'
-docker-compose down
-docker-compose up --force-recreate -d --remove-orphans
+docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.prod.yml up --force-recreate -d --remove-orphans

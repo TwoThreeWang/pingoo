@@ -1,0 +1,111 @@
+{{define "main"}}{{$v := .D}}
+<main class="wrap">
+<article class="paper">
+  <a class="back" href="/reports">← 所有报告</a>
+  <div class="kicker mono"><span class="dia"></span>{{kindLabel $v.R.Kind}} · {{$v.Label}} · {{md $v.R.PeriodStart}} – {{md $v.R.PeriodEnd}} · {{if $v.R.SiteID}}{{$v.R.SiteName}}{{else}}全部 {{len $v.Snap.Rows}} 个网站{{end}}</div>
+
+  {{if $v.Running}}
+    <div class="wait-box" hx-get="/reports/{{$v.R.ID}}/status" hx-trigger="every 3s"><span class="spin"></span><p>AI 正在查数据、写报告，大约 30～60 秒。完成后会自动刷新。</p></div>
+  {{else if eq $v.R.Status "error"}}
+    <h1 class="headline">这份报告没能生成。</h1>
+    <p class="lede">{{$v.R.Error}}</p>
+    <div class="tools"><form method="post" action="/reports" hx-post="/reports" hx-swap="none"><input type="hidden" name="kind" value="{{$v.R.Kind}}"><input type="hidden" name="site" value="{{deref $v.R.SiteID}}"><button class="act main" type="submit">重新生成 <span class="arr">→</span></button></form></div>
+  {{else}}
+  <h1 class="headline">{{$v.C.Title}}</h1>
+  <p class="lede">{{bold $v.C.Lede}}</p>
+  <div class="tools">
+    <button class="act main" type="button" data-print>打印 / 导出 PDF <span class="arr">→</span></button>
+    <a class="act" href="/chat{{if $v.R.SiteID}}?site={{deref $v.R.SiteID}}{{end}}">问 AI <span class="arr">→</span></a>
+    <form method="post" action="/reports" hx-post="/reports" hx-swap="none" style="display:inline"><input type="hidden" name="kind" value="{{$v.R.Kind}}"><input type="hidden" name="site" value="{{deref $v.R.SiteID}}"><button class="act" type="submit">重新生成 <span class="arr">→</span></button></form>
+  </div>
+
+  <section>
+    <h2>核心数字<span>对比 {{$v.Snap.PrevStart}} – {{$v.Snap.PrevEnd}}</span></h2>
+    <div class="tbl-wrap"><table class="tbl">
+      <tr><th class="l">网站</th><th>访客</th><th>变化</th><th>搜索点击</th><th>变化</th><th>每日访客</th><th class="l">状态</th></tr>
+      {{range $v.Snap.Rows}}
+      <tr><td class="l"><a class="t1" href="/sites/{{.SiteID}}">{{.Name}}</a></td><td><b>{{num .Visitors}}</b></td><td>{{delta .Visitors .PrevVis 1}}</td>
+        <td>{{if .HasSearch}}{{num .Clicks}}{{else}}—{{end}}</td><td>{{if .HasSearch}}{{delta .Clicks .PrevClicks 1}}{{end}}</td>
+        <td><div class="chart spk" style="height:22px;width:84px" data-chart="{{json (spark .Spark .Name)}}"></div></td>
+        <td class="l">{{status .Status}}</td></tr>
+      {{end}}
+      {{if gt (len $v.Snap.Rows) 1}}<tfoot><tr><td class="l">合计</td><td>{{num $v.Total.Visitors}}</td><td>{{delta $v.Total.Visitors $v.Total.PrevVis 1}}</td>
+        <td>{{if $v.Total.HasSearch}}{{num $v.Total.Clicks}}{{end}}</td><td>{{if $v.Total.HasSearch}}{{delta $v.Total.Clicks $v.Total.PrevClicks 1}}{{end}}</td><td></td><td></td></tr></tfoot>{{end}}
+    </table></div>
+  </section>
+
+  {{if $v.C.Stories}}
+  <section>
+    <h2>这段时间发生了什么<span>按重要程度排序</span></h2>
+    {{range $v.C.Stories}}
+    <div class="story">
+      <div class="top-l">{{sev .Severity}}{{if .Site}}<span>{{.Site}}</span>{{end}}{{if .Confidence}}<span><span class="conf">{{$c := confBars .Confidence}}{{range $i := seq 3}}<i class="{{if lt $i $c}}on{{end}}"></i>{{end}}</span> 置信度{{confLabel .Confidence}}</span>{{end}}</div>
+      <h3>{{.Title}}</h3>
+      <p>{{bold .Body}}</p>
+      {{if .Basis}}<div class="ev mono">依据：{{.Basis}}</div>{{end}}
+      {{with index $v.SiteNames .Site}}<div class="acts"><a class="act main" href="/sites/{{.}}">查看这个网站 <span class="arr">→</span></a></div>{{end}}
+    </div>
+    {{end}}
+  </section>
+  {{end}}
+
+  {{if or $v.Snap.Up $v.Snap.Down}}
+  <section>
+    <h2>搜索排名变化<span>Search Console{{if $v.Snap.GSCLatest}} · 截至 {{$v.Snap.GSCLatest}}{{end}}</span></h2>
+    <div class="cols2">
+      <div><h4>上升最多</h4>{{range $v.Snap.Up}}<div class="mv"><span class="q">{{.Query}}</span><span class="p"><small>{{printf "%.1f" .From}} →</small><b>{{printf "%.1f" .To}}</b></span><span class="s">{{.Site}}</span></div>{{else}}<p class="muted" style="font-size:13px">没有明显上升的词。</p>{{end}}</div>
+      <div><h4>下降最多</h4>{{range $v.Snap.Down}}<div class="mv"><span class="q">{{.Query}}</span><span class="p"><small>{{printf "%.1f" .From}} →</small><b>{{printf "%.1f" .To}}</b></span><span class="s">{{.Site}}</span></div>{{else}}<p class="muted" style="font-size:13px">没有明显下降的词。</p>{{end}}</div>
+    </div>
+  </section>
+  {{end}}
+
+  {{if $v.C.Reviews}}
+  <section>
+    <h2>上期的建议，效果如何<span>勾选“已完成”的建议会在这里检查</span></h2>
+    <div class="tbl-wrap"><table class="tbl">
+      <tr><th class="l">建议</th><th class="l">状态</th><th>改动前 → 现在</th><th class="l">判断</th></tr>
+      {{range $v.C.Reviews}}
+      <tr><td class="why"><span class="t1">{{if .Site}}{{.Site}}：{{end}}{{.Text}}</span></td>
+        <td class="l">{{if eq .Status "done"}}<span class="st">{{icon "ok"}}{{.DoneAt}} 完成</span>{{else}}<span class="st">{{icon "pending"}}未完成</span>{{end}}</td>
+        <td>{{if .Before}}{{.Before}} → <b>{{.After}}</b>{{else}}—{{end}}</td>
+        <td class="why">{{verdict .Verdict}} {{.Note}}</td></tr>
+      {{end}}
+    </table></div>
+  </section>
+  {{end}}
+
+  {{if $v.C.Notes}}
+  <section>
+    <h2>你保存的分析<span>来自问答和诊断</span></h2>
+    {{range $v.C.Notes}}
+    <details class="story" style="padding:16px 0">
+      <summary style="cursor:pointer;list-style:none"><span class="top-l"><span>{{if eq .Source "diagnosis"}}诊断{{else}}问答{{end}}</span>{{if .Site}}<span>{{.Site}}</span>{{end}}<span>{{.Date}}</span></span>
+        <h3 style="margin:6px 0 0;font-size:16px">{{.Title}}</h3></summary>
+      <div class="msg ai" style="margin:10px 0 0"><div class="body" style="font-size:14.5px">{{markdown .Content}}</div></div>
+    </details>
+    {{end}}
+  </section>
+  {{end}}
+
+  {{if $v.C.Next}}
+  <section>
+    <h2>下期建议<span>点“加入待办”后，下期报告会检查效果</span></h2>
+    <ol class="next">
+      {{range $v.C.Next}}
+      <li><span class="tx">{{if .Site}}{{.Site}}：{{end}}{{.Text}}<small>{{.Why}}</small></span>
+        <form hx-post="/todos" hx-swap="outerHTML"><input type="hidden" name="text" value="{{.Text}}"><input type="hidden" name="why" value="{{.Why}}"><input type="hidden" name="report_id" value="{{$v.R.ID}}"><input type="hidden" name="site_id" value="{{with index $v.SiteNames .Site}}{{.}}{{else}}{{.SiteID}}{{end}}"><button class="btn sm" type="submit">加入待办</button></form></li>
+      {{end}}
+    </ol>
+  </section>
+  {{end}}
+
+  <div class="meta mono">
+    {{if hasPrefix $v.R.Model "示例"}}演示示例：按演示数据里的数字和提醒写成，不是 AI 生成；真实账号里由 AI 分析你的数据后写出。<br>
+    {{else}}由 {{$v.R.Model}} 于 {{clock $v.R.CreatedAt}} 生成 · 输入 {{num $v.R.TokensIn}} tokens，输出 {{num $v.R.TokensOut}} tokens<br>{{end}}
+    报告中的数字都来自 Google Analytics 和 Search Console；“原因”是 AI 的推断，已标注置信度。
+    {{if $v.R.Trace}}<details class="trace"><summary>AI 查询了 {{len (lines $v.R.Trace)}} 次数据</summary><pre>{{$v.R.Trace}}</pre></details>{{end}}
+  </div>
+  {{end}}
+</article>
+</main>
+{{end}}

@@ -1,0 +1,182 @@
+{{define "main"}}{{$d := .D}}
+<main class="wrap">
+  <div class="page-head"><div><h1>管理后台</h1><p>用户和积分、AI 模型和价格、卡密、全站设置。</p></div></div>
+  <div class="layout">
+    <nav class="subnav">
+      <a href="#overview">概况</a><a href="#users">用户</a><a href="#plans">套餐</a><a href="#models">模型</a><a href="#codes">卡密</a><a href="#settings">设置</a>
+    </nav>
+    <div>
+      <section class="spanel" id="p-overview">
+        <div class="sblk">
+          <div class="sec-h"><h2>概况</h2></div>
+          <div class="big3">
+            <div><div class="k">用户</div><div class="n">{{num $d.UserCount}}</div></div>
+            <div><div class="k">24 小时发信</div><div class="n">{{num $d.MailDay}}</div><div class="note" style="margin:2px 0 0">上限 {{num $d.MailLimit}}，在「设置 → 发信」里改</div></div>
+            <div><div class="k">1 小时注册邮件</div><div class="n">{{num $d.RegHour}}</div><div class="note" style="margin:2px 0 0">{{if $d.Breaker}}<b style="color:var(--bad-t)">已熔断：注册页改用高难度人机校验</b>{{else}}超过 50 封会自动提高注册难度{{end}}</div></div>
+          </div>
+          {{if $d.Mail}}<div class="tbl-wrap"><table class="tbl">
+            <tr><th class="l">邮件类型</th><th>1 小时</th><th>24 小时</th><th>失败</th></tr>
+            {{range $d.Mail}}<tr><td class="l">{{mailKind .Kind}}</td><td class="tnum">{{.Hour}}</td><td class="tnum">{{.Day}}</td><td class="tnum">{{.FailedDay}}</td></tr>{{end}}
+          </table></div>{{end}}
+        </div>
+        <div class="sblk">
+          <div class="sec-h"><h2>本月 AI 用量<small>按模型，所有用户合计</small></h2></div>
+          {{if $d.Usage}}<div class="tbl-wrap"><table class="tbl">
+            <tr><th class="l">模型</th><th>调用</th><th>输入 tokens</th><th>其中缓存</th><th>输出 tokens</th><th>扣除积分</th></tr>
+            {{range $d.Usage}}<tr><td class="l">{{if .Purpose}}{{.Purpose}}{{else}}<span class="muted">（未记录）</span>{{end}}</td><td class="tnum">{{num .Calls}}</td><td class="tnum">{{compact .In}}</td><td class="tnum">{{compact .Cached}}</td><td class="tnum">{{compact .Out}}</td><td class="tnum">{{num .Credits}}</td></tr>{{end}}
+          </table></div>
+          <p class="note">扣除积分 ÷ {{$d.PerYuan}} = 按“服务商价格 × 倍率”算出的金额（元）；除以倍率就是服务商成本。</p>
+          {{else}}<p class="note" style="margin-top:0">本月还没有 AI 调用。</p>{{end}}
+        </div>
+      </section>
+
+      <section class="spanel" id="p-users">
+        <div class="sblk">
+          <div class="sec-h"><h2>用户<small>最近 100 个</small></h2>
+            <form class="r" method="get" action="/admin"><input class="input" name="q" value="{{$d.Q}}" placeholder="按邮箱搜索" style="width:200px;padding:4px 10px"><button class="btn sm" type="submit">搜索</button></form></div>
+          <div class="tbl-wrap"><table class="tbl">
+            <tr><th class="l">邮箱</th><th>网站</th><th>积分</th><th class="l">套餐</th><th class="l">注册 / 最近登录</th><th class="l">调整积分</th><th></th></tr>
+            {{range $d.Users}}
+            <tr><td class="l"><span class="t1">{{.Email}}{{if .IsAdmin}} <span class="pill">管理员</span>{{end}}{{if .Disabled}} <span class="pill">已停用</span>{{end}}{{if not .LastLoginAt}} <span class="pill">未登录过</span>{{end}}</span>
+                <span class="t2">{{if .AutoAI}}自动 AI 开{{else}}自动 AI 关{{end}}{{if .ModelID}} · {{index $d.ModelNames (deref .ModelID)}}{{end}}</span></td>
+              <td class="tnum">{{.Sites}}</td><td class="tnum">{{num .Credits}}</td>
+              <td class="l" style="font-size:12.5px">{{$pid := .PlanID $d.Now}}{{if .IsAdmin}}管理员{{else}}{{($d.Plans.Get $pid).Name}}{{if .PlanExpiresAt}}{{if ne $pid "free"}}<br><span class="muted mono">到 {{(deref2 .PlanExpiresAt).Format "2006-01-02"}}</span>{{else if ne .Plan "free"}}<br><span class="muted">已到期</span>{{end}}{{end}}{{end}}
+                {{if not .IsAdmin}}<form class="inline-f" hx-post="/admin/users/{{.ID}}/plan" style="margin-top:4px"><select class="select" name="plan" style="padding:2px 6px;font-size:12px">{{range $d.Plans.List}}<option value="{{.ID}}" {{if eq .ID $pid}}selected{{end}}>{{.Name}}</option>{{end}}</select><input class="input" name="days" inputmode="numeric" placeholder="天数" style="width:56px;padding:2px 6px"><button class="btn sm" type="submit" hx-confirm="直接设置这个用户的套餐（从现在起算天数）？">设置</button></form>{{end}}</td>
+              <td class="l mono" style="font-size:12px">{{.CreatedAt.Format "2006-01-02"}}<br>{{if .LastLoginAt}}{{ago (deref2 .LastLoginAt)}}{{else}}—{{end}}</td>
+              <td class="l"><form class="inline-f" hx-post="/admin/users/{{.ID}}/credits"><input class="input" name="delta" inputmode="numeric" placeholder="+100 / -50" style="width:90px;padding:3px 8px"><input class="input" name="note" placeholder="备注" style="width:100px;padding:3px 8px"><button class="btn sm" type="submit">确定</button></form></td>
+              <td>{{if not .IsAdmin}}<button class="btn sm" hx-post="/admin/users/{{.ID}}/disable" hx-confirm="{{if .Disabled}}恢复{{else}}停用{{end}} {{.Email}}？">{{if .Disabled}}恢复{{else}}停用{{end}}</button>{{end}}</td></tr>
+            {{else}}<tr><td class="l" colspan="7"><span class="muted">没有找到用户</span></td></tr>{{end}}
+          </table></div>
+        </div>
+      </section>
+
+      <section class="spanel" id="p-plans">
+        <form hx-post="/admin/plans" hx-swap="none">
+          <div class="sblk">
+            <div class="sec-h"><h2>套餐</h2></div>
+            <p class="note" style="margin:0 0 12px">付费套餐用“套餐卡密”开通（在「卡密」里生成）。AI 都按积分原价收费；付费套餐每 12 小时刷新一次数据、有每日邮件简报，这两项固定不改。到期后功能马上回到免费版，数据再保留 7 天。</p>
+            <div class="tbl-wrap"><table class="tbl plan-form">
+              <tr><th class="l"></th>{{range $d.Plans.List}}<th class="l">{{.Name}}</th>{{end}}</tr>
+              <tr><td class="l">名称</td>{{range $d.Plans.List}}<td class="l"><input class="input" name="{{.ID}}_name" value="{{.Name}}" maxlength="20"></td>{{end}}</tr>
+              <tr><td class="l">每月价格（{{$d.Plans.Currency}}）</td>{{range $d.Plans.List}}<td class="l">{{if .Paid}}<input class="input" name="{{.ID}}_price" inputmode="decimal" value="{{trimFloat .Price}}">{{else}}<span class="muted">免费</span>{{end}}</td>{{end}}</tr>
+              <tr><td class="l">网站数</td>{{range $d.Plans.List}}<td class="l"><input class="input" name="{{.ID}}_sites" inputmode="numeric" value="{{.Sites}}"></td>{{end}}</tr>
+              <tr><td class="l">明细保留（天）</td>{{range $d.Plans.List}}<td class="l"><input class="input" name="{{.ID}}_detail_days" inputmode="numeric" value="{{.DetailDays}}"></td>{{end}}</tr>
+              <tr><td class="l">每日总数保留（天）</td>{{range $d.Plans.List}}<td class="l"><input class="input" name="{{.ID}}_total_days" inputmode="numeric" value="{{.TotalDays}}"></td>{{end}}</tr>
+              <tr><td class="l">每月送积分</td>{{range $d.Plans.List}}<td class="l">{{if .Paid}}<input class="input" name="{{.ID}}_monthly_credits" inputmode="numeric" value="{{.MonthlyCredits}}">{{else}}<span class="muted">0</span>{{end}}</td>{{end}}</tr>
+              <tr><td class="l">购买链接</td>{{range $d.Plans.List}}<td class="l">{{if .Paid}}<input class="input mono" name="{{.ID}}_buy_url" value="{{.BuyURL}}" placeholder="https://…" style="min-width:160px">{{else}}<span class="muted">—</span>{{end}}</td>{{end}}</tr>
+            </table></div>
+            <div class="two" style="margin-top:12px">
+              <div class="field"><label for="pcur">货币符号</label><input class="input" id="pcur" name="currency" value="{{$d.Plans.Currency}}" maxlength="4"><span class="hint">显示在价格前面，例如 $、¥、€。</span></div>
+              <div class="field"><span class="hint" style="margin-top:26px">每一档单独填购买地址（发卡网站、店铺或支付页）。首页价格卡片的“购买”按钮、设置页和到期提醒邮件会链接到对应那一档；不填时按钮改成“注册后升级”。</span></div>
+            </div>
+            <p class="note">价格只用来展示，以及升级时折算剩余天数（例如基础版还剩 20 天、用专业版卡密升级，按价格比例折成专业版天数）。改短保留期后，超出的数据会在下次清理时删除。</p>
+            <div class="foot-save"><span class="muted">修改立即生效。</span><button class="btn dark" type="submit">保存</button></div>
+          </div>
+        </form>
+      </section>
+
+      <section class="spanel" id="p-models">
+        <div class="sblk">
+          <div class="sec-h"><h2>AI 模型<small>价格按服务商原价（元 / 百万 tokens），1 元 = {{$d.PerYuan}} 积分</small></h2>
+            <div class="r"><button class="btn dark sm" hx-get="/admin/models/0" hx-target="#drawer-body" data-open="drawer">添加模型</button></div></div>
+          {{if $d.Models}}<div class="tbl-wrap"><table class="tbl">
+            <tr><th class="l">名称 / 模型 ID</th><th>输入</th><th>缓存命中</th><th>输出</th><th>倍率</th><th class="l">状态</th><th></th></tr>
+            {{range $d.Models}}<tr><td class="l" style="white-space:normal;overflow-wrap:anywhere;min-width:180px"><span class="t1">{{.Name}}</span><span class="t2">{{.Model}} · {{host .BaseURL}}</span></td>
+              <td class="tnum">{{trimFloat .PriceIn}}</td><td class="tnum">{{trimFloat .PriceCache}}</td><td class="tnum">{{trimFloat .PriceOut}}</td><td class="tnum">×{{trimFloat .Multiplier}}</td>
+              <td class="l">{{if .IsDefault}}<span class="pill">默认</span> {{end}}{{if .Enabled}}启用{{else}}<span class="muted">停用</span>{{end}}</td>
+              <td><button class="btn sm" hx-get="/admin/models/{{.ID}}" hx-target="#drawer-body" data-open="drawer">编辑</button></td></tr>{{end}}
+          </table></div>
+          <p class="note">用户在设置里从启用的模型中选一个；没选或选的被停用时用默认模型。洞察、问答、诊断、报告开始前先预扣一笔，结束后按实际用量多退少补（超出预扣的部分照样扣，余额可能为负）。</p>
+          {{else}}<div class="empty">还没有模型。添加一个兼容 OpenAI 格式、支持工具调用的模型后，用户才能使用 AI 功能。</div>{{end}}
+        </div>
+      </section>
+
+      <section class="spanel" id="p-codes">
+        <div class="sblk">
+          <div class="sec-h"><h2>生成卡密</h2></div>
+          <form class="two" method="post" action="/admin/codes">
+            <div class="field"><label for="ck">类型</label><select class="select" id="ck" name="kind"><option value="credits">积分</option>{{range $d.Plans.List}}{{if .Paid}}<option value="{{.ID}}">{{.Name}}</option>{{end}}{{end}}</select>
+              <span class="hint">套餐卡密：兑换后开通或续期套餐；已经有别的套餐时按价格折算剩余天数。</span></div>
+            <div class="field"><label for="cc">数量</label><input class="input" id="cc" name="count" type="number" min="1" max="1000" value="10" required></div>
+            <div class="field"><label for="cr">面额（积分，积分卡密用）</label><input class="input" id="cr" name="credits" type="number" min="0" value="1000"></div>
+            <div class="field"><label for="cpd">套餐天数（套餐卡密用）</label><input class="input" id="cpd" name="plan_days" type="number" min="0" max="3660" value="30"><span class="hint">例如 30（月卡）、365（年卡）。</span></div>
+            <div class="field"><label for="cb">批次名</label><input class="input" id="cb" name="batch" placeholder="例如 2026-11 首批" maxlength="40"></div>
+            <div class="field"><label for="cd">兑换截止（天）</label><input class="input" id="cd" name="valid_days" type="number" min="0" value="0"><span class="hint">卡密多少天内要兑换，0 表示长期有效。</span></div>
+            <div><button class="btn dark" type="submit">生成并下载 CSV</button></div>
+          </form>
+          <p class="note">卡密原文只在下载时出现一次，数据库里只存哈希，丢了找不回，请妥善保存文件。</p>
+        </div>
+        <div class="sblk">
+          <div class="sec-h"><h2>批次</h2></div>
+          {{if $d.Batches}}<div class="tbl-wrap"><table class="tbl">
+            <tr><th class="l">批次</th><th>内容</th><th>已用 / 总数</th><th class="l">兑换截止</th><th></th></tr>
+            {{range $d.Batches}}<tr><td class="l"><span class="t1">{{.Batch}}</span><span class="t2">{{.CreatedAt.Format "2006-01-02 15:04"}}</span></td>
+              <td class="tnum">{{if .Plan}}{{($d.Plans.Get .Plan).Name}} {{.Days}} 天{{else}}{{num .Credits}} 积分{{end}}</td><td class="tnum">{{.Used}} / {{.Total}}</td>
+              <td class="l mono" style="font-size:12px">{{if .ExpiresAt}}{{(deref2 .ExpiresAt).Format "2006-01-02"}}{{else}}长期{{end}}</td>
+              <td>{{if lt .Used .Total}}<button class="btn sm danger" hx-post="/admin/codes/delete" hx-vals='{"batch": "{{.Batch}}"}' hx-confirm="作废“{{.Batch}}”里所有还没用过的卡密？">作废未用</button>{{end}}</td></tr>{{end}}
+          </table></div>{{else}}<p class="note" style="margin-top:0">还没有生成过卡密。</p>{{end}}
+        </div>
+      </section>
+
+      <section class="spanel" id="p-settings">
+        <form hx-post="/admin/settings" hx-swap="none">
+          <div class="sblk">
+            <div class="sec-h"><h2>站点</h2></div>
+            {{if $d.LocalURL}}<div class="notice" style="margin-bottom:16px">{{icon "info14"}}<span>站点地址还是 <span class="mono">{{$d.SiteURL}}</span>：注册、找回密码邮件里的链接别人打不开。正式上线前请填成你的域名。</span></div>{{end}}
+            <div class="two">
+              <div class="field"><label for="su">站点地址</label><input class="input mono" id="su" name="site_url" value="{{index $d.Settings "site_url"}}" placeholder="https://pingoo.example.com"><span class="hint">邮件里的链接用它。以 https 开头时，登录 cookie 会自动加上 Secure。</span></div>
+              <div class="field"><label for="dtz">默认时区</label>
+                <select class="select" id="dtz" name="default_tz">{{$tz := index $d.Settings "default_tz"}}{{range $d.TZs}}<option {{if eq . $tz}}selected{{end}}>{{.}}</option>{{end}}</select>
+                <span class="hint">GA 没给时区时，新网站用它；“全部网站”页面、报告和全站每日上限也按它算“今天”。</span></div>
+            </div>
+            <div class="foot-save"><span class="muted">修改立即生效。</span><button class="btn dark" type="submit">保存</button></div>
+          </div>
+        </form>
+        <form hx-post="/admin/settings" hx-swap="none">
+          <div class="sblk">
+            <div class="sec-h"><h2>发信<small>注册、找回密码、改邮箱验证码；任何 SMTP 服务都可以，例如 Amazon SES</small></h2></div>
+            <div class="two">
+              <div class="field"><label for="sh">SMTP 服务器</label><input class="input mono" id="sh" name="smtp_host" value="{{index $d.Settings "smtp_host"}}" placeholder="email-smtp.us-east-1.amazonaws.com"></div>
+              <div class="field"><label for="sp">端口</label><input class="input mono" id="sp" name="smtp_port" inputmode="numeric" value="{{index $d.Settings "smtp_port"}}" placeholder="587"><span class="hint">587（STARTTLS）或 465（TLS），不支持明文。</span></div>
+              <div class="field"><label for="sus">用户名</label><input class="input mono" id="sus" name="smtp_user" value="{{index $d.Settings "smtp_user"}}" autocomplete="off"></div>
+              <div class="field"><label for="spw">密码</label><input class="input mono" id="spw" name="smtp_password" type="password" autocomplete="new-password" placeholder="{{if $d.HasSMTPPw}}已保存（留空则不修改）{{else}}SMTP 密码{{end}}"><span class="hint">加密保存。</span></div>
+              <div class="field"><label for="sf">发件地址</label><input class="input mono" id="sf" name="smtp_from" value="{{index $d.Settings "smtp_from"}}" placeholder="noreply@example.com"><span class="hint">要在发信服务里验证过；也会显示在“关于”和“隐私政策”里作为联系地址。</span></div>
+              <div class="field"><label for="sfn">发件人名称</label><input class="input" id="sfn" name="smtp_from_name" value="{{index $d.Settings "smtp_from_name"}}" placeholder="Pingoo"></div>
+              <div class="field"><label for="ml">24 小时发信上限</label><input class="input" id="ml" name="mail_daily_limit" inputmode="numeric" value="{{$d.MailLimit}}"><span class="hint">发信服务的发送配额（SES 沙箱是 200）。全站 24 小时内发到这个数才真正暂停注册。</span></div>
+            </div>
+            <div class="foot-save"><button class="btn" type="button" hx-post="/admin/mail/test" hx-swap="none">给我发一封测试邮件</button><span class="muted" style="margin-left:auto">先保存，再测试。</span><button class="btn dark" type="submit">保存</button></div>
+          </div>
+        </form>
+        <form hx-post="/admin/settings" hx-swap="none">
+          <input type="hidden" name="signup_form" value="1">
+          <div class="sblk">
+            <div class="sec-h"><h2>全站设置</h2></div>
+            <div class="two">
+              <div class="field"><label for="sb">新用户赠送积分</label><input class="input" id="sb" name="signup_bonus" inputmode="numeric" value="{{index $d.Settings "signup_bonus"}}" placeholder="0"><span class="hint">赠送的积分会招来用临时邮箱批量注册“薅羊毛”的人，建议只给够试一两次的量。</span></div>
+              <div class="field"><label for="cap">全站每日 token 上限</label><input class="input" id="cap" name="ai_daily_token_cap" inputmode="numeric" value="{{index $d.Settings "ai_daily_token_cap"}}" placeholder="留空不限"><span class="hint">所有用户合计，到了之后当天暂停 AI，防止模型或接口出问题时一直花钱。</span></div>
+            </div>
+            <label class="toggle"><input type="checkbox" class="sw" name="signup_closed" {{if eq (index $d.Settings "signup_closed") "true"}}checked{{end}}><span class="tx"><b>暂停注册</b><span>打开后注册页不再接受新用户，已有用户不受影响。</span></span></label>
+            <div class="foot-save"><span class="muted">修改立即生效。</span><button class="btn dark" type="submit">保存</button></div>
+          </div>
+        </form>
+        <div class="sblk">
+          <div class="sec-h"><h2>演示账号</h2></div>
+          <p style="color:var(--ink-2);font-size:13.5px;margin:0 0 12px">首页的“先看看演示”和顶栏的“看演示”会进入一个共享的只读账号，里面是 6 个模拟网站。这两个入口只对<b>没登录的访客</b>显示（登录后点进去会退出你自己的账号），你自己想看的话先退出登录。演示数据每天凌晨 3 点自动刷新到昨天。{{if $d.HasDemo}}现在已经有演示数据。{{else}}<b>现在还没有演示数据，所以首页不会出现这两个入口</b>，点下面的按钮生成。{{end}}</p>
+          <div class="row-actions">
+            {{if $d.HasDemo}}<button class="btn" hx-post="/admin/demo" hx-vals='{"action":"reset"}'>重新生成</button>
+            <button class="btn danger" hx-post="/admin/demo" hx-vals='{"action":"remove"}' hx-confirm="删除演示账号和它的数据？">删除</button>
+            {{else}}<button class="btn dark" hx-post="/admin/demo" hx-vals='{"action":"seed"}'>生成演示数据</button>{{end}}
+          </div>
+        </div>
+        <div class="sblk">
+          <div class="sec-h"><h2>缓存</h2></div>
+          <p style="color:var(--ink-2);font-size:13.5px;margin:0 0 12px">实时查询（去重访客、在线人数）的结果会缓存一段时间。清除后所有用户下次打开页面时重新查询。</p>
+          <button class="btn" hx-post="/admin/cache/clear" hx-swap="none">清除数据缓存</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="编辑模型"><div id="drawer-body" style="display:flex;flex-direction:column;height:100%"></div></aside>
+{{end}}

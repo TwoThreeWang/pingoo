@@ -1,0 +1,18 @@
+{{define "main"}}{{$d := .D}}
+<main class="login">
+  {{template "auth-pitch"}}
+  <section>
+    <form class="form" method="post" action="/forgot" data-pow>
+      {{template "pow-fields" $d}}
+      <h2>找回密码</h2>
+      <p>填写注册时用的邮箱，我们会发一个重新设置密码的链接（30 分钟内有效）。</p>
+      <div class="field"><label for="em">邮箱</label>
+        <input class="input{{if $d.Error}} invalid{{end}}" id="em" name="email" type="email" autocomplete="email" value="{{$d.Email}}" autofocus required></div>
+      {{if $d.Error}}<div class="err-msg" role="alert">{{$d.Error}}</div>{{end}}
+      <button class="btn dark" type="submit">发送重置链接</button>
+      <div class="forgot"><a class="tlink" href="/login">返回登录</a></div>
+    </form>
+  </section>
+</main>
+{{end}}
+{{define "scripts"}}<script src="/static/js/pow.js?v={{.Asset}}"></script>{{end}}

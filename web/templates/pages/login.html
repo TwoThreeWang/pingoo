@@ -1,0 +1,30 @@
+{{define "main"}}{{$d := .D}}
+<main class="login">
+  {{template "auth-pitch"}}
+  <section>
+    <form class="form" method="post" action="/login" data-pow>
+      <input type="hidden" name="next" value="{{$d.Next}}">
+      {{template "pow-fields" $d}}
+      <h2>登录</h2>
+      <p>还没有账号？<a class="tlink" href="/register">免费注册</a>，只需要一个邮箱。</p>
+      {{if $d.Notice}}<div class="ok-msg" role="status">{{$d.Notice}}</div>{{end}}
+      <div class="field"><label for="em">邮箱</label>
+        <input class="input" id="em" name="email" type="email" autocomplete="username" value="{{$d.Email}}" {{if not $d.Email}}autofocus{{end}} required></div>
+      <div class="field">
+        <label for="pw">密码</label>
+        <div class="pw">
+          <input class="input{{if $d.Error}} invalid{{end}}" id="pw" name="password" type="password" autocomplete="current-password" {{if $d.Email}}autofocus{{end}} required>
+          <button type="button" data-toggle-pw="pw">显示</button>
+        </div>
+      </div>
+      {{if $d.Error}}<div class="err-msg" role="alert">{{$d.Error}}</div>{{end}}
+      <label class="toggle" style="border:0;padding:0 0 20px">
+        <input type="checkbox" class="sw" name="remember" checked><span class="tx"><b style="font-weight:400">在这台设备上保持登录（30 天没来才需要重新登录）</b></span>
+      </label>
+      <button class="btn dark" type="submit">登录</button>
+      <div class="forgot"><a class="tlink" href="/forgot">忘记密码？</a></div>
+    </form>
+  </section>
+</main>
+{{end}}
+{{define "scripts"}}<script src="/static/js/pow.js?v={{.Asset}}"></script>{{end}}

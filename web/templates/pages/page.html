@@ -1,0 +1,63 @@
+{{define "main"}}{{$v := .D}}{{$p := $v.P}}
+<div class="wrap">
+  <div class="crumb">
+    <a href="/overview">全部网站</a><span>/</span><a href="/sites/{{$v.Site.ID}}?range={{$v.Range.Key}}#content">{{$v.Site.Name}}</a><span>/</span><span>单页分析</span>
+  </div>
+  <div class="site-head">
+    <div style="min-width:0">
+      <div class="site-title" style="min-width:0"><h1 style="overflow-wrap:anywhere">{{if $p.Title}}{{$p.Title}}{{else}}{{$p.Path}}{{end}}</h1></div>
+      <div class="site-desc"><span class="mono" style="overflow-wrap:anywhere">{{$p.Path}}</span>
+        {{if $v.Site.Domain}}<a href="https://{{$v.Site.Domain}}{{$p.Path}}" target="_blank" rel="noopener noreferrer">打开页面 ↗</a>{{end}}</div>
+    </div>
+    <div class="site-meta"><button class="btn dark" data-diagnose="{{$v.Diagnose}}">让 AI 分析这个页面</button></div>
+  </div>
+  <div class="filters">
+    <div class="ranges" role="group" aria-label="日期范围">
+      {{range $v.Ranges}}<a href="/sites/{{$v.Site.ID}}/page?range={{.Key}}&path={{$p.Path}}" class="{{if eq .Key $v.Range.Key}}on{{end}}">{{.Label}}</a>{{end}}
+    </div>
+    <span class="period">{{$v.Range.Describe}}</span>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="blk" style="padding-top:32px">
+    <div class="tiles">
+      {{range $v.Tiles}}
+      <div class="tile static">
+        <span class="k">{{.Label}}<span class="qm" title="{{.Tip}}">?</span></span>
+        {{if .HasVal}}<div class="n">{{fmtTile .Kind .Cur}}</div><div class="m">{{tileDelta .}}<span>上期 {{fmtTile .Kind .Prev}}</span></div>
+        {{else}}<div class="n na">—</div><div class="m"><span>{{.Note}}</span></div>{{end}}
+      </div>
+      {{end}}
+    </div>
+    <div class="chart-box">
+      <div class="chart-head"><h3>每日浏览</h3><div class="legend"><span><i style="background:var(--accent)"></i>本期</span><span><i style="background:var(--prev)"></i>上期</span></div></div>
+      <div class="main-chart chart" tabindex="0" aria-label="这个页面每日浏览的趋势" data-chart="{{json $v.Chart}}"></div>
+    </div>
+  </section>
+
+  <section class="blk">
+    <div class="aud" style="margin-top:0">
+      <div>
+        <div class="sec-h"><h2>访客从哪来<small>从这个页面进入网站的访问</small></h2></div>
+        {{if $p.Sources}}
+        <table class="cmp"><tr><th>来源</th><th>进入次数</th><th>占比</th><th>认真阅读</th></tr>
+          {{range $p.Sources}}<tr><td>{{.Label}}</td><td>{{num .Sessions}}</td><td><span class="bar"><span>{{pct0 .Share}}</span><span class="track" style="width:80px"><span class="fill" style="width:{{widthPct .Share 1}}"></span></span></span></td><td>{{pct0 .EngRate}}</td></tr>{{end}}
+        </table>
+        {{else}}<p class="empty">这个页面很少作为入口页，没有来源数据。读者大多是从网站的其他页面点过来的。</p>{{end}}
+      </div>
+      <div>
+        <div class="sec-h"><h2>带来点击的搜索词<small>{{if $p.HasSearch}}截至 {{md $p.SearchRange.End}}{{else}}Search Console{{end}}</small></h2></div>
+        {{if $p.Queries}}
+        <div class="tbl-wrap"><table class="tbl">
+          <tr><th class="l">搜索词</th><th>点击</th><th>曝光</th><th>排名</th></tr>
+          {{range $p.Queries}}<tr><td class="l" style="white-space:normal">{{.Query}}</td><td><b>{{num .Clicks}}</b></td><td>{{num .Impr}}</td>
+            <td><span class="posc"><b>{{printf "%.1f" .Pos}}</b>{{if .PrevPos}}<span class="from">{{printf "%.1f" .PrevPos}} →</span>{{end}}</span></td></tr>{{end}}
+        </table></div>
+        {{else}}<p class="empty">{{if $p.HasSearch}}这段时间没有带来点击的搜索词。{{else}}这个页面没有搜索数据，或者网站还没连接 Search Console。{{end}}</p>{{end}}
+      </div>
+    </div>
+  </section>
+</main>
+{{template "drawer"}}
+{{end}}

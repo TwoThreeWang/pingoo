@@ -1,0 +1,12 @@
+{{define "main"}}{{$d := .D}}
+<main class="login">
+  {{template "auth-pitch"}}
+  <section>
+    <div class="form">
+      <h2>{{$d.Title}}</h2>
+      <p style="color:var(--ink-2);font-size:14px;line-height:1.8">{{$d.Body}}</p>
+      {{if $d.Link}}<a class="btn dark" href="{{$d.Link}}">{{$d.LinkText}}</a>{{end}}
+    </div>
+  </section>
+</main>
+{{end}}

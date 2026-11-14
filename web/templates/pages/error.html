@@ -1,0 +1,12 @@
+{{define "main"}}{{$d := .D}}
+<main class="wrap err-page">
+  <div class="err-code mono">{{$d.Code}}</div>
+  <h1 class="headline">{{$d.Head}}</h1>
+  <p class="lede">{{$d.Msg}}</p>
+  <div class="hero-acts">
+    {{if .User}}<a class="btn dark" href="/overview">回到概览</a>{{else}}<a class="btn dark" href="/">回到首页</a>{{end}}
+    <a class="btn" href="/help">帮助中心</a>
+    {{if eq $d.Code 500}}<a class="act" href="/help#feedback">告诉我们发生了什么 <span class="arr">→</span></a>{{end}}
+  </div>
+</main>
+{{end}}

@@ -1,0 +1,108 @@
+{{define "main"}}{{$d := .D}}{{$s := $d.Site}}
+<div class="wrap">
+  <div class="crumb">
+    <a href="/overview">全部网站</a><span>/</span>
+    <div class="switch">
+      <button data-menu="switchMenu" aria-haspopup="true" aria-expanded="false">{{$s.Name}} <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>
+      <div class="menu" id="switchMenu">
+        {{range $d.Sites}}<a href="/sites/{{.ID}}?range={{$d.Range.Key}}{{if $d.Range.Compare}}&cmp={{$d.Range.Compare}}{{end}}" class="{{if eq .ID $s.ID}}cur{{end}}"><span class="fav">{{.Initial}}</span>{{.Name}}{{with index $d.Statuses .ID}}<span class="st">{{sev .}}</span>{{end}}</a>{{end}}
+      </div>
+    </div>
+  </div>
+  <div class="site-head">
+    <div>
+      <div class="site-title"><span class="fav">{{$s.Initial}}</span><h1>{{$s.Name}}</h1>{{status $d.Status}}</div>
+      <div class="site-desc">
+        {{if $s.Description}}<span>给 AI 的背景：{{$s.Description}}</span>{{else}}<span>还没有写给 AI 的背景说明。写上网站是做什么的、你最在意什么，AI 的分析会准确很多。</span>{{end}}
+        <a href="/settings?edit={{$s.ID}}#sites">编辑</a>
+      </div>
+    </div>
+    <div class="site-meta">
+      {{if ge $d.Live 0}}<span><span class="live{{if eq $d.Live 0}} off{{end}}"></span>{{$d.Live}} 人在线</span>{{end}}
+      {{if $s.Domain}}<a class="mono" href="https://{{$s.Domain}}" target="_blank" rel="noopener noreferrer">{{$s.Domain}} ↗</a>{{end}}
+      <a class="btn" href="/chat?site={{$s.ID}}">问 AI</a>
+    </div>
+  </div>
+  <div class="filters">
+    {{template "range-bar" (dict "Base" (printf "/sites/%d" $s.ID) "Ranges" $d.Ranges "Range" $d.Range "Today" $d.Today "YoY" $d.CanYoY)}}
+    <span class="period">{{$d.Range.Describe}}</span>
+    <span class="sync mono">GA 截至 {{shortDate $d.GASync}} · <abbr title="Google Search Console 的数据通常有 2～3 天延迟">GSC 截至 {{shortDate $d.GSC}}</abbr></span>
+  </div>
+  {{if $d.Range.Compare}}<p class="range-note">“去年同期”用在核心指标和趋势图上。内容、来源、搜索的表格仍然和上一期比：这些明细没有一年前的数据。{{if $d.NoHistory}}<b>这个网站在 {{ymdZh $d.Range.PrevStart}} – {{md $d.Range.PrevEnd}} 还没有数据</b>，所以下面的对比是空的；刚添加的网站要等回填完成。{{end}}</p>{{end}}
+  {{if $d.Note}}<p class="range-note">{{$d.Note}}<a class="tlink" href="/help#plans">升级套餐</a>可以保留更久。</p>{{end}}
+  {{if not $d.DetailFrom.IsZero}}<p class="range-note">页面、来源这些明细是从 {{ymdZh $d.DetailFrom}} 开始同步的，更早的日期在下面的表格里会是 0；核心指标不受影响。</p>{{end}}
+</div>
+
+<nav class="secnav" aria-label="章节">
+  <div class="wrap">
+    <a href="#insight">洞察</a><a href="#metrics">指标</a><a href="#content">内容</a><a href="#sources">来源</a><a href="#search">搜索</a><a href="#audience">访客</a>{{if $d.HasAds}}<a href="#ads">广告</a>{{end}}<a href="#health">健康</a>
+    <span class="sp"></span>
+    <form method="post" action="/reports" hx-post="/reports" hx-swap="none" style="display:inline"><input type="hidden" name="site" value="{{$s.ID}}"><input type="hidden" name="kind" value="weekly">
+      <button class="btn" type="submit">生成周报</button></form>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section class="blk ins-lead" id="insight" style="padding-top:40px">
+    <div id="insight-body" hx-get="/sites/{{$s.ID}}/part/insight?range={{$d.Range.Key}}" hx-trigger="load">
+      <div class="kicker mono"><span class="dia"></span>{{$d.Range.Kicker}}洞察</div>
+      {{template "insight-wait"}}
+    </div>
+  </section>
+
+  <section class="blk" id="metrics">
+    <div class="sec-h"><h2>核心指标<small>点击任意指标，查看它的每日变化</small></h2></div>
+    <div class="tiles">
+      {{range $d.Tiles}}
+      <button class="tile" type="button" data-tile aria-pressed="{{if eq .Key "v"}}true{{else}}false{{end}}"
+        hx-get="/sites/{{$s.ID}}/part/chart?range={{$d.Range.Key}}&metric={{.Key}}{{if $d.Range.Compare}}&cmp={{$d.Range.Compare}}{{end}}" hx-target="#chart-box" hx-swap="innerHTML">
+        <span class="k">{{.Label}}<span class="qm" title="{{.Tip}}">?</span></span>
+        {{if .HasVal}}<div class="n">{{fmtTile .Kind .Cur}}</div><div class="m">{{tileDelta .}}<span>{{$d.Range.PrevName}} {{fmtTile .Kind .Prev}}</span></div>
+        {{else}}<div class="n na">—</div><div class="m"><span>{{.Note}}</span></div>{{end}}
+      </button>
+      {{end}}
+    </div>
+    <div class="chart-box" id="chart-box" hx-get="/sites/{{$s.ID}}/part/chart?range={{$d.Range.Key}}&metric=v{{if $d.Range.Compare}}&cmp={{$d.Range.Compare}}{{end}}" hx-trigger="load">
+      <div class="main-chart"></div>
+    </div>
+  </section>
+
+  <section class="blk" id="content">
+    <div class="sec-h"><h2>内容表现<small>哪些页面在起势、在衰退、在长期带流量</small></h2></div>
+    <div hx-get="/sites/{{$s.ID}}/part/content?range={{$d.Range.Key}}" hx-trigger="revealed" hx-swap="outerHTML">{{template "insight-wait"}}</div>
+  </section>
+
+  <section class="blk" id="sources">
+    <div class="sec-h"><h2>流量来源<small>人从哪来，哪里来的人更愿意读</small></h2></div>
+    <div hx-get="/sites/{{$s.ID}}/part/sources?range={{$d.Range.Key}}" hx-trigger="revealed" hx-swap="outerHTML">{{template "insight-wait"}}</div>
+  </section>
+
+  <section class="blk" id="search">
+    <div class="sec-h"><h2>搜索表现<small>来自 Google Search Console{{if not $d.GSC.IsZero}} · 数据截至 {{md $d.GSC}}{{end}}</small></h2></div>
+    <div hx-get="/sites/{{$s.ID}}/part/search?range={{$d.Range.Key}}" hx-trigger="revealed" hx-swap="outerHTML">{{template "insight-wait"}}</div>
+  </section>
+
+  <section class="blk" id="audience">
+    <div class="sec-h"><h2>访客画像<small>谁在看、用什么看、什么时候看</small></h2></div>
+    <div hx-get="/sites/{{$s.ID}}/part/audience?range={{$d.Range.Key}}" hx-trigger="revealed" hx-swap="outerHTML">{{template "insight-wait"}}</div>
+  </section>
+
+  {{if $d.HasAds}}
+  <section class="blk" id="ads">
+    <div class="sec-h"><h2>广告收益<small>网站上展示的广告（AdSense 等）赚了多少、哪些页面最赚钱</small></h2></div>
+    <div hx-get="/sites/{{$s.ID}}/part/ads?range={{$d.Range.Key}}" hx-trigger="revealed" hx-swap="outerHTML">{{template "insight-wait"}}</div>
+  </section>
+  {{else if $d.AdNote}}
+  <section class="blk" id="ads">
+    <div class="sec-h"><h2>广告收益<small>网站上展示的广告（AdSense 等）赚了多少、哪些页面最赚钱</small></h2></div>
+    <div class="notice">{{icon "info14"}}<span>{{if eq $d.AdNote "waiting"}}这个网站的 GA4 已经关联了 AdSense，正在等数据。关联以前的日子 GA 不会补；关联之后的广告数据一般 24～48 小时后出现，出来后这里会显示广告收入、每千次浏览收入和最赚钱的页面。{{else}}你的其他网站关联了 AdSense，这个网站的 GA4 媒体资源还没有。如果这个网站也放了 AdSense 广告，需要在 GA4 里单独关联一次。{{end}}<a class="tlink" href="/help#adsense">{{if eq $d.AdNote "waiting"}}说明{{else}}怎么关联{{end}}</a></span></div>
+  </section>
+  {{end}}
+
+  <section class="blk" id="health">
+    <div hx-get="/sites/{{$s.ID}}/part/health" hx-trigger="revealed" hx-swap="outerHTML">
+      <div class="sec-h"><h2>健康检查</h2></div>{{template "insight-wait"}}</div>
+  </section>
+</main>
+{{template "drawer"}}
+{{end}}

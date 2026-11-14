@@ -1,0 +1,38 @@
+{{define "main"}}{{$d := .D}}
+<main class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>积分明细</h1>
+      <p>每一次 AI 洞察、诊断、问答、报告的实际消耗，以及充值、赠送、套餐调整都记在这里。命中缓存的 tokens 只按原价的零头计费，所以 tokens 多不等于花得多。<a class="tlink" href="/help#credits">积分怎么算</a></p>
+    </div>
+    <div class="credit-stats">
+      <div><div class="k">积分余额</div><div class="n">{{num $d.Credits}}</div></div>
+      <div><div class="k">本月消耗</div><div class="n">{{num $d.MonthUsed}}</div></div>
+      <a class="btn" href="/settings#ai">充值 / 卡密</a>
+    </div>
+  </div>
+
+  {{if $d.Rows}}
+  <div class="tbl-wrap"><table class="tbl">
+    <tr><th class="l">时间</th><th class="l">项目</th><th>tokens</th><th>积分</th></tr>
+    {{range $d.Rows}}<tr>
+      <td class="l mono" style="font-size:12.5px;white-space:nowrap">{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+      <td class="l">{{ledgerKind .Kind}}{{if .Model}} <span class="muted">· {{.Model}}</span>{{end}}{{if .Note}} <span class="muted">· {{.Note}}</span>{{end}}{{if .Pending}} <span class="pill">进行中</span>{{end}}</td>
+      <td class="tnum">{{if or .In .Out}}{{compact (add0 .In .Out)}}{{if .Cached}}<br><span class="muted" style="font-size:12px">其中 {{compact .Cached}} 命中缓存</span>{{end}}{{end}}</td>
+      <td class="tnum">{{if gt .Credits 0}}<span class="d good">+{{num .Credits}}</span>{{else if lt .Credits 0}}{{num .Credits}}{{else}}0{{end}}</td>
+    </tr>{{end}}
+  </table></div>
+  <div class="pager">
+    {{if $d.Paged}}<a class="btn" href="/credits">回到最新</a>{{else}}<span></span>{{end}}
+    {{if $d.More}}<a class="btn" href="/credits?before={{$d.NextBefore}}">更早的记录 →</a>{{end}}
+  </div>
+  {{else}}
+  <div class="blank">
+    <div class="kicker mono" style="margin-bottom:14px"><span class="dia"></span>积分明细</div>
+    <h2>{{if $d.Paged}}没有更早的记录了。{{else}}还没有积分记录。{{end}}</h2>
+    <p>用 AI 分析数据会消耗积分；充值或用卡密后，记录也会出现在这里。</p>
+    {{if $d.Paged}}<div class="acts"><a class="btn dark" href="/credits">回到最新</a></div>{{end}}
+  </div>
+  {{end}}
+</main>
+{{end}}

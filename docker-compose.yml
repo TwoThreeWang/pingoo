@@ -1,24 +1,37 @@
-version: '3'
+# 一键启动 Pingoo + PostgreSQL：
+#   cp .env.example .env   # 至少填上 ADMIN_EMAIL、ADMIN_PASSWORD 和 APP_SECRET；站点地址、发信在管理后台里设置
+#   docker compose up -d
 services:
   pingoo:
-    container_name: pingoo
+    build: .
     image: pingoo:latest
+    container_name: pingoo
     ports:
       - "5004:5004"
+    env_file: .env
+    environment:
+      DB_HOST: db
     volumes:
-      - ./templates:/templates
-      - ./public:/public
-      - ./.env:/.env
-      - ./docs:/docs
-      - ./logs:/logs
-    restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-    networks:
-      - postgres_default
+      - ./.env:/.env:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
-networks:
-  postgres_default:
-    external: true
+  db:
+    image: postgres:17-alpine
+    container_name: pingoo-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-pingoo}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:

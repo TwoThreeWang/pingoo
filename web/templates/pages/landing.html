@@ -1,0 +1,71 @@
+{{define "main"}}{{$d := .D}}
+<main>
+  <section class="wrap hero">
+    <div class="kicker mono"><span class="dia"></span>给独立开发者的网站数据简报</div>
+    <h1 class="headline">每天早上，读一份关于你所有网站的简报。</h1>
+    <p class="lede">Google Analytics 太复杂、Search Console 看不懂？Pingoo 每天帮你同步这两边的数据，用规则找出值得注意的变化——哪篇文章突然火了、哪个搜索词带来了流量、哪里在下滑——再让 AI 用大白话讲清楚原因和下一步。</p>
+    <div class="hero-acts">
+      {{if and .User (not .User.Demo)}}<a class="btn dark" href="/overview">进入 Pingoo</a>
+      {{else}}{{if $d.SignupOpen}}<a class="btn dark" href="/register">免费注册</a>{{end}}
+      {{if $d.HasDemo}}<form method="post" action="/demo"><button class="btn" type="submit">先看看演示</button></form>{{end}}
+      <a class="act" href="/login">已有账号？登录 <span class="arr">→</span></a>{{end}}
+    </div>
+    {{if gt $d.Bonus 0}}<p class="note">新注册送 {{num $d.Bonus}} 积分，够先体验几次 AI 洞察和问答。</p>{{end}}
+  </section>
+
+  <section class="wrap pub-sec" id="features">
+    <div class="sec-h"><h2>它会告诉你什么</h2></div>
+    <div class="feat">
+      <article><h3>所有网站，一页看完</h3><p>访客、搜索点击、在线人数，每个网站一张小图，图上直接标出“为什么”：哪天飙升、哪天下滑、Google 哪次算法更新。</p></article>
+      <article><h3>值得注意的变化，自动找出来</h3><p>文章突然走红、老页面在衰退、新外链、差一点上首页的搜索词、高曝光低点击、统计代码失效……规则引擎每天检查一遍。</p></article>
+      <article><h3>AI 讲清原因和下一步</h3><p>AI 会自己去查 GA 和 Search Console，拆到渠道、页面、搜索词，给出结论、证据和能直接做的建议。推测的地方会标出来。</p></article>
+      <article><h3>诊断、问答、周报月报</h3><p>点任意一个异常让 AI 一步步诊断；有问题直接问；每周一份周报，还会回头检查上期建议有没有效果。</p></article>
+    </div>
+  </section>
+
+  <section class="wrap pub-sec">
+    <div class="sec-h"><h2>三步开始</h2></div>
+    <ol class="steps">
+      <li><b>注册</b><span>只要一个邮箱，初始密码会发到你的邮箱。</span></li>
+      <li><b>连接 Google</b><span>在 Google Cloud 建一个只读的服务账号，把它加进 GA 和 Search Console。<a class="tlink" href="/help#google">帮助页</a>有一步步的图文说明，大约 10 分钟。</span></li>
+      <li><b>导入网站</b><span>自动列出服务账号能看到的所有网站，并按域名配好 Search Console。几分钟后就能看到数据。</span></li>
+    </ol>
+  </section>
+
+  <section class="wrap pub-sec" id="pricing">
+    <div class="sec-h"><h2>价格</h2></div>
+    {{$cfg := $d.Plans}}{{$u := .User}}
+    <div class="price-grid">
+      {{range $cfg.List}}<article class="price-card{{if eq .ID "basic"}} featured{{end}}">
+        {{if eq .ID "basic"}}<span class="price-badge">推荐</span>{{end}}
+        <div class="price-name">{{.Name}}</div>
+        <p class="price-tag">{{if eq .ID "free"}}先连一个网站，看看 Pingoo 能帮你什么{{else if eq .ID "basic"}}个人站长：几个网站一起看，每天早上收简报{{else}}认真做流量：数据留得更久，能和去年同期比{{end}}</p>
+        <div class="price-amount">
+          {{if not .Paid}}<span class="num">免费</span>
+          {{else if gt .Price 0.0}}<span class="cur">{{$cfg.Currency}}</span><span class="num">{{trimFloat .Price}}</span><span class="per">/ 月</span>
+          {{else}}<span class="num sm">付费套餐</span>{{end}}
+        </div>
+        {{if not .Paid}}{{if and $u (not $u.Demo)}}<a class="btn" href="/overview">进入 Pingoo</a>{{else}}<a class="btn" href="/register">免费注册</a>{{end}}
+        {{else if .BuyURL}}<a class="btn {{if eq .ID "basic"}}dark{{end}}" href="{{.BuyURL}}" target="_blank" rel="noopener">购买{{.Name}}</a>
+        {{else}}<a class="btn {{if eq .ID "basic"}}dark{{end}}" href="{{if and $u (not $u.Demo)}}/settings#ai{{else}}/register{{end}}">{{if and $u (not $u.Demo)}}在设置里升级{{else}}注册后升级{{end}}</a>{{end}}
+        <ul class="price-feats">
+          <li>{{.Sites}} 个网站</li>
+          <li>页面、来源、搜索词明细保留 {{keepText .DetailDays}}</li>
+          <li>每日趋势保留 {{keepText .TotalDays}}</li>
+          <li class="{{if not (.CanYoY 7)}}off{{end}}">和去年同期对比</li>
+          <li class="{{if not .Digest}}off{{end}}">每天早上的邮件简报</li>
+          <li class="{{if not (gt .SyncHours 0)}}off{{end}}">每 {{if gt .SyncHours 0}}{{.SyncHours}}{{else}}12{{end}} 小时刷新数据</li>
+          <li>{{if gt .MonthlyCredits 0}}每月送 {{num .MonthlyCredits}} AI 积分{{else}}AI 按积分使用，随时充值{{end}}</li>
+        </ul>
+      </article>{{end}}
+    </div>
+    <p class="note" style="margin-top:16px">每个套餐都有：每天自动同步 GA 和 Search Console、全部网站概览、网站详情和单页分析、“需要关注”提醒、健康检查。AI 洞察、诊断、问答、周报月报在所有套餐里都按实际用量扣积分（同样的价格），任务失败全额退回；积分不过期，不够了随时用卡密充值。</p>
+    <p class="note" style="margin-top:12px">每个模型的价格、一次洞察大概用多少积分，见<a class="tlink" href="/help#credits">帮助 → 积分怎么算</a>。</p>
+  </section>
+
+  <section class="wrap pub-sec">
+    <div class="sec-h"><h2>你的数据</h2></div>
+    <p class="say" style="margin-top:14px">Pingoo 只通过你提供的<b>只读</b>服务账号读取数据，改不了你 GA 和 Search Console 里的任何东西。密钥加密保存；注销账号时，所有数据一并删除。详见<a class="tlink" href="/privacy">隐私政策</a>。</p>
+  </section>
+</main>
+{{end}}

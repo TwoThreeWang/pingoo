@@ -1,0 +1,18 @@
+{{define "main"}}{{$d := .D}}
+<main class="wrap doc">
+  <h1 class="headline">关于 Pingoo</h1>
+  <p class="lede">Pingoo 是一个给独立开发者用的网站数据助手：一个人、好几个网站、没时间研究 Google Analytics。</p>
+  <h2>为什么做它</h2>
+  <p>Google Analytics 功能强大，但报表太多、术语太多，真正想知道的往往只有几件事：这周哪里变了、为什么变、接下来该做什么。Pingoo 每天把 GA 和 Search Console 的数据同步下来，先用规则把明显的变化挑出来，再让 AI 去查清原因、写成几句大白话。</p>
+  <h2>名字的由来</h2>
+  <p><b>Ping</b> 是检测网络的命令，象征着实时掌握网站动态；后面的 <b>oo</b> 读起来圆润轻快，呼应小体积、快速部署；Pin-goo 的发音又有点像 penguin——企鹅稳重可靠，就像一个随时帮你看着流量的小助手。🐧</p>
+  <h2>它是怎么工作的</h2>
+  <ul>
+    <li>每天按各网站当地时间同步“昨天”的数据，并重新拉取最近几天（Google 还会修正这些数据）。</li>
+    <li>规则引擎负责算数字、找变化；AI 只负责解释原因和给建议，推测会标注出来。</li>
+    <li>AI 用的是平台配置的大模型。洞察、诊断、问答、报告按实际用量扣积分。</li>
+  </ul>
+  <h2>联系</h2>
+  <p>有问题或建议，欢迎{{if $d.Contact}}发邮件到 <span class="mono">{{$d.Contact}}</span>{{else}}联系网站管理员{{end}}。</p>
+</main>
+{{end}}

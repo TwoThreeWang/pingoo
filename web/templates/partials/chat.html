@@ -1,0 +1,34 @@
+{{define "chat-list"}}{{$d := .}}
+<div class="convs" id="convs">
+  {{range .Groups}}<h3>{{.Label}}</h3>
+    {{range .Items}}<a class="conv{{if and $d.Conv (eq .ID $d.Conv.ID)}} on{{end}}" href="/chat/{{.ID}}"><span class="t">{{.Title}}</span><span class="m">{{if .SiteName}}{{.SiteName}}{{else}}全部网站{{end}} · {{ago .UpdatedAt}}</span></a>{{end}}
+  {{else}}<p class="muted" style="padding:12px 10px;font-size:13px">{{if .Q}}没有找到相关对话。{{else}}还没有对话。{{end}}</p>{{end}}
+</div>
+{{end}}
+
+{{define "chat-user"}}<div class="msg user"><div class="bub">{{.Content}}</div></div>{{end}}
+
+{{define "chat-ai-head"}}<div class="who">{{icon "logo"}}<span>Pingoo</span></div>{{end}}
+
+{{define "chat-message"}}
+{{if eq .Status "running"}}
+<div class="msg ai" hx-get="/messages/{{.ID}}" hx-trigger="every 1.5s" hx-swap="outerHTML">
+  {{template "chat-ai-head"}}
+  <div class="steps">
+    {{range .Steps}}<div class="{{if .Done}}done{{end}}">{{if .Done}}{{icon "ok"}}{{else}}<span class="spin"></span>{{end}}<span>{{.Title}}</span></div>{{end}}
+    <div><span class="spin"></span><span>{{if .Steps}}继续分析…{{else}}理解问题，决定要查哪些数据…{{end}}</span></div>
+  </div>
+</div>
+{{else}}
+<div class="msg ai">
+  {{template "chat-ai-head"}}
+  {{if .Trace}}<details class="trace" style="margin:0 0 12px"><summary>查询了 {{len (lines .Trace)}} 次数据</summary><pre>{{.Trace}}</pre></details>{{end}}
+  {{if eq .Status "error"}}<p class="err">{{.Error}}</p>
+  {{else}}<div class="body">{{markdown .Content}}</div>{{end}}
+  {{if .Followups}}<div class="chips">{{range .Followups}}<button class="chip" type="button" data-ask="{{.}}">{{.}}</button>{{end}}</div>{{end}}
+  {{if eq .Status "done"}}<div class="msg-tools"><button type="button" data-copy="{{.Content}}">复制</button><button type="button" hx-post="/messages/{{.ID}}/save" hx-swap="outerHTML">保存到报告</button></div>{{end}}
+</div>
+{{end}}
+{{end}}
+
+{{define "chat-append"}}{{template "chat-user" .User}}{{template "chat-message" .M}}{{end}}

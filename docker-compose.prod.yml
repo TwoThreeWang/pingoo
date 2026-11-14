@@ -1,0 +1,22 @@
+# 线上部署：不自带数据库，用服务器上已有的 PostgreSQL（在 postgres_default 网络里）。由 build.sh 调用。
+# 数据库连接写在 .env 里：DB_HOST 填那个 PostgreSQL 容器在 postgres_default 网络里的名字。
+services:
+  pingoo:
+    image: pingoo:latest
+    container_name: pingoo
+    ports:
+      - "5004:5004"
+    env_file: .env
+    volumes:
+      - ./.env:/.env:ro
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+    networks:
+      - postgres_default
+
+networks:
+  postgres_default:
+    external: true

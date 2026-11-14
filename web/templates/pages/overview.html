@@ -1,0 +1,117 @@
+{{define "main"}}{{$d := .D}}
+<main class="wrap">
+  <div class="filters">
+    {{template "range-bar" (dict "Base" "/overview" "Ranges" $d.Ranges "Range" $d.Range "Today" $d.Today "Sort" $d.Sort "YoY" $d.CanYoY)}}
+    <span class="period">{{$d.Range.Describe}}</span>
+    <span class="sync mono">GA 截至 {{shortDate $d.O.GALatest}} · <abbr title="Google Search Console 的数据通常有 2～3 天延迟">GSC 截至 {{shortDate $d.O.GSCLatest}}</abbr></span>
+  </div>
+  {{if $d.Note}}<p class="range-note">{{$d.Note}}<a class="tlink" href="/help#plans">升级套餐</a>可以保留更久。</p>{{end}}
+
+  {{if $d.NoSites}}
+  <div class="blank">
+    <div class="kicker mono" style="margin-bottom:14px"><span class="dia"></span>开始使用</div>
+    <h2>还没有网站。连接 Google 之后，导入你的网站就能看到简报。</h2>
+    <p>Pingoo 用一个只读的 Google 服务账号读取 Google Analytics 和 Search Console 的数据，每天同步一次，再让 AI 把变化讲清楚。{{if $d.NoGoogle}}先到设置里连接 Google。{{else}}服务账号已经连好了，下一步是导入网站。{{end}}</p>
+    <div class="acts">
+      {{if $d.NoGoogle}}<a class="btn dark" href="/settings#connections">连接 Google</a>{{else}}<a class="btn dark" href="/settings#sites">导入网站</a>{{end}}
+    </div>
+  </div>
+  {{else}}
+
+  <section class="lead">
+    <div id="ov-insight" hx-get="/part/overview-insight?range={{$d.Range.Key}}" hx-trigger="load" hx-swap="innerHTML">
+      <div class="kicker mono"><span class="dia"></span>{{$d.Range.Kicker}}摘要</div>
+      <div class="loading-block"><div class="skel" style="width:80%;height:28px"></div><div class="skel" style="width:55%;height:28px"></div><div class="skel" style="width:90%"></div><div class="skel" style="width:70%"></div></div>
+    </div>
+    <div class="hero">
+      <div class="k"><span>访客 · {{len $d.O.Cards}} 个网站合计</span>
+        <span class="legend"><span><i style="background:var(--accent)"></i>本期</span><span><i style="background:var(--prev)"></i>{{$d.Range.PrevName}}</span></span></div>
+      <div class="n">{{num $d.O.Visitors}}</div>
+      <div class="m">{{delta $d.O.Visitors $d.O.VisitorsPrev 1}}<span>{{$d.Range.PrevName}} {{num $d.O.VisitorsPrev}}</span></div>
+      <div class="chart" tabindex="0" aria-label="合计访客趋势，按左右方向键查看每个时间点" data-chart="{{json (chartCmp $d.O.Series (printf "%d 个网站合计" (len $d.O.Cards)) "访客" "count" $d.Range.PrevName)}}"></div>
+      <div class="minis">
+        <div class="mini" title="在 Google 搜索结果中点进你网站的次数，来自 Search Console">
+          <div class="k">搜索点击</div>
+          {{if $d.O.HasSearch}}<div class="n">{{num $d.O.Clicks}}</div><div class="m">{{delta $d.O.Clicks $d.O.ClicksPrev 1}}</div>
+          {{else}}<div class="n" style="color:var(--ink-3)">—</div><div class="m">{{if $d.Range.Hourly}}GSC 延迟 2～3 天{{else}}暂无搜索数据{{end}}</div>{{end}}
+        </div>
+        <div class="mini" id="ov-live" title="过去 30 分钟内有活动的访客" hx-get="/part/overview-live" hx-trigger="load" hx-swap="innerHTML">
+          <div class="k">此刻在线</div>
+          <div class="n" style="color:var(--ink-3)">…</div><div class="m">读取中</div>
+        </div>
+        <div class="mini">
+          <div class="k">待处理</div>
+          <div class="n">{{len $d.O.Signals}}</div>
+          <div class="m">{{template "sev-counts" $d.O.Signals}}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2>需要关注<small>{{len $d.O.Signals}}</small></h2>
+      <div class="r"><span class="mono">每天同步后自动检测</span>
+        {{if gt (len $d.O.Signals) $d.MaxAlert}}<button class="tlink" data-expand="alerts" data-label="全部 {{len $d.O.Signals}} 条">全部 {{len $d.O.Signals}} 条</button>{{end}}</div>
+    </div>
+    <div class="alerts" id="alerts">
+    {{range $i, $s := $d.O.Signals}}
+      <div class="alert{{if ge $i $d.MaxAlert}} more{{end}}">
+        <span class="i mono">{{pad2 (add $i 1)}}</span>
+        {{sev $s.Severity}}
+        <a class="s" href="/sites/{{$s.SiteID}}">{{$s.SiteName}}</a>
+        <span class="t">{{$s.Title}}</span>
+        {{if diagnosable $s.Severity}}<button class="act main" data-diagnose="/sites/{{$s.SiteID}}/diagnose?signal={{$s.ID}}">诊断 <span class="arr">→</span></button>
+        {{else}}<a class="act" href="/sites/{{$s.SiteID}}?range=d28#{{signalSection $s.Kind}}">查看 <span class="arr">→</span></a>{{end}}
+        <button class="x" hx-post="/signals/{{$s.ID}}/dismiss" hx-target="closest .alert" hx-swap="outerHTML" title="忽略，不再提醒" aria-label="忽略">×</button>
+      </div>
+    {{else}}
+      <div class="empty-line">一切正常，没有需要处理的事。</div>
+    {{end}}
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2>网站<small>{{len $d.O.Cards}}</small></h2>
+      <div class="r">
+        <form method="get" action="/overview" style="display:flex;gap:6px;align-items:center">
+          <input type="hidden" name="range" value="{{$d.Range.Key}}">
+          {{if $d.Range.Compare}}<input type="hidden" name="cmp" value="{{$d.Range.Compare}}">{{end}}
+          排序 <select class="plain" name="sort" data-autosubmit>
+            <option value="attention" {{if eq $d.Sort "attention"}}selected{{end}}>需要关注优先</option>
+            <option value="visitors" {{if eq $d.Sort "visitors"}}selected{{end}}>访客最多</option>
+            <option value="growth" {{if eq $d.Sort "growth"}}selected{{end}}>涨幅最大</option>
+            <option value="decline" {{if eq $d.Sort "decline"}}selected{{end}}>跌幅最大</option>
+          </select>
+        </form>
+      </div>
+    </div>
+    <div class="multiples">
+      {{range $d.O.Cards}}
+      <article class="panel" data-href="/sites/{{.Site.ID}}?range={{if or (eq $d.Range.Key "today") (eq $d.Range.Key "yesterday")}}d7{{else}}{{$d.Range.Key}}{{end}}{{if $d.Range.Compare}}&cmp={{$d.Range.Compare}}{{end}}" style="cursor:pointer">
+        <div class="p-top">
+          <span class="fav">{{.Site.Initial}}</span>
+          <div class="p-id"><a class="nm" href="/sites/{{.Site.ID}}">{{.Site.Name}}</a><span class="dm mono">{{.Site.Domain}}</span></div>
+          {{status .Status}}
+        </div>
+        <div class="p-num"><span class="n">{{num .Visitors}}</span>{{delta .Visitors .VisitorsPrev 1}}<span class="u">访客{{if .Approx}}*{{end}}</span></div>
+        <div class="chart" tabindex="0" aria-label="{{.Site.Name}} 访客趋势" data-chart="{{json (cardChart . $d.Range.PrevName)}}"></div>
+        <div class="axis mono"><span>{{first .Series.Labels}}</span><span>{{last .Series.Labels}}</span></div>
+        <div class="p-sub">
+          <span>搜索点击 {{if .HasSearch}}<b>{{num .Clicks}}</b> {{delta .Clicks .ClicksPrev 1}}{{else}}<b>—</b>{{end}}</span>
+          <span>浏览量 <b>{{num .PV}}</b></span>
+          {{if .HasAds}}<span title="网站上的广告收入（{{.Site.Currency}}），来自 GA4 关联的 AdSense">广告收入 <b>{{money .AdRevenue}}</b> {{decDelta .AdRevenue .AdRevPrev}}</span>{{end}}
+          <span id="live-{{.Site.ID}}"></span>
+        </div>
+        {{with .Highlight}}<div class="p-hl"><span class="tag">{{sevLabel .Severity}}</span>{{.Title}}</div>{{end}}
+      </article>
+      {{end}}
+    </div>
+    {{if and .User .User.Demo}}<div class="notice">{{icon "info14"}}<span>这是共享的演示账号，数据是模拟的，只能浏览。<a href="/register">免费注册</a>后，可以连接你自己的网站。</span></div>{{end}}
+    {{if $d.O.Approx}}<p class="note">* 带星号的访客数是按天相加的近似值（同一个人隔天再来会被算两次）：没有连接 GA，或实时查询 GA 失败时会这样显示。</p>{{end}}
+  </section>
+  {{end}}
+</main>
+{{template "drawer"}}
+{{end}}

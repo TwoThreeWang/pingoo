@@ -1,0 +1,13 @@
+# 不要把密钥和本地产物带进构建上下文：COPY . . 会把它们留在构建层的缓存里
+.env
+.env.*
+!.env.example
+service-account*.json
+bin/
+.git
+.gitignore
+.claude
+prototype/
+*.test
+coverage.*
+.DS_Store

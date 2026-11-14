@@ -1,0 +1,283 @@
+{{define "main"}}{{$d := .D}}{{$u := .User}}
+<main class="wrap help">
+  <nav class="help-toc" aria-label="帮助目录">
+    <a href="#start">快速上手</a>
+    <a href="#google">连接 Google</a>
+    <a href="#sites">网站和数据同步</a>
+    <a href="#features">各个功能</a>
+    <a href="#plans">套餐</a>
+    <a href="#credits">积分怎么算</a>
+    <a href="#limits">使用限制</a>
+    <a href="#faq">常见问题</a>
+    <a href="#feedback">反馈与联系</a>
+  </nav>
+
+  <div class="doc help-body">
+    <h1 class="headline">帮助中心</h1>
+    <p class="lede">第一次用 Pingoo？按「快速上手」走一遍，大约 15 分钟就能看到自己网站的数据。这里找不到答案的话，在页面最后给我们留言。</p>
+    {{if $d.CanFeedback}}<div class="help-me">
+      <span>Google 服务账号：{{if $d.Google.Connected}}<b>已连接</b>{{else}}<b>还没连接</b>（看下面第 2 节）{{end}}</span>
+      <span>积分余额：<b>{{num $d.Credits}}</b></span>
+      {{if $d.MyModel}}<span>AI 模型：<b>{{$d.MyModel}}</b></span>{{end}}
+      <a class="tlink" href="/settings">去设置</a>
+    </div>{{end}}
+
+    <h2 id="start">1. 快速上手</h2>
+    <ol class="help-steps">
+      <li><b>注册并登录。</b>只要一个邮箱，初始密码会发到这个邮箱。登录后建议到「设置 → 账号」改成自己记得住的密码。</li>
+      <li><b>连接 Google。</b>在你自己的 Google Cloud 里建一个只读的“服务账号”，把它加到 Google Analytics 和 Search Console，再把它的密钥文件上传到 Pingoo。见<a class="tlink" href="#google">第 2 节</a>，跟着做大约 10 分钟。</li>
+      <li><b>导入网站。</b>「设置 → 网站 → 导入网站」，勾选要看的网站。导入后会自动下载历史数据，一般几分钟。</li>
+      <li><b>看数据。</b>「概览」一页看所有网站，点进某个网站看详情。想让 AI 帮你解读，需要积分，见<a class="tlink" href="#credits">第 5 节</a>。</li>
+    </ol>
+
+    <h2 id="google">2. 连接 Google Analytics 和 Search Console</h2>
+    <p>Pingoo 不需要你的 Google 账号密码，也不用点“用 Google 登录”。做法是：你在自己的 Google Cloud 里建一个<b>服务账号</b>（专门给程序用的账号，只能读数据），把它加到 GA 和 Search Console 里，再把它的“钥匙”（一个 JSON 密钥文件）交给 Pingoo。全程免费，不用绑信用卡。</p>
+    {{if and $d.CanFeedback $d.Google.Connected}}
+    <div class="status-box">{{icon "ok"}}<span>你已经上传了服务账号，它的邮箱是</span><span class="em mono">{{$d.Google.Email}}</span>
+      <span class="r"><button class="btn sm" type="button" data-copy="{{$d.Google.Email}}">复制邮箱</button></span></div>
+    <p class="note">下面第 5、6 步要添加的就是这个邮箱。</p>
+    {{end}}
+
+    <h3>第 1 步：新建 Google Cloud 项目</h3>
+    <p>打开 <a class="tlink" href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud 控制台</a>（用你平时登录 GA 的 Google 账号），点顶部的项目下拉框 →「新建项目」，名字随便取，比如 <code>pingoo</code>，点「创建」。</p>
+    <p>第一次打开可能要先同意服务条款、选择国家，照着点就行。下面用到的 API 都是免费的，<b>不需要开通结算</b>。</p>
+
+    <h3>第 2 步：启用三个 API</h3>
+    <p>先确认顶部选中的是刚建的项目。然后打开左侧菜单「API 和服务 → 库」，在搜索框里分别搜下面三个名字，点进去，点「启用」：</p>
+    <ul>
+      <li><b>Google Analytics Data API</b>：读取 GA 的报表数据</li>
+      <li><b>Google Analytics Admin API</b>：列出你有哪些 GA 网站，导入网站时用</li>
+      <li><b>Google Search Console API</b>：读取搜索数据</li>
+    </ul>
+
+    <h3>第 3 步：创建服务账号</h3>
+    <p>左侧菜单「IAM 和管理 → 服务账号」→ 顶部「创建服务账号」：</p>
+    <ol>
+      <li>名称随便填，比如 <code>pingoo</code>，点「创建并继续」。</li>
+      <li>“向此服务账号授予对项目的访问权限”这一步<b>直接点「继续」跳过，不要选任何角色</b>。Pingoo 只读 GA 和 Search Console，权限在第 5、6 步单独给。</li>
+      <li>点「完成」。</li>
+    </ol>
+    <p>列表里会出现一个邮箱，形如 <code>pingoo@你的项目ID.iam.gserviceaccount.com</code>。<b>复制下来</b>，第 5、6 步要用。</p>
+
+    <h3>第 4 步：下载密钥文件</h3>
+    <p>点进刚创建的服务账号 → 顶部「密钥」标签 →「添加密钥 → 创建新密钥」→ 选 <b>JSON</b> →「创建」。浏览器会下载一个 <code>.json</code> 文件，这就是钥匙，不要发给别人。</p>
+    <ul>
+      <li>Google 可能提醒“服务账号密钥可能带来安全风险，建议改用工作负载身份联合”。这个提醒是给跑在 Google Cloud 上的程序看的，<b>直接继续创建</b>即可；按本文配置，密钥即使泄露影响也很有限（见本节最后的「密钥安全」）。</li>
+      <li>如果出现的是报错“已停用服务账号密钥创建”（不是提醒），说明你的 Google 账号属于某个公司或学校组织，组织策略禁止创建密钥，需要找组织管理员放开。个人 Gmail 账号一般没有这个限制。</li>
+    </ul>
+
+    <h3>第 5 步：在 Google Analytics 里添加这个邮箱</h3>
+    <p>打开 <a class="tlink" href="https://analytics.google.com/" target="_blank" rel="noopener">Google Analytics</a>，点左下角的齿轮「管理」：</p>
+    <ul>
+      <li><b>推荐加在“账号”这一层</b>：「账号设置 → 账号访问权限管理」→ 右上角「+」→「添加用户」→ 填第 3 步的邮箱 → 取消勾选「通过电子邮件通知新用户」→ 角色选<b>查看者</b> →「添加」。这样这个账号下的所有网站都能读到，以后新建的也自动包含。</li>
+      <li>只想给部分网站：在「媒体资源设置 → 媒体资源访问权限管理」里逐个添加，步骤一样。</li>
+      <li>有多个 GA 账号的话，每个账号都要加一次。</li>
+    </ul>
+
+    <h3>第 6 步：在 Search Console 里添加这个邮箱</h3>
+    <p>打开 <a class="tlink" href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console</a>，<b>每个网站都要做一次</b>：左上角选中网站 →「设置 → 用户和权限 → 添加用户」→ 填同一个邮箱 → 权限选<b>受限</b> →「添加」。</p>
+    <ul>
+      <li>需要用这个网站“所有者”的身份操作。「添加用户」按钮是灰的，说明你当前登录的账号不是所有者。</li>
+      <li>网域资源（<code>sc-domain:example.com</code>）和网址前缀资源（<code>https://example.com/</code>）都可以。</li>
+      <li>不用 Search Console 的话可以跳过这一步，只是看不到搜索数据。</li>
+    </ul>
+
+    <h3>第 7 步：把密钥交给 Pingoo，测试连接</h3>
+    <p>「设置 → 连接 → Google 服务账号」→ 选择第 4 步下载的 JSON 文件（或者用记事本打开它，把全部内容粘贴进去）→「保存」。然后点「测试连接」，三项都显示正常就说明配好了：</p>
+    <ul>
+      <li>Google Analytics Admin API：可以看到 N 个 GA4 媒体资源</li>
+      <li>Google Analytics Data API：可以读取报表数据</li>
+      <li>Search Console API：可以访问 N 个网站</li>
+    </ul>
+    <p>密钥会加密保存，只用来读你自己的网站。</p>
+
+    <h3 id="adsense">可选：看网站上的广告收益（AdSense）</h3>
+    <p>如果你的网站放了 Google AdSense 广告，把 AdSense 关联到 GA4，Pingoo 就能显示广告收入、每千次浏览收入（RPM）、哪些页面最赚钱、哪些页面流量大却没赚到钱，还会在收入异常时提醒你。不需要给 Pingoo 额外授权。</p>
+    <p>注意要关联的是 <b>AdSense</b>（在网站上放广告赚钱），不是 <b>Google Ads</b>（花钱投放广告）：Google Ads 关联到 GA4 只会带来投放花费，没有收益数据。</p>
+    <ol>
+      <li>打开 <a class="tlink" href="https://analytics.google.com/" target="_blank" rel="noopener">Google Analytics</a>，左下角齿轮「管理」→「产品关联」→「AdSense 关联」→「关联」。</li>
+      <li>选择你的 AdSense 账号（需要你同时是这个 AdSense 账号的管理员、这个 GA4 媒体资源的编辑者），选择网站对应的网页数据流，确认提交。</li>
+      <li><b>有多个网站时，每个网站的 GA4 媒体资源都要单独关联一次</b>（同一个 AdSense 账号可以关联多个媒体资源）。Pingoo 发现你有的网站关联了、有的没关联时，会在没关联的网站详情里提醒你。</li>
+      <li>关联之后的数据一般 24～48 小时出现。在这之前，网站详情的“广告收益”一节会显示“已关联、正在等数据”；有了数据后会显示收入，概览的网站卡片上也会显示广告收入。</li>
+    </ol>
+    <ul>
+      <li>只有关联之后的广告数据：关联以前的日子，GA4 里本来就没有，也不会补。</li>
+      <li>关联两三天后还是 0：检查放 AdSense 广告的页面装的是不是<b>同一个 GA4 媒体资源</b>的统计代码。GA 按页面把广告收入归到媒体资源上，统计代码不对就归不过来。</li>
+      <li>金额的单位是 GA4 媒体资源设置里的货币，和 AdSense 后台可能有小的出入，结算以 AdSense 为准。</li>
+      <li>其他广告平台（如 Google Ad Manager、AdMob）关联到 GA4 后，收入也会算进来。</li>
+    </ul>
+
+    <h3>连接时的常见问题</h3>
+    <div class="tbl-wrap"><table class="tbl help-tbl">
+      <thead><tr><th class="l">现象</th><th class="l">原因和解决办法</th></tr></thead>
+      <tbody>
+        <tr><td class="l why">提示某个 API “has not been used in project … or it is disabled”</td><td class="l why">第 2 步漏启用了这个 API，或者启用在了别的项目里。启用后等一两分钟再测。</td></tr>
+        <tr><td class="l why">能看到 0 个 GA4 媒体资源</td><td class="l why">第 5 步没做，或者加在了别的 GA 账号下。只支持 GA4，旧版 Universal Analytics 不支持。</td></tr>
+        <tr><td class="l why">Search Console 能访问 0 个网站</td><td class="l why">第 6 步没做，或者不是用所有者身份添加的。</td></tr>
+        <tr><td class="l why">导入时某个网站没自动配上 Search Console</td><td class="l why">两边的网址对不上（比如一个带 www、一个不带）。在导入弹窗或网站「编辑」里手动选。</td></tr>
+        <tr><td class="l why">某个网站只有 GA 数据，没有搜索数据</td><td class="l why">这个网站还没在 Search Console 验证，或者没给服务账号加权限。</td></tr>
+        <tr><td class="l why">上传时提示密钥格式不对</td><td class="l why">要上传的是第 4 步下载的 JSON 文件，内容以 <code>{"type": "service_account"</code> 开头。不是 GA 的“衡量 ID”（G-XXXX），也不是 API 密钥。</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>密钥安全</h3>
+    <ul>
+      <li>服务账号在 Google Cloud 里没有任何角色，拿到密钥的人建不了资源，也花不了你的钱。</li>
+      <li>它在 GA 里是“查看者”、在 Search Console 里是“受限”，最多只能<b>读</b>你授权的那几个网站，改不了任何东西。</li>
+      <li>它和你的 Google 账号是分开的，泄露了也登录不了你的账号。</li>
+      <li>担心泄露时，在 Cloud 控制台「服务账号 → 密钥」里删掉这把密钥，它会立刻失效；再新建一把上传到 Pingoo 即可，GA 和 Search Console 的授权不用重做。</li>
+    </ul>
+
+    <h2 id="sites">3. 网站和数据同步</h2>
+    <ul>
+      <li><b>导入：</b>「设置 → 网站 → 导入网站」会列出服务账号能看到的所有 GA4 网站，并按域名自动配好对应的 Search Console。勾选、点「导入」即可。</li>
+      <li><b>历史数据：</b>导入后自动回填，回填多少看套餐（见<a class="tlink" href="#plans">第 5 节</a>）：页面、来源、搜索词等明细，和每天的访客、点击等总数分别保留。升级套餐后，下一次同步会自动把更早的数据补回来。每个网站一般一两分钟，流量大的网站久一些，进度在「设置 → 同步」里看。</li>
+      <li><b>每天更新：</b>每天当地时间 {{$d.SyncHour}}:00 后同步“昨天”的数据。Google 会修正最近几天的数据，所以每天这一次同步会把 GA 最近 3 天、Search Console 最近 5 天重新拉取。基础版和专业版每 12 小时再刷新一次：先比对每日总数，Google 那边有变化的日子才重新拉取，昨天的数字更快变完整，提醒也更早。“今天”的数字是打开页面时实时查的，不受刷新频率影响。</li>
+      <li><b>Search Console 有延迟：</b>Google 的搜索数据本身要 2～3 天才出来，最近两天没有搜索数据是正常的。</li>
+      <li><b>给 AI 的背景：</b>导入后建议给每个网站点「编辑」，写几句话：网站是做什么的、读者是谁、你最在意什么。AI 的分析和建议会更贴切。</li>
+      <li><b>提醒：</b>每个网站可以调提醒灵敏度（小网站调高、大网站调低），灵敏度在网站「编辑」里改；不想看的提醒类型在「设置 → 报告」下面关掉。</li>
+    </ul>
+
+    <h2 id="features">4. 各个功能怎么用</h2>
+    <dl class="help-dl">
+      <dt>概览 <span class="tag">免费</span></dt><dd>所有网站一页看完。右上角切换日期范围（今天、昨天、7 / 28 / 90 天，或自选，最长 {{$d.MaxDays}} 天）和对比方式（上一期、去年同期；和去年同期比需要专业版，范围最长约一个月）。</dd>
+      <dt>网站详情 <span class="tag">免费</span></dt><dd>核心指标、趋势图、热门内容、流量来源、搜索词、访客和健康检查。点内容表格里的一行能看单页分析。</dd>
+      <dt>需要关注 <span class="tag">免费</span></dt><dd>规则每天自动检查：文章突然走红、老页面衰退、新的外链、差一点上首页的搜索词、统计代码失效等。看过的可以点“忽略”。</dd>
+      <dt>AI 洞察 <span class="tag ai">积分</span></dt><dd>点「生成洞察」，AI 读这段时间的数据，写出结论、证据和能直接做的建议。生成后会保存，刷新页面不会重复扣积分。</dd>
+      <dt>诊断 <span class="tag ai">积分</span></dt><dd>点图上的异常点，或者洞察里的「深入分析」，AI 会一步步查原因。</dd>
+      <dt>问答 <span class="tag ai">积分</span></dt><dd>直接问关于你网站的问题，比如“上周哪篇文章带来的搜索流量最多？”。每问一次结算一次。</dd>
+      <dt>报告 <span class="tag ai">积分</span></dt><dd>周报每周一 05:00、月报每月 1 日生成，会回头检查上一期的建议有没有效果。在「报告」页手动生成；打开“每天自动生成 AI 内容”后按「设置 → 报告」里的设置自动生成。</dd>
+      <dt>广告收益 <span class="tag">免费</span></dt><dd>网站放了 AdSense 并关联到 GA4 后出现：广告收入、每千次浏览收入、收入最高的页面、流量大收入低的页面，收入异常时会提醒。怎么关联见<a class="tlink" href="#adsense">第 2 节</a>。</dd>
+      <dt>待办</dt><dd>洞察和报告里的建议可以加入待办，做完勾掉。</dd>
+      <dt>每日邮件简报 <span class="tag">付费套餐</span></dt><dd>每天早上 8 点把各网站昨天的访客、浏览、搜索点击，需要关注的变化，以及新出的报告发到你的邮箱。不用 AI，不扣积分；在「设置 → 报告」里可以关掉。</dd>
+      <dt>每天自动生成 AI 内容</dt><dd>在「设置 → 套餐与积分」里，默认关闭。打开后每天同步完自动给每个网站写“近 7 天”的洞察，并自动生成周报、月报，会持续消耗积分（超过 3 天没打开 Pingoo 时洞察先不提前写，回来打开页面时当场生成）；关着的时候只有你点“生成”才会用积分。</dd>
+    </dl>
+
+    <h2 id="plans">5. 套餐</h2>
+    <p>有{{range $i, $p := $d.Plans.List}}{{if $i}}、{{end}}{{$p.Name}}{{end}}三档，区别在网站数、数据保留多久、每月送多少积分、同步频率和邮件简报，具体见<a class="tlink" href="/#pricing">首页的价格</a>。AI 在所有套餐里都是同样的价格。</p>
+    <ul>
+      <li><b>怎么开通：</b>购买套餐卡密，在「设置 → 套餐与积分」里兑换，马上生效；同一个套餐再兑换就是续期，到期时间往后延。</li>
+      <li><b>升级：</b>还在基础版有效期内就兑换专业版卡密，会立即升到专业版，基础版剩下的天数按价格折算成专业版的天数，不会白白浪费。</li>
+      <li><b>每月积分：</b>开通或升级时立即到账，之后每 30 天到账一次，和充值的积分合在一起、不过期。AI 在所有套餐里都是同样的价格。</li>
+      <li><b>网站数：</b>超出套餐的网站（按网站列表的顺序，排在后面的）会暂停同步，数据不删，升级或续费后恢复。</li>
+      <li><b>到期：</b>不会自动扣费。到期后功能当天回到{{($d.Plans.Get "free").Name}}；数据再保留 {{$d.Grace}} 天，这期间续费什么都不丢；之后超出{{($d.Plans.Get "free").Name}}保留期的数据会被删除。到期前 3 天会发邮件提醒。</li>
+    </ul>
+
+    <h2 id="credits">6. 积分怎么算</h2>
+    <p>同步、概览、网站详情、提醒、健康检查<b>全部免费</b>。只有用到 AI 的功能（洞察、诊断、问答、报告）才扣积分。</p>
+
+    <h3>怎么获得积分</h3>
+    <ul>
+      <li><b>兑换卡密：</b>「设置 → AI 与积分 → 兑换」，输入卡密（形如 <code>PGO-XXXX-XXXX-XXXX-XXXX</code>，不区分大小写，空格和横线可以不输）。</li>
+      {{if gt $d.Bonus 0}}<li><b>新用户赠送：</b>注册就送 {{num $d.Bonus}} 积分。</li>{{end}}
+      <li>积分没有有效期（卡密本身可能有兑换期限）。</li>
+    </ul>
+
+    <h3>按什么扣</h3>
+    <p>AI 是按 <b>token</b> 收费的。token 是 AI 处理文字的单位，粗略地说，中文一个字大约 1 个 token，英文大约 4 个字母 1 个。AI 读进去的内容（你的数据、问题、说明）叫<b>输入</b>，AI 写出来的叫<b>输出</b>。同样的开头内容短时间内再发给 AI，服务商会<b>命中缓存</b>，这部分输入便宜很多。</p>
+    <div class="formula">积分 = (没命中缓存的输入 × 输入价 + 命中缓存的输入 × 缓存价 + 输出 × 输出价) ÷ 1,000,000<br><span class="muted">结果四舍五入到整数，不足 1 积分按 1 积分算。价格单位是“积分 / 百万 tokens”。1 元 = {{$d.PerYuan}} 积分。</span></div>
+
+    {{if $d.Prices}}
+    <h3>现在可以选的模型</h3>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th class="l">模型</th><th>输入</th><th>输入（命中缓存）</th><th>输出</th></tr></thead>
+      <tbody>{{range $d.Prices}}<tr><td class="l">{{.Name}}{{if .Default}} <span class="tag">默认</span>{{end}}</td><td>{{trimFloat .In}}</td><td>{{trimFloat .Cached}}</td><td>{{trimFloat .Out}}</td></tr>{{end}}</tbody>
+    </table></div>
+    <p class="note">单位：积分 / 百万 tokens。在「设置 → AI 与积分」里选用哪个模型。</p>
+    {{with index $d.Prices 0}}<p>举个例子：用 <b>{{.Name}}</b>，一次用了 2 万输入 tokens（其中 1 万命中缓存）、3 千输出 tokens：<br><code class="help-code">{{.ExampleFormula}}</code>，扣 <b>{{.Example}}</b> 积分。</p>{{end}}
+
+    <h3>一次大概要多少积分</h3>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th class="l">功能</th>{{range $d.Prices}}<th>{{.Name}}</th>{{end}}</tr></thead>
+      <tbody>{{range $d.Rows}}<tr><td class="l"><span class="t1">{{.Name}}</span><span class="t2">{{.Note}}</span></td>
+        {{range .Cells}}<td>{{if .HasAvg}}约 {{num .Avg}}{{else}}<span class="muted">—</span>{{end}}<span class="t2">预扣 {{num .Hold}}</span></td>{{end}}</tr>{{end}}</tbody>
+    </table></div>
+    <p class="note">“约”是全站最近 30 天的平均（次数太少时不显示）。网站多、日期范围长、问题复杂时会用得多一些。</p>
+    {{else}}
+    <p class="note">管理员还没有配置 AI 模型，配置后这里会显示每个模型的价格。</p>
+    {{end}}
+
+    <h3>预扣和结算</h3>
+    <ul>
+      <li>每次开始前，先按这类任务的常见用量<b>预扣</b>一笔（上表的“预扣”）。余额不够预扣时不能开始。</li>
+      <li>结束后按 AI 接口返回的<b>实际用量</b>结算：用得少，退回差额；用得多，按实际补扣。补扣后余额可能变成负数，下次充值时先抵扣；余额不是正数时暂时不能用 AI。</li>
+      <li>积分充足时，AI 会按需要把数据查完再下结论；只有余额不够继续查的时候，才会用已经查到的数据提前给出结论（避免把余额扣成很大的负数）。</li>
+      <li><b>失败不收费：</b>AI 出错、超时、返回的格式不对，全额退回；服务重启打断的任务也全额退回。</li>
+      <li>个别 AI 接口不返回用量时，按文字长度估算，积分明细里会写“按字数估算”。</li>
+      <li>每一笔都能在「设置 → AI 与积分 → 积分明细」里看到：哪个功能、用了多少 token、扣了多少积分。</li>
+    </ul>
+
+    <h3>怎么省积分</h3>
+    <ul>
+      <li>选便宜一些的模型；日常看洞察用不到最贵的。</li>
+      <li>不需要时关掉“每天自动生成 AI 内容”，需要时再手动点“生成”。</li>
+      <li>问答尽量一次把问题说清楚，比来回追问省。</li>
+      <li>给网站写好“给 AI 的背景”，AI 少走弯路。</li>
+    </ul>
+
+    <h2 id="limits">7. 使用限制</h2>
+    <div class="tbl-wrap"><table class="tbl help-tbl">
+      <tbody>
+        <tr><td class="l">网站数</td><td class="l why">{{range $i, $p := $d.Plans.List}}{{if $i}}，{{end}}{{$p.Name}} {{$p.Sites}} 个{{end}}。</td></tr>
+        <tr><td class="l">日期范围</td><td class="l why">自选日期最长 {{$d.MaxDays}} 天。</td></tr>
+        <tr><td class="l">数据保留</td><td class="l why">页面、来源、搜索词、地区、设备等按天的明细：{{range $i, $p := $d.Plans.List}}{{if $i}}，{{end}}{{$p.Name}} {{keepText $p.DetailDays}}{{end}}。每天的访客、点击等总数：{{range $i, $p := $d.Plans.List}}{{if $i}}，{{end}}{{$p.Name}} {{keepText $p.TotalDays}}{{end}}。过期的数据每天自动彻底删除；删除网站或注销账号时立即删除。</td></tr>
+        <tr><td class="l">AI</td><td class="l why">余额要够这类任务的预扣才能开始。{{if $d.DailyCap}}为了防止异常消耗，全站每天的 AI 用量有上限，到了之后当天暂停 AI，第二天自动恢复。{{end}}</td></tr>
+        <tr><td class="l">Google 配额</td><td class="l why">GA 对每个网站每天、每小时的查询次数有限制（Google 规定的，免费）。Pingoo 已经尽量少查，正常使用碰不到；超了要等配额恢复。</td></tr>
+        <tr><td class="l">邮件</td><td class="l why">注册邮件同一邮箱每天 3 封；找回密码同一邮箱每分钟 1 封、每天 5 封；改邮箱验证码每分钟 1 封、每天 5 封。</td></tr>
+        <tr><td class="l">登录</td><td class="l why">连续输错密码 5 次会锁定 15 分钟。注册、登录时浏览器会自动做 1～2 秒的安全校验，不用输验证码。</td></tr>
+        <tr><td class="l">问答</td><td class="l why">每个问题最多 2000 字；AI 只看这次对话最近的 20 条消息。</td></tr>
+        <tr><td class="l">卡密</td><td class="l why">1 小时内输错 10 次后，要等 1 小时再试。</td></tr>
+        <tr><td class="l">反馈</td><td class="l why">每人每天最多提交 {{$d.FeedbackPerDay}} 条。</td></tr>
+        <tr><td class="l">演示账号</td><td class="l why">只能浏览，不能改设置、不能用 AI。</td></tr>
+        <tr><td class="l">账号</td><td class="l why">一个账号给一个人用，不要用脚本批量注册或登录，详见<a class="tlink" href="/terms">服务条款</a>。</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="faq">8. 常见问题</h2>
+    <details class="faq"><summary>Pingoo 里的数字和 GA 后台对不上？</summary>
+      <p>常见原因：一是时区，Pingoo 按网站在 GA 里设置的时区算“哪一天”；二是口径，“访客数”是去重人数，不能把每天的数加起来比；三是最近几天 GA 还在修正数据。差几个百分点是正常的，差很多的话请留言告诉我们是哪个网站、哪个日期。</p></details>
+    <details class="faq"><summary>导入后一直没有数据？</summary>
+      <p>首次回填一般要几分钟，大网站更久，进度在「设置 → 同步」里看。如果那里显示错误，多半是权限问题，回到<a class="tlink" href="#google">第 2 节</a>检查第 5、6 步，再点「测试连接」。</p></details>
+    <details class="faq"><summary>为什么最近两天没有搜索数据？</summary>
+      <p>Google 的 Search Console 数据本身要 2～3 天才出来，不是 Pingoo 没同步。</p></details>
+    <details class="faq"><summary>不充值能用吗？</summary>
+      <p>能。同步、概览、网站详情、提醒、健康检查都免费，只是不能用 AI 洞察、诊断、问答和报告。</p></details>
+    <details class="faq"><summary>套餐到期后会怎样？</summary>
+      <p>不会自动扣费。到期当天功能回到{{($d.Plans.Get "free").Name}}：只有排在前面的 {{($d.Plans.Get "free").Sites}} 个网站继续同步，没有每日邮件简报和每月积分；剩下的积分照样能用。数据再保留 {{$d.Grace}} 天，这期间续费什么都不丢。</p></details>
+    <details class="faq"><summary>为什么“比去年同期”是锁着的？</summary>
+      <p>和去年同期比，需要保留一年以上的每天数据。{{range $d.Plans.List}}{{if .CanYoY 7}}{{.Name}}{{end}}{{end}}保留得够，范围最长约一个月；其他套餐保留得不够，所以没法比。</p></details>
+    <details class="faq"><summary>积分余额为什么是负数？</summary>
+      <p>上一个 AI 任务实际用的比预扣的多，按实际扣了。充值后会先抵扣，余额变成正数后就能继续用 AI。每一笔在「积分明细」里都能看到。</p></details>
+    <details class="faq"><summary>积分会过期吗？能退吗？</summary>
+      <p>积分没有有效期。积分不能提现、不能转让，注销账号后作废，详见<a class="tlink" href="/terms">服务条款</a>。AI 任务失败会自动全额退回积分。</p></details>
+    <details class="faq"><summary>AI 说的一定对吗？</summary>
+      <p>不一定。AI 根据你的数据推理，数字来自 GA 和 Search Console，推测的地方会标出来。重要的决定前请再核对一下数据。</p></details>
+    <details class="faq"><summary>我的数据安全吗？</summary>
+      <p>Pingoo 只通过只读的服务账号读数据，改不了你 GA 和 Search Console 里的任何东西；密钥加密保存；每个用户只能看到自己的网站；注销账号时所有数据一并删除。详见<a class="tlink" href="/privacy">隐私政策</a>。</p></details>
+    <details class="faq"><summary>收不到邮件？</summary>
+      <p>先看看垃圾邮件文件夹，再检查邮箱有没有拼错。邮件有发送频率限制（见上面的“使用限制”），过一会儿再试。还是收不到的话{{if $d.Contact}}发邮件到 <span class="mono">{{$d.Contact}}</span>{{else}}联系管理员{{end}}。</p></details>
+    <details class="faq"><summary>忘记密码、改邮箱、改密码、注销账号？</summary>
+      <p>忘记密码：登录页点「忘记密码」，重置链接会发到注册邮箱。改邮箱、改密码、退出其他设备、注销账号：都在「设置 → 账号」里。</p></details>
+    <details class="faq"><summary>可以只用 Google Analytics、不用 Search Console 吗？</summary>
+      <p>可以。没配 Search Console 的网站，搜索相关的部分会空着，其他功能不受影响。</p></details>
+    <details class="faq"><summary>可以看别人的网站吗？</summary>
+      <p>只要服务账号被加进那个网站的 GA 或 Search Console 就能读到。请确认你有权访问这些数据。</p></details>
+
+    <h2 id="feedback">9. 反馈与联系</h2>
+    {{if $d.CanFeedback}}
+    <p>遇到问题、发现数据不对，或者有想要的功能，直接写在这里。我们会回复到你的注册邮箱 <span class="mono">{{$u.Email}}</span>。</p>
+    <form id="fb" class="help-fb" hx-post="/feedback" hx-target="#fb" hx-swap="outerHTML">
+      <div class="field"><label for="fbt">类型</label>
+        <select class="select" id="fbt" name="topic">{{range $d.Topics}}<option>{{.}}</option>{{end}}</select></div>
+      <div class="field"><label for="fbx">内容</label>
+        <textarea class="textarea" id="fbx" name="text" rows="6" minlength="5" maxlength="3000" required placeholder="尽量写清楚：哪个网站、哪个页面、做了什么、看到了什么。"></textarea></div>
+      <div class="row-actions"><button class="btn dark" type="submit">提交</button></div>
+    </form>
+    {{else if $u}}
+    <p>演示账号不能提交反馈。<a class="tlink" href="/register">注册</a>后就可以在这里直接留言了。</p>
+    {{else}}
+    <p><a class="tlink" href="/login?next=/help%23feedback">登录</a>后可以在这里直接留言，我们会回复到你的注册邮箱{{if $d.Contact}}；也可以发邮件到 <span class="mono">{{$d.Contact}}</span>{{end}}。</p>
+    {{end}}
+  </div>
+</main>
+{{end}}

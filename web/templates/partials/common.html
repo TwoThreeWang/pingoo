@@ -1,0 +1,80 @@
+{{define "drawer"}}
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="AI 诊断">
+  <div id="drawer-body" style="display:flex;flex-direction:column;height:100%"></div>
+</aside>
+{{end}}
+
+{{/* range-bar：日期范围 + 自选起止日期 + 对比方式。参数：Base（页面地址）、Ranges、Range、Today、Sort（可选） */}}
+{{define "range-bar"}}
+<div class="ranges" role="group" aria-label="日期范围">
+  {{range .Ranges}}<a href="{{$.Base}}?range={{.Key}}{{if $.Sort}}&sort={{$.Sort}}{{end}}{{if $.Range.Compare}}&cmp={{$.Range.Compare}}{{end}}" class="{{if eq .Key $.Range.Key}}on{{end}}">{{.Label}}</a>{{end}}
+</div>
+<form class="custom-range{{if .Range.IsCustom}} on{{end}}" method="get" action="{{.Base}}" aria-label="自选日期范围">
+  <input type="date" name="from" value="{{if .Range.IsCustom}}{{ymd .Range.Start}}{{end}}" max="{{.Today}}" required aria-label="开始日期">
+  <span>–</span>
+  <input type="date" name="to" value="{{if .Range.IsCustom}}{{ymd .Range.End}}{{end}}" max="{{.Today}}" required aria-label="结束日期">
+  {{if .Sort}}<input type="hidden" name="sort" value="{{.Sort}}">{{end}}
+  {{if .Range.Compare}}<input type="hidden" name="cmp" value="{{.Range.Compare}}">{{end}}
+  <button class="btn sm" type="submit">查看</button>
+</form>
+{{if not .Range.Hourly}}
+<div class="ranges" role="group" aria-label="对比方式">
+  <a href="{{.Base}}?range={{.Range.Key}}{{if .Sort}}&sort={{.Sort}}{{end}}" class="{{if not .Range.Compare}}on{{end}}">比上一期</a>
+  {{if .YoY}}<a href="{{.Base}}?range={{.Range.Key}}{{if .Sort}}&sort={{.Sort}}{{end}}&cmp=yoy" class="{{if .Range.Compare}}on{{end}}" title="和 52 周前的同一段时间比（星期几对齐）">比去年同期</a>
+  {{else}}<a href="/help#plans" class="locked" title="和去年同期比要保留一年以上的每日数据：专业版可以和去年同期比（范围最长约一个月）">比去年同期 🔒</a>{{end}}
+</div>
+{{end}}
+{{end}}
+
+{{define "sev-counts"}}{{$c := 0}}{{$w := 0}}{{range .}}{{if eq .Severity "critical"}}{{$c = add $c 1}}{{end}}{{if eq .Severity "warn"}}{{$w = add $w 1}}{{end}}{{end}}{{if $c}}紧急 {{$c}}{{end}}{{if and $c $w}} · {{end}}{{if $w}}注意 {{$w}}{{end}}{{if and (not $c) (not $w)}}没有紧急事项{{end}}{{end}}
+
+{{define "insight-wait"}}<div class="loading-block"><div class="skel" style="width:80%;height:26px"></div><div class="skel" style="width:55%;height:26px"></div><div class="skel" style="width:90%"></div><div class="skel" style="width:70%"></div></div>{{end}}
+
+{{define "overview-insight"}}
+<div {{if .Running}}hx-get="{{.PollURL}}" hx-trigger="every 3s" hx-swap="outerHTML"{{end}}>
+  {{if and .NoAI (not .Content.Headline)}}
+    <div class="kicker mono"><span class="dia"></span>{{.Range.Kicker}}摘要</div>
+    <h1 class="headline">AI 简报会告诉你这段时间最该先做什么。</h1>
+    <p class="lede">{{.AIMsg}} 下面的数字和“需要关注”不依赖 AI，已经可以用了。</p>
+    {{if not (contains .AIMsg "演示")}}<div class="lead-acts"><a class="act main" href="/settings#ai">AI 与积分 <span class="arr">→</span></a></div>{{end}}
+  {{else if .Content.Headline}}
+    <div class="kicker mono"><span class="dia"></span><span>{{.Range.Kicker}}摘要 · {{if hasPrefix .Insight.Model "示例"}}演示示例，不是 AI 生成{{else}}AI 生成于 {{clock .Insight.CreatedAt}}{{end}}{{if .Outdated}} · 基于 {{md .Insight.PeriodStart}} – {{md .Insight.PeriodEnd}} 的数据{{end}}</span>
+      {{if .Running}}<span>· 正在重新生成…</span>{{else if not .NoAI}}<span>·</span><button hx-post="{{.RegenURL}}" hx-target="#ov-insight" hx-swap="innerHTML">{{if .Outdated}}按最新数据重新生成{{else}}重新生成{{end}}</button>{{end}}</div>
+    <h1 class="headline">{{.Content.Headline}}</h1>
+    <p class="lede">{{bold .Content.Lede}}</p>
+    <div class="lead-acts">
+      <a class="act main" href="/reports">阅读完整报告 <span class="arr">→</span></a>
+      <a class="act" href="/chat">追问 AI <span class="arr">→</span></a>
+    </div>
+  {{else if .Running}}
+    <div class="kicker mono"><span class="dia"></span>{{.Range.Kicker}}摘要 · AI 正在查数据、写简报，大约 30 秒</div>
+    {{template "insight-wait"}}
+  {{else if .Manual}}
+    <div class="kicker mono"><span class="dia"></span>{{.Range.Kicker}}摘要</div>
+    <h1 class="headline">这段时间还没有 AI 简报。</h1>
+    <p class="lede">为了节省 AI 用量，只有“7 天”的简报会自动生成。下面的数字和“需要关注”都已经是这段时间的；需要简报的话点一下，大约 30～60 秒。</p>
+    <div class="lead-acts"><button class="act main" hx-post="{{.RegenURL}}" hx-target="#ov-insight" hx-swap="innerHTML">生成简报 <span class="arr">→</span></button></div>
+  {{else}}
+    <div class="kicker mono"><span class="dia"></span>{{.Range.Kicker}}摘要</div>
+    <h1 class="headline">简报没能生成。</h1>
+    <p class="lede">{{if .Error}}{{.Error}}{{else}}还没有生成过简报。{{end}}</p>
+    <div class="lead-acts"><button class="act main" hx-post="{{.RegenURL}}" hx-target="#ov-insight" hx-swap="innerHTML">重新生成 <span class="arr">→</span></button></div>
+  {{end}}
+</div>
+{{end}}
+
+{{define "overview-live"}}{{$lv := .Live}}
+<div class="k">此刻在线</div>
+{{if $lv.Known}}<div class="n"><span class="live{{if eq $lv.Total 0}} off{{end}}"></span>{{$lv.Total}}</div><div class="m">{{$lv.Sites}} / {{$lv.Count}} 个网站</div>
+{{else}}<div class="n" style="color:var(--ink-3)">—</div><div class="m">需要连接 GA</div>{{end}}
+{{range $id, $n := $lv.PerSite}}<span id="live-{{$id}}" hx-swap-oob="innerHTML">{{if ge $n 0}}<span class="live{{if eq $n 0}} off{{end}}" style="margin-right:6px"></span>{{$n}} 人在线{{end}}</span>{{end}}
+{{end}}
+
+{{define "test-results"}}
+<div class="results">
+  {{range .}}<div>{{checkIcon .Status}}<span>{{.Title}}{{if .Detail}}<small>{{.Detail}}</small>{{end}}</span></div>{{end}}
+</div>
+{{end}}
+
+{{define "feedback-done"}}<div id="fb" class="status-box">{{icon "ok"}}<span>收到了，谢谢！我们会通过邮件回复你。</span></div>{{end}}

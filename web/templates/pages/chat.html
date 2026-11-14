@@ -1,0 +1,52 @@
+{{define "main"}}{{$d := .D}}
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-h">
+      <a class="btn dark" href="/chat">+ 新对话</a>
+      <form method="get" action="/chat" hx-get="/chat?partial=list" hx-trigger="input changed delay:300ms from:#q" hx-target="#convs" hx-swap="outerHTML">
+        <input class="input" id="q" name="q" value="{{$d.Q}}" placeholder="搜索对话" aria-label="搜索对话" autocomplete="off">
+      </form>
+    </div>
+    {{template "chat-list" $d}}
+  </aside>
+
+  <section class="main-col">
+    <div class="main-h">
+      <button class="btn sm menu-btn" id="menuBtn" type="button" aria-label="打开对话列表">☰ 对话</button>
+      <span class="ti">{{if $d.Conv}}{{$d.Conv.Title}}{{else}}新对话{{end}}</span>
+      <div class="r">
+        <label class="scope">范围
+          <select class="select" name="scope" form="chatForm" {{if $d.Conv}}hx-post="/chat/{{$d.Conv.ID}}/scope" hx-trigger="change" hx-swap="none"{{end}}>
+            <option value="0">全部网站</option>
+            {{range $d.Sites}}<option value="{{.ID}}" {{if eq .ID $d.ScopeID}}selected{{end}}>{{.Name}}</option>{{end}}
+          </select>
+        </label>
+        {{if $d.Conv}}<form method="post" action="/chat/{{$d.Conv.ID}}/delete" data-confirm="删除这段对话？"><button class="tlink" type="submit" style="color:var(--ink-3);border:0">删除</button></form>{{end}}
+      </div>
+    </div>
+    <div class="stream" id="stream">
+      <div class="col" id="col">
+        {{if $d.Conv}}
+          {{range $d.Messages}}{{if eq .Role "user"}}{{template "chat-user" .}}{{else}}{{template "chat-message" .}}{{end}}{{end}}
+        {{else}}
+        <div class="chat-empty">
+          <h1 class="headline">想知道什么，直接问。</h1>
+          <p>{{if $d.AIReady}}AI 会自己去查 GA 和 Search Console，并告诉你它查了哪些数据。{{else}}{{$d.AIMsg}}{{if not (contains $d.AIMsg "演示")}} <a class="tlink" href="/settings#ai">AI 与积分 →</a>{{end}}{{end}}</p>
+          <div class="sugg">{{range $d.Suggest}}<button type="button" data-ask="{{index . 0}}"><span class="q">{{index . 0}}</span><span class="w">{{index . 1}}</span></button>{{end}}</div>
+        </div>
+        {{end}}
+      </div>
+    </div>
+    <div class="composer">
+      <div class="col">
+        <form class="box" id="chatForm" {{if $d.Conv}}hx-post="/chat/{{$d.Conv.ID}}" hx-target="#col" hx-swap="beforeend"{{else}}hx-post="/chat"{{end}}>
+          <textarea id="ta" name="text" rows="1" maxlength="2000" placeholder="问一个关于你网站的问题…" aria-label="输入问题" {{if not $d.AIReady}}disabled{{end}}></textarea>
+          <button class="send" id="send" type="submit" aria-label="发送" disabled><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 12V2M2.5 6.5 7 2l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </form>
+        <div class="chat-hint mono"><span>Enter 发送 · Shift + Enter 换行</span><span>AI 只能看到你授权的 GA 和 Search Console 数据</span></div>
+      </div>
+    </div>
+  </section>
+</div>
+{{end}}
+{{define "after"}}<!-- 问答页不显示页脚 -->{{end}}

@@ -1,0 +1,244 @@
+{{define "settings-google"}}
+{{if .Connected}}
+<div class="status-box">{{icon "ok"}}<span>已连接</span><span class="em">{{.Email}}</span>
+  <span class="r"><button class="btn sm" type="button" data-copy="{{.Email}}">复制邮箱</button></span></div>
+{{else}}
+<div class="status-box">{{icon "info14"}}<span>还没有连接。</span></div>
+{{end}}
+<details class="howto" {{if not .Connected}}open{{end}}>
+  <summary>第一次设置？按这 6 步来（大约 10 分钟）</summary>
+  <ol>
+    <li>打开 Google Cloud 控制台，新建一个项目（名字随便取，不需要开通结算）。</li>
+    <li>在「API 和服务 → 库」里启用 <b>Google Analytics Data API</b>、<b>Google Analytics Admin API</b> 和 <b>Google Search Console API</b>。</li>
+    <li>在「IAM 和管理 → 服务账号」里创建服务账号，<b>不要给它任何角色</b>。记下它的邮箱（形如 xxx@项目ID.iam.gserviceaccount.com）。</li>
+    <li>点进服务账号 →「密钥 → 添加密钥 → 创建新密钥 → JSON」，下载密钥文件。Google 提示“建议改用工作负载身份联合”时直接继续即可。</li>
+    <li>在 GA「管理 → 账号访问权限管理」里，把服务账号的邮箱加为<b>查看者</b>（加在账号这一层，下面所有媒体资源都能看到）。</li>
+    <li>在 Search Console 里，每个网站「设置 → 用户和权限 → 添加用户」，把同一个邮箱加为<b>受限</b>用户。</li>
+  </ol>
+  <p class="note" style="margin-top:4px"><a class="tlink" href="/help#google" target="_blank">更详细的步骤和常见问题 →</a></p>
+  <p class="note" style="margin-top:4px">服务账号只能读你授权的数据，改不了任何东西；密钥加密保存。万一泄露，在 Google Cloud 里删掉这把密钥就立刻失效。</p>
+</details>
+<form hx-post="/settings/google" hx-target="#google-box" hx-encoding="multipart/form-data">
+  <div class="field">
+    <span class="lab">服务账号密钥（JSON）</span>
+    {{if .Connected}}
+    <details><summary class="saved" style="cursor:pointer;list-style:none"><span>已保存 · 项目 <span class="mono">{{.Project}}</span>{{if .Uploaded}} · {{.Uploaded}} 上传{{end}}</span><span class="tlink">替换</span></summary>
+      <div style="margin-top:10px">{{template "sa-input"}}</div></details>
+    {{else}}{{template "sa-input"}}{{end}}
+  </div>
+  {{if .Error}}<p class="err" style="padding-top:0">{{.Error}}</p>{{end}}
+  <div class="row-actions">
+    <button class="btn dark" type="submit">保存</button>
+    {{if .Connected}}<button class="btn" type="button" hx-post="/settings/google/test" hx-target="#res-google" hx-indicator="#res-google">测试连接</button>{{end}}
+  </div>
+</form>
+<div id="res-google"><div class="results htmx-indicator-only"></div></div>
+{{end}}
+
+{{define "sa-input"}}
+<textarea class="textarea mono" name="sa_json" placeholder='{"type": "service_account", "project_id": "…", …}' aria-label="粘贴服务账号 JSON"></textarea>
+<div class="row-actions"><input type="file" name="sa_file" accept="application/json,.json" style="font-size:12.5px"><span class="muted" style="font-size:12.5px">或者直接粘贴文件内容</span></div>
+{{end}}
+
+{{define "settings-ai"}}
+<div class="plan-box">
+  <div class="plan-now"><span class="muted">当前套餐</span> <b>{{.Plan.Name}}</b>
+    {{if .Expires}}<span class="muted">· 到期 {{(deref2 .Expires).Format "2006-01-02"}}（还剩 {{.DaysLeft}} 天）</span>
+    {{else if .Expired}}<span class="warn-t">· 付费套餐已于 {{(deref2 .Expired).Format "2006-01-02"}} 到期，{{.GraceEnd.Format "2006-01-02"}} 前续费，数据一点都不会少</span>{{end}}
+    <span style="margin-left:auto;display:flex;gap:12px">{{if .Plan.BuyURL}}<a class="tlink" href="{{.Plan.BuyURL}}" target="_blank" rel="noopener">{{if .Expired}}续费{{else}}购买{{end}}{{.Plan.Name}}卡密</a>{{end}}<a class="tlink" href="/#pricing">比较套餐</a></span></div>
+  <div class="plan-facts">{{.SitesUsed}}{{if lt .Plan.Sites 100000}} / {{.Plan.Sites}}{{end}} 个网站 · 明细保留 {{keepText .Plan.DetailDays}} · 每日趋势保留 {{keepText .Plan.TotalDays}}{{if gt .Plan.SyncHours 0}} · 每 {{.Plan.SyncHours}} 小时刷新{{end}}{{if .Plan.Digest}} · 每日邮件简报{{end}}{{if gt .Plan.MonthlyCredits 0}} · 每月送 {{num .Plan.MonthlyCredits}} 积分{{if .NextCredits}}（下次 {{(deref2 .NextCredits).Format "01-02"}}）{{end}}{{end}}</div>
+</div>
+<div class="big3">
+  <div><div class="k">积分余额</div><div class="n">{{num .Credits}}</div></div>
+  <div><div class="k">本月消耗</div><div class="n">{{num .Usage.Credits}}</div></div>
+  <div><div class="k">本月调用</div><div class="n">{{num .Usage.Calls}}</div></div>
+</div>
+<form class="redeem" hx-post="/settings/redeem" hx-swap="none">
+  <div class="field" style="margin:0"><label for="code">兑换卡密<span class="muted" style="font-weight:400">（积分卡密或套餐卡密：开通、续期、升级套餐都在这里）</span></label>
+    <div class="row-actions" style="margin:0"><input class="input mono" id="code" name="code" placeholder="PGO-XXXX-XXXX-XXXX-XXXX" autocomplete="off" required style="max-width:280px"><button class="btn dark" type="submit">兑换</button></div></div>
+</form>
+{{if .Models}}
+<form hx-post="/settings/ai" hx-swap="none" style="margin-top:22px">
+  <div class="field" style="max-width:420px"><label for="aiModel">使用的模型</label>
+    <select class="select" id="aiModel" name="model">
+      {{range .Models}}<option value="{{.ID}}" {{if eq .ID $.ModelID}}selected{{end}}>{{.Name}}{{if .IsDefault}}（默认）{{end}} · 倍率 ×{{trimFloat .Multiplier}}</option>{{end}}
+    </select>
+    <span class="hint">倍率越高，同样的用量扣的积分越多。洞察、诊断、问答和报告都用这个模型。</span></div>
+  <label class="toggle"><input type="checkbox" class="sw" name="auto_ai" {{if .AutoAI}}checked{{end}}><span class="tx"><b>每天自动生成 AI 内容</b><span>每天同步完自动给每个网站写“近 7 天”的洞察，并按「报告」里的设置生成周报、月报。会持续消耗积分；关掉后只在你点“生成”时才用。超过 3 天没打开 Pingoo 时洞察先不提前写（没人看就不花积分），你回来打开页面时当场生成；报告不受影响。</span></span></label>
+  <div class="foot-save" style="border:0;padding-top:4px;justify-content:flex-start"><button class="btn dark" type="submit">保存</button></div>
+</form>
+{{if .Holds}}<p class="note">按实际用量扣积分（1 元 = {{.PerYuan}} 积分，按服务商价格 × 倍率），失败的任务全额退回。开始前先预扣一笔、结束后多退少补：用当前模型，洞察预扣 {{index .Holds "insight"}}、问答 {{index .Holds "chat"}}、诊断 {{index .Holds "diagnose"}}、报告 {{index .Holds "report"}} 积分，余额不够预扣时不能开始；实际用量超过预扣时按实际扣，余额可能变成负数，下次充值先抵扣。<a href="/help#credits">积分怎么算</a></p>{{end}}
+{{else}}<p class="note">平台还没有可用的 AI 模型，等管理员配置好就能用了。</p>{{end}}
+<div class="sec-h" style="margin-top:28px;border-bottom-color:var(--line)"><h2 style="font-size:15px">积分明细<small>最近 30 条</small></h2><div class="r"><a class="tlink" href="/credits">查看全部 →</a></div></div>
+{{if .Ledger}}
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th class="l">时间</th><th class="l">项目</th><th>tokens</th><th>积分</th></tr>
+  {{range .Ledger}}<tr><td class="l mono" style="font-size:12.5px">{{.CreatedAt.Format "01-02 15:04"}}</td>
+    <td class="l">{{ledgerKind .Kind}}{{if .Model}} <span class="muted">· {{.Model}}</span>{{end}}{{if .Note}} <span class="muted">· {{.Note}}</span>{{end}}{{if .Pending}} <span class="pill">进行中</span>{{end}}</td>
+    <td class="tnum">{{if or .In .Out}}{{compact (add0 .In .Out)}}{{end}}</td>
+    <td class="tnum">{{if gt .Credits 0}}<span class="d good">+{{num .Credits}}</span>{{else if lt .Credits 0}}{{num .Credits}}{{else}}0{{end}}</td></tr>{{end}}
+</table></div>
+{{else}}<p class="note">还没有积分记录。</p>{{end}}
+{{end}}
+
+{{define "sync-status"}}
+{{if .Site.Demo}}<span class="st">{{icon "flat"}}演示数据</span>
+{{else if .Paused}}<span class="st">{{icon "pending"}}已暂停：超出套餐的网站数</span><span class="muted" style="display:block;font-size:12px">数据还在，升级或续费后恢复同步；也可以删掉排在前面不用的网站</span>
+{{else if or .Running (eq .GA.Status "running") (eq .GSC.Status "running")}}
+  <span class="prog"><span class="pbar"><i style="width:{{if eq .GA.Status "running"}}{{.GA.Progress}}{{else}}{{.GSC.Progress}}{{end}}%"></i></span><span class="muted" style="font-size:12.5px">{{if eq .GA.Status "running"}}GA 同步中 {{.GA.Progress}}%{{else}}GSC 同步中 {{.GSC.Progress}}%{{end}}</span></span>
+{{else if eq .GA.Status "error"}}<span class="st">{{icon "critical"}}GA 同步失败</span>
+{{else if eq .GSC.Status "error"}}<span class="st">{{icon "warn"}}Search Console 同步失败</span>
+{{else if eq .GA.Status "pending"}}<span class="st">{{icon "pending"}}等待首次同步</span>
+{{else if not .Site.GSCSite}}<span class="st">{{icon "warn"}}未连接 Search Console</span>
+{{else}}<span class="st">{{icon "good"}}正常</span>{{end}}
+{{end}}
+
+{{define "sync-table"}}
+<div id="sync-table" {{if .Running}}hx-get="/settings/sync/table" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
+  {{if not .Sites}}<div class="empty">还没有网站。</div>{{else}}
+  <div class="tbl-wrap"><table class="tbl">
+    <tr><th class="l">网站</th><th class="l">GA 已同步到</th><th class="l">GSC 已同步到</th><th class="l">状态</th><th></th></tr>
+    {{range .Sites}}
+    <tr><td class="l"><span class="t1">{{.Site.Name}}</span></td>
+      <td class="l mono">{{if .GA.LastSynced}}{{shortDate (deref2 .GA.LastSynced)}}{{else}}—{{end}}</td>
+      <td class="l mono">{{if .GSC.LastSynced}}{{shortDate (deref2 .GSC.LastSynced)}}{{else}}—{{end}}</td>
+      <td class="l" style="white-space:normal">{{template "sync-status" .}}{{if .GA.LastError}}<span class="muted" style="display:block;font-size:12px">{{truncate .GA.LastError 80}}</span>{{else if .GSC.LastError}}<span class="muted" style="display:block;font-size:12px">{{truncate .GSC.LastError 80}}</span>{{end}}</td>
+      <td>{{if not (or .Site.Demo .Paused)}}<button class="btn sm" hx-post="/settings/sync" hx-vals='{"site": "{{.Site.ID}}"}' hx-target="#sync-table" hx-swap="outerHTML">重新同步</button>{{end}}</td></tr>
+    {{end}}
+  </table></div>
+  {{end}}
+  {{if .Runs}}
+  <details class="howto" style="margin-top:16px"><summary>最近的同步记录</summary>
+    <div class="log">{{range .Runs}}{{.StartedAt.Format "01-02 15:04"}}  {{printf "%-10s" .SiteName}}  {{printf "%-3s" .Source}}  {{if eq .Status "ok"}}ok   {{num .Rows}} 行  {{.Message}}{{else if eq .Status "running"}}进行中{{else}}失败  {{truncate .Message 120}}{{end}}
+{{end}}</div></details>
+  {{end}}
+</div>
+{{end}}
+
+{{define "sessions"}}{{$cur := .Current}}
+<div id="sessions">
+  {{range .Sessions}}
+  <div class="dev"><span class="fav">{{if contains .UserAgent "iPhone"}}i{{else if contains .UserAgent "Android"}}A{{else}}M{{end}}</span>
+    <div><div style="font-size:13.5px">{{truncate .UserAgent 70}}</div><div class="muted" style="font-size:12.5px">{{.IP}} · 最近 {{ago .LastSeenAt}}{{if eq .ID $cur}} · 当前设备{{end}}</div></div></div>
+  {{end}}
+</div>
+{{end}}
+
+{{define "site-form"}}
+<div class="dr-h"><div><div class="mono muted">{{if .New}}手动添加网站{{else}}编辑网站{{end}}</div><h2>{{if .New}}新网站{{else}}{{.Site.Name}}{{end}}</h2></div><button class="close" data-close aria-label="关闭">×</button></div>
+<form class="dr-b" id="siteForm" hx-post="/settings/sites/{{.Site.ID}}">
+  <div class="field"><label for="edName">名称</label><input class="input" id="edName" name="name" value="{{.Site.Name}}" required></div>
+  <div class="field"><label for="edDomain">域名</label><input class="input mono" id="edDomain" name="domain" value="{{.Site.Domain}}" placeholder="blog.example.com"></div>
+  {{if .Site.Demo}}<div class="notice">{{icon "info14"}}<span>这是演示网站，数据是模拟的，不会去同步 Google。</span></div>{{else}}
+  <div class="field"><label for="edGa">GA 媒体资源</label>
+    {{if .Props}}<select class="select" id="edGa" name="ga_property"><option value="">不连接</option>{{range .Props}}<option value="{{.Property}}" {{if eq .Property $.Site.GAProperty}}selected{{end}}>{{.DisplayName}} · {{.Property}}</option>{{end}}</select>
+    {{else}}<input class="input mono" id="edGa" name="ga_property" value="{{.Site.GAProperty}}" placeholder="properties/123456789"><span class="hint">{{if .LoadErr}}无法列出媒体资源：{{.LoadErr}}{{else}}在 GA「管理 → 媒体资源设置」里能看到媒体资源 ID。{{end}}</span>{{end}}
+  </div>
+  <div class="field"><label for="edGsc">Search Console 网站</label>
+    {{if .GSCSites}}<select class="select" id="edGsc" name="gsc_site"><option value="">不连接</option>{{range .GSCSites}}<option value="{{.SiteURL}}" {{if eq .SiteURL $.Site.GSCSite}}selected{{end}}>{{.SiteURL}}</option>{{end}}</select>
+    {{else}}<input class="input mono" id="edGsc" name="gsc_site" value="{{.Site.GSCSite}}" placeholder="sc-domain:example.com">{{end}}
+    <span class="hint">没有找到？确认服务账号已经在 Search Console 里被加为用户。</span></div>
+  {{end}}
+  <div class="field"><label for="edTz">时区</label><input class="input mono" id="edTz" name="timezone" value="{{.Site.Timezone}}"><span class="hint">从 GA 导入时会自动填好，和 GA 媒体资源的时区保持一致。</span></div>
+  <div class="field"><label for="edDesc">给 AI 的背景</label>
+    <textarea class="textarea" id="edDesc" name="description" rows="4" maxlength="1000" placeholder="例如：Go 语言与独立开发的技术博客，读者主要是后端开发者。目标是增加 Newsletter 订阅。">{{.Site.Description}}</textarea>
+    <span class="hint">写清楚网站是做什么的、读者是谁、你最在意什么。AI 的洞察、诊断和建议都会围绕这里展开。</span></div>
+  <div class="field"><label for="edLv">提醒灵敏度</label>
+    <select class="select" id="edLv" name="signal_level">
+      <option value="high" {{if eq .Site.SignalLevel "high"}}selected{{end}}>高 · 小网站用，很小的变化也提醒</option>
+      <option value="normal" {{if or (eq .Site.SignalLevel "normal") (not .Site.SignalLevel)}}selected{{end}}>标准</option>
+      <option value="low" {{if eq .Site.SignalLevel "low"}}selected{{end}}>低 · 大网站用，只提醒量大的变化</option>
+    </select>
+    <span class="hint">决定“需要关注”里一条提醒至少要有多少量才出现。例如页面飙升：标准是 7 天浏览 150 次以上，高是 60 次，低是 375 次。</span></div>
+  <div class="field"><label for="edEx">不统计的路径</label><input class="input mono" id="edEx" name="exclude" value="{{.Exclude}}" placeholder="/admin, /preview"><span class="hint">用逗号分隔，按开头匹配：/admin 会同时排除 /admin/posts。只影响内容分析。</span></div>
+  {{if not .New}}
+  <div class="danger-zone">
+    <b>删除这个网站</b>
+    <p>会删除它在 Pingoo 里的所有历史数据、报告和对话。GA 和 Search Console 里的数据不受影响。</p>
+    <details><summary class="btn danger sm">删除网站</summary>
+      <div class="confirm"><span style="font-size:13px">确定吗？删除后无法恢复。</span>
+        <button class="btn danger sm" type="button" hx-post="/settings/sites/{{.Site.ID}}/delete">确认删除</button></div></details>
+  </div>
+  {{end}}
+</form>
+<div class="dr-f"><button class="btn" type="button" data-close>取消</button><button class="btn dark" type="submit" form="siteForm">保存</button></div>
+{{end}}
+
+{{define "import-form"}}
+<div class="dr-h"><div><h2>导入网站</h2><div class="muted" style="font-size:13px">{{if .Error}}{{else}}服务账号能看到 {{.Total}} 个 GA 媒体资源，其中 {{.New}} 个还没导入。已按域名自动配好 Search Console。{{end}}</div></div><button class="close" data-close aria-label="关闭">×</button></div>
+<form class="dr-b" id="importForm" hx-post="/settings/import" style="padding-top:4px">
+  {{if .Error}}<p class="err">{{.Error}}</p>{{end}}
+  {{range .Rows}}
+  <label class="imp{{if .Imported}} done{{end}}">
+    <input type="checkbox" name="ga" value="{{.P.Property}}" {{if .Imported}}checked disabled{{else}}checked{{end}}>
+    <span><span class="n1">{{.P.DisplayName}}</span><br><span class="n2">{{.P.Property}}{{if .P.Domain}} · {{.P.Domain}}{{end}}</span></span>
+    <span class="gsc">{{if .Imported}}<span class="muted" style="font-size:12.5px">已导入</span>{{else}}
+      <select class="select" name="gsc_{{trimProp .P.Property}}" aria-label="对应的 Search Console 网站"><option value="-">不连接 Search Console</option>{{$m := .Match}}{{range $.GSC}}<option value="{{.SiteURL}}" {{if eq .SiteURL $m}}selected{{end}}>{{.SiteURL}}</option>{{end}}</select>
+      {{if .Match}}<span class="pill accent" style="width:max-content">按域名自动匹配</span>{{end}}{{end}}</span>
+  </label>
+  {{else}}{{if not .Error}}<p class="muted">服务账号还看不到任何 GA4 媒体资源。请在 GA「管理 → 媒体资源访问权限管理」里把服务账号邮箱加为“查看者”。</p>{{end}}{{end}}
+</form>
+<div class="dr-f"><span class="muted" style="font-size:12.5px;margin-right:auto">导入后会在后台回填：明细最近 90 天，每日总数约 16 个月。</span><button class="btn" type="button" data-close>取消</button><button class="btn dark" type="submit" form="importForm" {{if not .New}}disabled{{end}}>导入</button></div>
+{{end}}
+
+{{define "admin-model-form"}}{{$m := .M}}
+<div class="dr-h"><div><div class="mono muted">{{if $m.ID}}编辑模型{{else}}添加模型{{end}}</div><h2>{{if $m.ID}}{{$m.Name}}{{else}}新模型{{end}}</h2></div><button class="close" data-close aria-label="关闭">×</button></div>
+<form class="dr-b" id="modelForm" hx-post="/admin/models/{{$m.ID}}">
+  <div class="field"><label for="mn">名称</label><input class="input" id="mn" name="name" value="{{$m.Name}}" placeholder="例如 DeepSeek V3" required><span class="hint">用户在设置里看到的名字。</span></div>
+  <div class="field"><label for="mm">模型 ID</label><input class="input mono" id="mm" name="model" value="{{$m.Model}}" placeholder="deepseek-chat" required></div>
+  <div class="field"><label for="mu">接口地址（Base URL）</label><input class="input mono" id="mu" name="base_url" value="{{$m.BaseURL}}" placeholder="https://api.deepseek.com/v1" required><span class="hint">兼容 OpenAI 的 /chat/completions，需要支持工具调用。</span></div>
+  <div class="field"><label for="mk">API Key</label><input class="input mono" id="mk" name="api_key" type="password" autocomplete="off" placeholder="{{if .HasKey}}已保存（留空则不修改）{{else}}粘贴 API Key{{end}}"><span class="hint">加密保存。</span></div>
+  <div class="two">
+    <div class="field"><label for="pi">输入价格</label><input class="input" id="pi" name="price_in" inputmode="decimal" value="{{trimFloat $m.PriceIn}}"><span class="hint">元 / 百万 tokens</span></div>
+    <div class="field"><label for="pc">缓存命中价格</label><input class="input" id="pc" name="price_cache" inputmode="decimal" value="{{trimFloat $m.PriceCache}}"><span class="hint">元 / 百万 tokens；不支持缓存的填和输入一样</span></div>
+    <div class="field"><label for="po">输出价格</label><input class="input" id="po" name="price_out" inputmode="decimal" value="{{trimFloat $m.PriceOut}}"><span class="hint">元 / 百万 tokens</span></div>
+    <div class="field"><label for="px">倍率</label><input class="input" id="px" name="multiplier" inputmode="decimal" value="{{trimFloat $m.Multiplier}}"><span class="hint">扣积分 = 价格 × 用量 × 倍率 × {{.PerYuan}}</span></div>
+  </div>
+  <div class="field"><label for="pts">思考强度</label>
+    <select class="select" id="pts" name="thinking_style" aria-label="思考参数的写法">{{range .Styles}}<option value="{{.Key}}" {{if eq .Key $.Style}}selected{{end}}>{{.Label}}</option>{{end}}</select>
+    <span class="hint">推理模型回答前会先“想”一遍，想的内容按<b>输出</b>价格计费，常常占一次任务一半以上的花费。这里选这家服务商用哪种参数控制思考，下面按任务设强度。</span>
+    <div class="two" style="margin-top:10px">
+      {{range .Efforts}}<div class="field"><label for="pe-{{.Key}}">{{.Label}}</label>
+        <select class="select" id="pe-{{.Key}}" name="effort_{{.Key}}">
+          <option value="" {{if not .Set}}selected{{end}}>默认（{{effortName .Default}}）</option>
+          {{$set := .Set}}{{range $k := effortKeys}}<option value="{{$k}}" {{if eq $k $set}}selected{{end}}>{{effortName $k}}</option>{{end}}
+        </select></div>{{end}}
+    </div>
+    <details class="howto" style="margin:8px 0 0">
+      <summary>默认值是怎么定的、各档是什么意思？</summary>
+      <div class="xp">
+        <p><b>默认值：</b>洞察不思考（数据已经全写在提示里，只是归纳成几条结论）；问答少想；诊断和报告正常思考（要自己决定查什么、把几份数据对起来找原因）。把结论整理成固定格式这类小调用始终不思考。</p>
+        <p><b>各档怎么换成参数：</b></p>
+        <table class="tbl xp-tbl">
+          <tr><th class="l">服务商</th><th class="l">不思考</th><th class="l">少想</th><th class="l">正常</th><th class="l">多想</th></tr>
+          <tr><td class="l">通义千问 / 阿里百炼</td><td class="l">关</td><td class="l">开，思考预算 1,024</td><td class="l">开，思考预算 4,096</td><td class="l">开，不限</td></tr>
+          <tr><td class="l">DeepSeek</td><td class="l">关</td><td class="l">low</td><td class="l">high（它的默认）</td><td class="l">max</td></tr>
+          <tr><td class="l">OpenAI、Gemini、Grok、OpenRouter</td><td class="l">low（关不掉）</td><td class="l">low</td><td class="l">medium</td><td class="l">high</td></tr>
+          <tr><td class="l">小米 MiMo、智谱、豆包</td><td class="l">关</td><td class="l" colspan="3">开（只有开和关）</td></tr>
+        </table>
+        <p>思考预算是一次调用里最多“想”多少 token，平时一次只用 400～2,500，这两个上限只挡住偶尔想个没完的情况。</p>
+        <p><b>“自动”认得的接口：</b>阿里百炼、DeepSeek、OpenAI、Gemini、Grok、OpenRouter、小米 MiMo、智谱、火山方舟。其他接口（包括各种中转网关）默认不带任何思考参数，需要的话在上面手动选一种写法。</p>
+        <p><b>通义千问要注意两点：</b>qwen-plus 思考和不思考的输出价格不一样（思考贵 4 倍），而这里的输出价格只能填一个，按任务开关思考时计费会有偏差，建议用 3.x 系列（两种模式同价）；qwen3.7-flash 这类按单次请求的输入长度分档计价的模型，价格填第一档的即可，Pingoo 的单次请求平时在 1.5 万 token 以内。</p>
+        <p><b>保存后点下面的“测试”</b>：服务商不认识的参数，有的会忽略、有的会直接报错。</p>
+      </div>
+    </details></div>
+  <div class="field"><label for="pex">附加请求参数（可选，JSON）</label>
+    <input class="input mono" id="pex" name="extra_params" value="{{$m.ExtraParams}}" placeholder="大多数情况留空">
+    <span class="hint">这里填的 JSON 会原样加进发给这个模型的每一次请求，用来打开或关闭服务商特有的功能。不知道填什么就留空。</span>
+    <details class="howto" style="margin:8px 0 0">
+      <summary>什么时候要填？</summary>
+      <div class="xp">
+        <p>上面的“思考强度”覆盖不到的情况才需要：比如服务商控制思考的写法不在列表里，或者要打开别的特有功能。这里写的参数和思考强度的参数同名时，<b>以这里为准</b>（所有任务都用同一个值）。</p>
+        <p><b>注意：</b>不能填 model、messages、tools 这些字段（由 Pingoo 决定）；服务商不认识的参数，有的会忽略、有的会直接报错，所以<b>保存后一定点下面的“测试”</b>，三项都正常再给用户用。Pingoo 已经给每次调用设了 16,000 token 的输出上限（防止偶尔失控），一般不用再填 max_tokens；填了以你填的为准，填得太小回答会被截断。不想用了清空再保存即可。</p>
+      </div>
+    </details></div>
+  <label class="toggle"><input type="checkbox" class="sw" name="enabled" {{if $m.Enabled}}checked{{end}}><span class="tx"><b>启用</b><span>停用后用户不能再选它，选了它的用户改用默认模型。</span></span></label>
+  <label class="toggle"><input type="checkbox" class="sw" name="is_default" {{if $m.IsDefault}}checked{{end}}><span class="tx"><b>设为默认模型</b><span>没选模型的用户用它。</span></span></label>
+  <div id="res-model"></div>
+</form>
+<div class="dr-f">
+  {{if $m.ID}}<button class="btn" type="button" hx-post="/admin/models/{{$m.ID}}/test" hx-target="#res-model">测试</button>
+  <button class="btn danger" type="button" hx-post="/admin/models/{{$m.ID}}/delete" hx-confirm="删除这个模型？" style="margin-right:auto">删除</button>{{else}}<span style="margin-right:auto"></span>{{end}}
+  <button class="btn" type="button" data-close>取消</button><button class="btn dark" type="submit" form="modelForm">保存</button>
+</div>
+{{end}}

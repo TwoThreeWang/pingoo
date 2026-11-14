@@ -1,0 +1,41 @@
+{{define "main"}}{{$d := .D}}
+<main class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>报告</h1>
+      <p>{{if $d.NextWeekly.IsZero}}自动周报已关闭，可以在设置里打开。{{else}}每周一 05:00 之后，等各网站同步完上周的数据就生成周报；每月 1 日同样生成上个月的月报。当天没生成的话，之后会补上。{{end}}也可以随时手动生成。</p>
+    </div>
+    <div class="gen-wrap">
+      <button class="btn dark" data-menu="genPop" aria-haspopup="true" aria-expanded="false" {{if not $d.AIReady}}disabled title="{{$d.AIMsg}}"{{end}}>立即生成</button>
+      <form class="gen-pop" id="genPop" method="post" action="/reports" hx-post="/reports" hx-swap="none">
+        <div class="field"><label for="gKind">类型</label>
+          <select class="select" id="gKind" name="kind">
+            <option value="weekly">周报 · 上周（{{md (index $d.Weekly 0)}} – {{md (index $d.Weekly 1)}}）</option>
+            <option value="monthly">月报 · {{md (index $d.Monthly 0)}} – {{md (index $d.Monthly 1)}}</option>
+            <option value="custom">本周至今（{{md (index $d.ThisWeek 0)}} – {{md (index $d.ThisWeek 1)}}）</option>
+          </select></div>
+        <div class="field"><label for="gScope">范围</label>
+          <select class="select" id="gScope" name="site"><option value="0">全部网站</option>{{range $d.Sites}}<option value="{{.ID}}">{{.Name}}</option>{{end}}</select></div>
+        <div class="field" style="margin-bottom:14px"><span class="hint">大约需要 30～60 秒，生成过程中可以离开这个页面。</span></div>
+        <button class="btn dark" type="submit" style="width:100%;justify-content:center">开始生成</button>
+      </form>
+    </div>
+  </div>
+
+  <form class="filters" method="get" action="/reports">
+    <label>范围 <select class="select" name="scope" data-autosubmit>
+      <option value="all" {{if eq $d.Scope "all"}}selected{{end}}>全部</option>
+      <option value="summary" {{if eq $d.Scope "summary"}}selected{{end}}>只看全站汇总</option>
+      {{range $d.Sites}}<option value="{{.ID}}" {{if eq $d.Scope (printf "%d" .ID)}}selected{{end}}>{{.Name}}</option>{{end}}
+    </select></label>
+    <div class="ranges">
+      <a href="/reports?scope={{$d.Scope}}" class="{{if eq $d.Kind ""}}on{{end}}">全部</a>
+      <a href="/reports?scope={{$d.Scope}}&kind=weekly" class="{{if eq $d.Kind "weekly"}}on{{end}}">周报</a>
+      <a href="/reports?scope={{$d.Scope}}&kind=monthly" class="{{if eq $d.Kind "monthly"}}on{{end}}">月报</a>
+    </div>
+    {{if not $d.NextWeekly.IsZero}}<span class="next-run mono"><span class="kicker"><span class="dia"></span></span>下一份：{{md $d.NextWeekly}} 05:00</span>{{end}}
+  </form>
+
+  {{template "report-list" $d}}
+</main>
+{{end}}

@@ -1,0 +1,34 @@
+{{define "report-list"}}
+<div id="report-list" {{range .Items}}{{if .Running}}hx-get="/reports?partial=list&scope={{q $.Scope}}&kind={{q $.Kind}}" hx-trigger="every 4s" hx-swap="outerHTML"{{break}}{{end}}{{end}}>
+  {{if not .Items}}
+    <div class="blank">
+      <h2>还没有报告。</h2>
+      <p>{{if .AIReady}}第一份周报会在下周一自动生成；也可以点右上角“立即生成”马上看一份。{{else}}报告由 AI 撰写。{{.AIMsg}}{{end}}</p>
+      {{if and (not .AIReady) (not (contains .AIMsg "演示"))}}<div class="acts"><a class="btn dark" href="/settings#ai">AI 与积分</a></div>{{end}}
+    </div>
+  {{end}}
+  {{$month := ""}}
+  {{range .Items}}
+    {{if ne .Month $month}}{{if ne $month ""}}</section>{{end}}<section class="month"><h2>{{.Month}}</h2>{{$month = .Month}}{{end}}
+    <article class="rep{{if .Running}} gen{{end}}" {{if not .Running}}data-href="/reports/{{.R.ID}}" tabindex="0" style="cursor:pointer"{{end}}>
+      <div class="dt mono">{{shortDate .R.PeriodStart}} – {{shortDate .R.PeriodEnd}}<small>{{.Label}}</small></div>
+      <div class="ty">{{kindLabel .R.Kind}}</div>
+      <div class="main">
+        <div class="scope">{{if .R.SiteID}}<span class="fav">{{initial .R.SiteName}}</span>{{.R.SiteName}}{{else}}全部网站{{end}}</div>
+        <div class="ti">
+          {{if .Running}}<span style="display:inline-flex;gap:8px;align-items:center"><span class="spin"></span>正在生成，大约 30～60 秒…</span>
+          {{else if eq .R.Status "error"}}<span style="color:var(--bad-t)">生成失败：{{.R.Error}}</span>
+          {{else}}{{.C.Title}}{{end}}
+        </div>
+        {{if and (not .Running) (eq .R.Status "done")}}
+        <div class="nums"><span>访客 <b>{{num .Snap.Total.Visitors}}</b> {{delta .Snap.Total.Visitors .Snap.Total.PrevVis 1}}</span>
+          {{if .Snap.Total.HasSearch}}<span>搜索点击 <b>{{num .Snap.Total.Clicks}}</b> {{delta .Snap.Total.Clicks .Snap.Total.PrevClicks 1}}</span>{{end}}
+          {{if .C.Next}}<span>建议 <b>{{len .C.Next}}</b> 条</span>{{end}}</div>
+        {{end}}
+      </div>
+      {{if not .Running}}<a class="act" href="/reports/{{.R.ID}}">阅读 <span class="arr">→</span></a>{{else}}<span></span>{{end}}
+    </article>
+  {{end}}
+  {{if ne $month ""}}</section>{{end}}
+</div>
+{{end}}
