@@ -43,10 +43,10 @@
 {{define "settings-ai"}}
 <div class="plan-box">
   <div class="plan-now"><span class="muted">当前套餐</span> <b>{{.Plan.Name}}</b>
-    {{if .Expires}}<span class="muted">· 到期 {{(deref2 .Expires).Format "2006-01-02"}}（还剩 {{.DaysLeft}} 天）</span>
-    {{else if .Expired}}<span class="warn-t">· 付费套餐已于 {{(deref2 .Expired).Format "2006-01-02"}} 到期，{{.GraceEnd.Format "2006-01-02"}} 前续费，数据一点都不会少</span>{{end}}
+    {{if .Expires}}<span class="muted">· 到期 {{tsDate (deref2 .Expires)}}（还剩 {{.DaysLeft}} 天）</span>
+    {{else if .Expired}}<span class="warn-t">· 付费套餐已于 {{tsDate (deref2 .Expired)}} 到期，{{tsDate .GraceEnd}} 前续费，数据一点都不会少</span>{{end}}
     <span style="margin-left:auto;display:flex;gap:12px">{{if .Plan.BuyURL}}<a class="tlink" href="{{.Plan.BuyURL}}" target="_blank" rel="noopener">{{if .Expired}}续费{{else}}购买{{end}}{{.Plan.Name}}卡密</a>{{end}}<a class="tlink" href="/#pricing">比较套餐</a></span></div>
-  <div class="plan-facts">{{.SitesUsed}}{{if lt .Plan.Sites 100000}} / {{.Plan.Sites}}{{end}} 个网站 · 明细保留 {{keepText .Plan.DetailDays}} · 每日趋势保留 {{keepText .Plan.TotalDays}}{{if gt .Plan.SyncHours 0}} · 每 {{.Plan.SyncHours}} 小时刷新{{end}}{{if .Plan.Digest}} · 每日邮件简报{{end}}{{if gt .Plan.MonthlyCredits 0}} · 每月送 {{num .Plan.MonthlyCredits}} 积分{{if .NextCredits}}（下次 {{(deref2 .NextCredits).Format "01-02"}}）{{end}}{{end}}</div>
+  <div class="plan-facts">{{.SitesUsed}}{{if lt .Plan.Sites 100000}} / {{.Plan.Sites}}{{end}} 个网站 · 明细保留 {{keepText .Plan.DetailDays}} · 每日趋势保留 {{keepText .Plan.TotalDays}}{{if gt .Plan.SyncHours 0}} · 每 {{.Plan.SyncHours}} 小时刷新{{end}}{{if .Plan.Digest}} · 每日邮件简报{{end}}{{if gt .Plan.MonthlyCredits 0}} · 每月送 {{num .Plan.MonthlyCredits}} 积分{{if .NextCredits}}（下次 {{tsMD (deref2 .NextCredits)}}）{{end}}{{end}}</div>
 </div>
 <div class="big3">
   <div><div class="k">积分余额</div><div class="n">{{num .Credits}}</div></div>
@@ -73,7 +73,7 @@
 {{if .Ledger}}
 <div class="tbl-wrap"><table class="tbl">
   <tr><th class="l">时间</th><th class="l">项目</th><th>tokens</th><th>积分</th></tr>
-  {{range .Ledger}}<tr><td class="l mono" style="font-size:12.5px">{{.CreatedAt.Format "01-02 15:04"}}</td>
+  {{range .Ledger}}<tr><td class="l mono" style="font-size:12.5px">{{tsShort .CreatedAt}}</td>
     <td class="l">{{ledgerKind .Kind}}{{if .Model}} <span class="muted">· {{.Model}}</span>{{end}}{{if .Note}} <span class="muted">· {{.Note}}</span>{{end}}{{if .Pending}} <span class="pill">进行中</span>{{end}}</td>
     <td class="tnum">{{if or .In .Out}}{{compact (add0 .In .Out)}}{{end}}</td>
     <td class="tnum">{{if gt .Credits 0}}<span class="d good">+{{num .Credits}}</span>{{else if lt .Credits 0}}{{num .Credits}}{{else}}0{{end}}</td></tr>{{end}}
@@ -109,7 +109,7 @@
   {{end}}
   {{if .Runs}}
   <details class="howto" style="margin-top:16px"><summary>最近的同步记录</summary>
-    <div class="log">{{range .Runs}}{{.StartedAt.Format "01-02 15:04"}}  {{printf "%-10s" .SiteName}}  {{printf "%-3s" .Source}}  {{if eq .Status "ok"}}ok   {{num .Rows}} 行  {{.Message}}{{else if eq .Status "running"}}进行中{{else}}失败  {{truncate .Message 120}}{{end}}
+    <div class="log">{{range .Runs}}{{tsShort .StartedAt}}  {{printf "%-10s" .SiteName}}  {{printf "%-3s" .Source}}  {{if eq .Status "ok"}}ok   {{num .Rows}} 行  {{.Message}}{{else if eq .Status "running"}}进行中{{else}}失败  {{truncate .Message 120}}{{end}}
 {{end}}</div></details>
   {{end}}
 </div>

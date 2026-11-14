@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/yuin/goldmark"
@@ -207,11 +208,41 @@ func shortDate(t time.Time) string {
 	return t.Format("01-02")
 }
 
+// appLoc 是整个前台展示用的时区：后台“默认时区”设置。所有来自数据库的时间戳
+// （timestamptz，比如生成时间、充值时间、最近登录）在展示前都转成这个时区，
+// 让界面上的时间统一。按天的日历日期（date 列，如 GA/GSC 截至、报告周期、
+// 内容首次出现）不走这里——它们本身不带时区，转了反而会错位一天。
+var appLoc atomic.Pointer[time.Location]
+
+func init() {
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		loc = time.UTC
+	}
+	appLoc.Store(loc)
+}
+
+// SetDisplayTZ 设置展示时区；启动时和后台改时区后调用。名字无效时保持不变。
+func SetDisplayTZ(name string) {
+	if loc, err := time.LoadLocation(name); err == nil {
+		appLoc.Store(loc)
+	}
+}
+
+// inAppLoc 把一个时间戳转到展示时区。
+func inAppLoc(t time.Time) time.Time {
+	if loc := appLoc.Load(); loc != nil {
+		return t.In(loc)
+	}
+	return t
+}
+
 func clock(t time.Time) string {
 	if t.IsZero() {
 		return "—"
 	}
-	now := time.Now()
+	t = inAppLoc(t)
+	now := inAppLoc(time.Now())
 	if t.Year() == now.Year() && t.YearDay() == now.YearDay() {
 		return "今天 " + t.Format("15:04")
 	}
@@ -232,7 +263,37 @@ func ago(t time.Time) string {
 	case d < 7*24*time.Hour:
 		return fmt.Sprintf("%d 天前", int(d.Hours()/24))
 	}
-	return t.Format("01-02")
+	return inAppLoc(t).Format("01-02")
+}
+
+// 以下几个把数据库时间戳按展示时区格式化，模板里统一用它们，不再直接 .Format。
+// ts 开头表示“时间戳”：带时区转换，区别于按天的日历日期（md / shortDate / ymdZh）。
+func tsDateTime(t time.Time) string { // 2006-01-02 15:04
+	if t.IsZero() {
+		return "—"
+	}
+	return inAppLoc(t).Format("2006-01-02 15:04")
+}
+
+func tsShort(t time.Time) string { // 01-02 15:04
+	if t.IsZero() {
+		return "—"
+	}
+	return inAppLoc(t).Format("01-02 15:04")
+}
+
+func tsDate(t time.Time) string { // 2006-01-02
+	if t.IsZero() {
+		return "—"
+	}
+	return inAppLoc(t).Format("2006-01-02")
+}
+
+func tsMD(t time.Time) string { // 01-02
+	if t.IsZero() {
+		return "—"
+	}
+	return inAppLoc(t).Format("01-02")
 }
 
 // chartData 把序列变成前端图表需要的 JSON。
@@ -422,6 +483,7 @@ func funcMap() template.FuncMap {
 		},
 		"num": num, "compact": compact, "pct": pctStr, "pct0": pct0, "dur": durZh, "durShort": durShort,
 		"delta": delta, "tileDelta": tileDelta, "fmtTile": fmtTile, "md": mdDate, "shortDate": shortDate, "clock": clock, "ago": ago,
+		"tsDateTime": tsDateTime, "tsShort": tsShort, "tsDate": tsDate, "tsMD": tsMD,
 		"json": toJSON, "markdown": markdown, "bold": bold, "truncate": truncate, "icon": icon,
 		"status": statusHTML, "sev": sevHTML, "sevLabel": func(s string) string { return sevLabels[s] }, "checkIcon": checkIcon,
 		"chart": chartJSON, "channel": metrics.ChannelName, "weekday": metrics.WeekdayName,

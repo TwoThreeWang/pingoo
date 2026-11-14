@@ -199,8 +199,11 @@
     var tr = t.closest('tr[data-detail]');
     if (tr && !t.closest('a,button')) { toggleRow(tr); return; }
 
-    // 问答：手机上打开对话列表
+    // 问答：手机上打开/关闭对话列表
     if (t.closest('#menuBtn')) { document.getElementById('side').classList.toggle('open'); return; }
+    // 问答：点遮罩或选中某段对话后，收起侧栏
+    if (t.id === 'sideScrim') { document.getElementById('side').classList.remove('open'); return; }
+    if (t.closest('#side .conv')) { var sdc = document.getElementById('side'); if (sdc) sdc.classList.remove('open'); }
     // 问答：推荐问题和追问建议
     var ask = t.closest('[data-ask]');
     if (ask) {
@@ -235,7 +238,7 @@
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target.matches('tr[data-detail]')) { toggleRow(e.target); return; }
-    if (e.key === 'Escape') { closeDrawer(); document.querySelectorAll('.menu.open,.gen-pop.open').forEach(function (m) { m.classList.remove('open'); }); }
+    if (e.key === 'Escape') { closeDrawer(); var sd = document.getElementById('side'); if (sd) sd.classList.remove('open'); document.querySelectorAll('.menu.open,.gen-pop.open').forEach(function (m) { m.classList.remove('open'); }); }
     if (e.key === 'Enter' && e.target.matches('tr[data-href], .rep[data-href]')) location.href = e.target.dataset.href;
   });
 

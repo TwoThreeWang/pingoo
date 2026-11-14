@@ -17,7 +17,7 @@
   <div class="tbl-wrap"><table class="tbl">
     <tr><th class="l">时间</th><th class="l">项目</th><th>tokens</th><th>积分</th></tr>
     {{range $d.Rows}}<tr>
-      <td class="l mono" style="font-size:12.5px;white-space:nowrap">{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+      <td class="l mono" style="font-size:12.5px;white-space:nowrap">{{tsDateTime .CreatedAt}}</td>
       <td class="l">{{ledgerKind .Kind}}{{if .Model}} <span class="muted">· {{.Model}}</span>{{end}}{{if .Note}} <span class="muted">· {{.Note}}</span>{{end}}{{if .Pending}} <span class="pill">进行中</span>{{end}}</td>
       <td class="tnum">{{if or .In .Out}}{{compact (add0 .In .Out)}}{{if .Cached}}<br><span class="muted" style="font-size:12px">其中 {{compact .Cached}} 命中缓存</span>{{end}}{{end}}</td>
       <td class="tnum">{{if gt .Credits 0}}<span class="d good">+{{num .Credits}}</span>{{else if lt .Credits 0}}{{num .Credits}}{{else}}0{{end}}</td>

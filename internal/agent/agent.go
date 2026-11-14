@@ -206,7 +206,10 @@ func insightTools() []llm.Tool {
 func (a *Agent) systemPrompt(ctx context.Context, extra string) string {
 	sites, _ := a.Store.Sites(ctx)
 	var sb strings.Builder
-	now := time.Now()
+	now := time.Now() // “今天”按后台设置的默认时区算，和全站每日上限、界面展示保持一致
+	if loc, err := time.LoadLocation(a.Store.DefaultTZ(ctx)); err == nil {
+		now = now.In(loc)
+	}
 	// 不变的部分（身份、规则）放最前面，日期、网站列表这些会变的放后面：服务商按“开头相同的部分”命中提示缓存，
 	// 开头一样的话，不同任务、不同用户的第一次调用也能命中，缓存部分的价格一般只有原价的 1/4～1/10。
 	sb.WriteString(`你是 Pingoo 的数据分析助手，帮一位独立开发者看懂他的网站数据。

@@ -40,9 +40,9 @@
             <tr><td class="l"><span class="t1">{{.Email}}{{if .IsAdmin}} <span class="pill">管理员</span>{{end}}{{if .Disabled}} <span class="pill">已停用</span>{{end}}{{if not .LastLoginAt}} <span class="pill">未登录过</span>{{end}}</span>
                 <span class="t2">{{if .AutoAI}}自动 AI 开{{else}}自动 AI 关{{end}}{{if .ModelID}} · {{index $d.ModelNames (deref .ModelID)}}{{end}}</span></td>
               <td class="tnum">{{.Sites}}</td><td class="tnum">{{num .Credits}}</td>
-              <td class="l" style="font-size:12.5px">{{$pid := .PlanID $d.Now}}{{if .IsAdmin}}管理员{{else}}{{($d.Plans.Get $pid).Name}}{{if .PlanExpiresAt}}{{if ne $pid "free"}}<br><span class="muted mono">到 {{(deref2 .PlanExpiresAt).Format "2006-01-02"}}</span>{{else if ne .Plan "free"}}<br><span class="muted">已到期</span>{{end}}{{end}}{{end}}
+              <td class="l" style="font-size:12.5px">{{$pid := .PlanID $d.Now}}{{if .IsAdmin}}管理员{{else}}{{($d.Plans.Get $pid).Name}}{{if .PlanExpiresAt}}{{if ne $pid "free"}}<br><span class="muted mono">到 {{tsDate (deref2 .PlanExpiresAt)}}</span>{{else if ne .Plan "free"}}<br><span class="muted">已到期</span>{{end}}{{end}}{{end}}
                 {{if not .IsAdmin}}<form class="inline-f" hx-post="/admin/users/{{.ID}}/plan" style="margin-top:4px"><select class="select" name="plan" style="padding:2px 6px;font-size:12px">{{range $d.Plans.List}}<option value="{{.ID}}" {{if eq .ID $pid}}selected{{end}}>{{.Name}}</option>{{end}}</select><input class="input" name="days" inputmode="numeric" placeholder="天数" style="width:56px;padding:2px 6px"><button class="btn sm" type="submit" hx-confirm="直接设置这个用户的套餐（从现在起算天数）？">设置</button></form>{{end}}</td>
-              <td class="l mono" style="font-size:12px">{{.CreatedAt.Format "2006-01-02"}}<br>{{if .LastLoginAt}}{{ago (deref2 .LastLoginAt)}}{{else}}—{{end}}</td>
+              <td class="l mono" style="font-size:12px">{{tsDate .CreatedAt}}<br>{{if .LastLoginAt}}{{ago (deref2 .LastLoginAt)}}{{else}}—{{end}}</td>
               <td class="l"><form class="inline-f" hx-post="/admin/users/{{.ID}}/credits"><input class="input" name="delta" inputmode="numeric" placeholder="+100 / -50" style="width:90px;padding:3px 8px"><input class="input" name="note" placeholder="备注" style="width:100px;padding:3px 8px"><button class="btn sm" type="submit">确定</button></form></td>
               <td>{{if not .IsAdmin}}<button class="btn sm" hx-post="/admin/users/{{.ID}}/disable" hx-confirm="{{if .Disabled}}恢复{{else}}停用{{end}} {{.Email}}？">{{if .Disabled}}恢复{{else}}停用{{end}}</button>{{end}}</td></tr>
             {{else}}<tr><td class="l" colspan="7"><span class="muted">没有找到用户</span></td></tr>{{end}}
@@ -110,9 +110,9 @@
           <div class="sec-h"><h2>批次</h2></div>
           {{if $d.Batches}}<div class="tbl-wrap"><table class="tbl">
             <tr><th class="l">批次</th><th>内容</th><th>已用 / 总数</th><th class="l">兑换截止</th><th></th></tr>
-            {{range $d.Batches}}<tr><td class="l"><span class="t1">{{.Batch}}</span><span class="t2">{{.CreatedAt.Format "2006-01-02 15:04"}}</span></td>
+            {{range $d.Batches}}<tr><td class="l"><span class="t1">{{.Batch}}</span><span class="t2">{{tsDateTime .CreatedAt}}</span></td>
               <td class="tnum">{{if .Plan}}{{($d.Plans.Get .Plan).Name}} {{.Days}} 天{{else}}{{num .Credits}} 积分{{end}}</td><td class="tnum">{{.Used}} / {{.Total}}</td>
-              <td class="l mono" style="font-size:12px">{{if .ExpiresAt}}{{(deref2 .ExpiresAt).Format "2006-01-02"}}{{else}}长期{{end}}</td>
+              <td class="l mono" style="font-size:12px">{{if .ExpiresAt}}{{tsDate (deref2 .ExpiresAt)}}{{else}}长期{{end}}</td>
               <td>{{if lt .Used .Total}}<button class="btn sm danger" hx-post="/admin/codes/delete" hx-vals='{"batch": "{{.Batch}}"}' hx-confirm="作废“{{.Batch}}”里所有还没用过的卡密？">作废未用</button>{{end}}</td></tr>{{end}}
           </table></div>{{else}}<p class="note" style="margin-top:0">还没有生成过卡密。</p>{{end}}
         </div>

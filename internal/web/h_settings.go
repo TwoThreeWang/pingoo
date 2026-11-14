@@ -321,7 +321,7 @@ func (s *Server) saveGoogle(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, err)
 		return
 	}
-	_ = s.Store.SetSetting(ctx, store.KeyGoogleSAUpload, time.Now().Format("2006-01-02 15:04"))
+	_ = s.Store.SetSetting(ctx, store.KeyGoogleSAUpload, inAppLoc(time.Now()).Format("2006-01-02 15:04"))
 	s.Store.CacheDeletePrefix(ctx, listsKey(ctx)) // 换了服务账号，能看到的媒体资源也变了
 	toast(w, "已保存，密钥已加密。可以点“测试连接”确认权限")
 	s.part(w, "settings-google", s.googleView(ctx))
@@ -446,7 +446,7 @@ func (s *Server) redeem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if res.Plan != "" {
-		msg := fmt.Sprintf("已开通%s，到期时间 %s", s.Store.Plans(r.Context()).Get(res.Plan).Name, res.Expires.Format("2006-01-02 15:04"))
+		msg := fmt.Sprintf("已开通%s，到期时间 %s", s.Store.Plans(r.Context()).Get(res.Plan).Name, inAppLoc(res.Expires).Format("2006-01-02 15:04"))
 		if res.Granted > 0 {
 			msg += fmt.Sprintf("，本月 %d 积分已到账", res.Granted)
 		}

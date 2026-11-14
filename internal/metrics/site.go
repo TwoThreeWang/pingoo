@@ -23,6 +23,7 @@ type Tile struct {
 
 var tileDefs = []Tile{
 	{Key: "v", Label: "访客", Tip: "来了多少人（同一台设备只算一次）", Kind: "count", Better: 1},
+	{Key: "pv", Label: "浏览量", Tip: "所有页面被打开的总次数（同一个人多次打开都算）", Kind: "count", Better: 1},
 	{Key: "newShare", Label: "新访客占比", Tip: "第一次来的人占多少。高说明拉新好，太高说明老读者没回来", Kind: "pct", Better: 0},
 	{Key: "ret", Label: "回头客", Tip: "之前来过、这次又来的人，代表粘性", Kind: "count", Better: 1},
 	{Key: "ppv", Label: "人均看几页", Tip: "每次访问平均浏览几页，代表有没有兴趣继续逛", Kind: "dec", Better: 1},
@@ -60,7 +61,7 @@ func TileDef(key string) (Tile, bool) {
 	return Tile{}, false
 }
 
-// Tiles 计算 8 个核心指标的本期和对比期。
+// Tiles 计算核心指标的本期和对比期。
 func (m *Svc) Tiles(ctx context.Context, site store.Site, r period.Range) []Tile {
 	cur, prev := m.Totals(ctx, site, r)
 	out := make([]Tile, 0, len(tileDefs))
@@ -70,6 +71,8 @@ func (m *Svc) Tiles(ctx context.Context, site store.Site, r period.Range) []Tile
 		switch d.Key {
 		case "v":
 			t.Cur, t.Prev = float64(cur.Users), float64(prev.Users)
+		case "pv":
+			t.Cur, t.Prev = float64(cur.PV), float64(prev.PV)
 		case "newShare":
 			t.Cur, t.Prev = cur.NewShare(), prev.NewShare()
 		case "ret":
@@ -117,6 +120,7 @@ func (m *Svc) Tiles(ctx context.Context, site store.Site, r period.Range) []Tile
 // MetricExpr 是每个指标在每日表里的计算方式。
 var metricExpr = map[string][2]string{
 	"v":        {"ga_daily", "sum(active_users)::float8"},
+	"pv":       {"ga_daily", "sum(page_views)::float8"},
 	"newShare": {"ga_daily", "sum(new_users)::float8/nullif(sum(active_users),0)"},
 	"ret":      {"ga_daily", "sum(returning_users)::float8"},
 	"ppv":      {"ga_daily", "sum(page_views)::float8/nullif(sum(sessions),0)"},

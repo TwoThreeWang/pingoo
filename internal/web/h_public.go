@@ -149,7 +149,7 @@ func (s *Server) feedback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body := fmt.Sprintf("类型：%s\n用户：%s（ID %d）\n积分余额：%d\n网站数：%d\n时间：%s\n浏览器：%s\n\n%s",
-		topic, u.Email, u.ID, u.Credits, s.Store.SiteCount(ctx), time.Now().Format("2006-01-02 15:04"), truncate(r.UserAgent(), 160), text)
+		topic, u.Email, u.ID, u.Credits, s.Store.SiteCount(ctx), inAppLoc(time.Now()).Format("2006-01-02 15:04"), truncate(r.UserAgent(), 160), text)
 	err = s.Mail.Send(ctx, mail.Msg{Kind: "feedback", To: to, ReplyTo: u.Email, IP: rateKey(s.clientIP(r)), UserID: u.ID,
 		Subject: "[Pingoo 反馈] " + topic + " · " + u.Email, Title: "用户反馈：" + topic, Body: body})
 	if err != nil {

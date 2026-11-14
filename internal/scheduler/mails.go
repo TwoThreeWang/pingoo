@@ -142,6 +142,12 @@ func (s *Scheduler) planReminders(ctx context.Context) {
 	now := time.Now()
 	cfg := s.Store.Plans(ctx)
 	base := s.siteURL(ctx)
+	// 邮件里的到期时间统一按后台默认时区显示。
+	loc, err := time.LoadLocation(s.Store.DefaultTZ(ctx))
+	if err != nil {
+		loc = time.UTC
+	}
+	expAt := func(u store.User) string { return u.PlanExpiresAt.In(loc).Format("2006-01-02 15:04") }
 	// 怎么续费：这一档有自己的购买地址就写在正文里；邮件下面的链接通到设置页，在那里兑换新的套餐卡密。
 	buy := func(p store.Plan) string {
 		s := "续费：在「设置 → 套餐与积分」里兑换新的套餐卡密。"
@@ -169,7 +175,7 @@ func (s *Scheduler) planReminders(ctx context.Context) {
 			send("plan_expiring", u, "你的 Pingoo "+p.Name+"快到期了", p.Name+"快到期了", fmt.Sprintf(
 				"你的 Pingoo %s将在 %s 到期。到期后会回到%s：只保留 %d 个网站在同步、%d 天的明细数据，不再有每日邮件简报和每月积分。"+
 					"到期后 %d 天内续费，数据一点都不会少。%s",
-				p.Name, u.PlanExpiresAt.Format("2006-01-02 15:04"), free.Name, free.Sites, free.DetailDays, store.GraceDays, buy(p)))
+				p.Name, expAt(u), free.Name, free.Sites, free.DetailDays, store.GraceDays, buy(p)))
 		}
 	}
 	if users, err := s.Store.ExpiringUsers(ctx, now.AddDate(0, 0, -1), now); err == nil {
@@ -178,7 +184,7 @@ func (s *Scheduler) planReminders(ctx context.Context) {
 			send("plan_expired", u, "你的 Pingoo "+p.Name+"已经到期", p.Name+"已经到期", fmt.Sprintf(
 				"你的 Pingoo %s已经在 %s 到期，现在按%s使用：超出 %d 个的网站暂停同步（数据还在），不再有每日邮件简报和每月积分。\n\n"+
 					"%d 天内续费，所有数据都会保留；超过 %d 天，超出%s保留期（明细 %d 天、每日总数 %d 天）的数据会被删除。%s",
-				p.Name, u.PlanExpiresAt.Format("2006-01-02 15:04"), free.Name, free.Sites, store.GraceDays, store.GraceDays, free.Name,
+				p.Name, expAt(u), free.Name, free.Sites, store.GraceDays, store.GraceDays, free.Name,
 				free.DetailDays, free.TotalDays, buy(p)))
 		}
 	}

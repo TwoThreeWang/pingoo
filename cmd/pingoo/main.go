@@ -125,6 +125,7 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	web.SetDisplayTZ(st.DefaultTZ(ctx)) // 界面时间统一按后台设置的默认时区展示
 	if n := st.MarkInterrupted(ctx); n > 0 {
 		log.Info("上次退出时有任务没做完，已标记为中断", "count", n)
 	}

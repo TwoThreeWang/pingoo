@@ -152,6 +152,9 @@ func (s *Server) adminSaveSettings(w http.ResponseWriter, r *http.Request) {
 	if _, ok := r.Form["signup_form"]; ok { // “暂停注册”是复选框，只在它所在的表单里才处理
 		_ = s.Store.SetSetting(ctx, store.KeySignupOff, strconv.FormatBool(r.FormValue(store.KeySignupOff) != ""))
 	}
+	if _, ok := r.Form[store.KeyDefaultTZ]; ok {
+		SetDisplayTZ(s.Store.DefaultTZ(ctx)) // 时区改了，界面展示时区立即跟着变
+	}
 
 	if len(problems) > 0 {
 		toast(w, "其余已保存；"+strings.Join(problems, "；"))
@@ -436,7 +439,7 @@ func (s *Server) adminCodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if batch == "" {
-		batch = time.Now().Format("20060102-1504")
+		batch = inAppLoc(time.Now()).Format("20060102-1504")
 	}
 	var exp *time.Time
 	if days > 0 {
@@ -456,7 +459,7 @@ func (s *Server) adminCodes(w http.ResponseWriter, r *http.Request) {
 	_ = cw.Write([]string{"卡密", "内容", "批次", "兑换截止"})
 	expS := "长期有效"
 	if exp != nil {
-		expS = exp.Format("2006-01-02")
+		expS = inAppLoc(*exp).Format("2006-01-02")
 	}
 	for _, c := range codes {
 		_ = cw.Write([]string{c, content, batch, expS})
