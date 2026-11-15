@@ -58,6 +58,10 @@ type Server struct {
 
 	breakerLogged time.Time // 上次记“注册熔断”日志的时间
 
+	activityMu sync.Mutex // 后台概况的使用情况：算一次缓存 activityTTL，见 adminActivity
+	activityAt time.Time
+	activity   store.Activity
+
 	lookupUser func(ctx context.Context, email string) (store.User, error) // 测试里替换；nil 表示查数据库
 }
 
@@ -110,6 +114,7 @@ type view struct {
 	Path    string
 	User    *store.User // 没登录时为 nil
 	HasDemo bool        // 有演示数据：没登录的访客在顶栏能看到“看演示”
+	SEO     seoView     // 标题、描述、收录、统计代码（见 seo.go）
 	D       any
 }
 
@@ -137,8 +142,9 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, code int, name, 
 		_, err := s.Store.DemoUserID(r.Context(), false)
 		hasDemo = err == nil
 	}
+	seo := s.seoFor(w, r, name, title, layout)
 	if err := t.ExecuteTemplate(&buf, layout, view{Asset: s.assetVer, Page: name, Title: title, Nav: nav, Version: Version, Path: r.URL.Path,
-		User: currentUser(r), HasDemo: hasDemo, D: d}); err != nil {
+		User: currentUser(r), HasDemo: hasDemo, SEO: seo, D: d}); err != nil {
 		s.Log.Error("渲染页面失败", "page", name, "err", err)
 		http.Error(w, "页面渲染出错", 500)
 		return
@@ -214,6 +220,8 @@ func (s *Server) Handler() (http.Handler, error) {
 		fileServer.ServeHTTP(w, r)
 	}))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
+	mux.HandleFunc("GET /robots.txt", s.robots)
+	mux.HandleFunc("GET /sitemap.xml", s.sitemap)
 	mux.HandleFunc("/", s.notFound) // 其他路由都没匹配上
 	s.mux = mux
 
@@ -297,6 +305,7 @@ func (s *Server) Handler() (http.Handler, error) {
 
 	// 管理后台（只有管理员能进，其他人看到的是 404）
 	mux.HandleFunc("GET /admin", s.adminPage)
+	mux.HandleFunc("GET /admin/part/activity", s.adminActivity)
 	mux.HandleFunc("POST /admin/settings", s.adminSaveSettings)
 	mux.HandleFunc("POST /admin/mail/test", s.adminMailTest)
 	mux.HandleFunc("POST /admin/users/{id}/credits", s.adminCredits)
@@ -328,6 +337,7 @@ const (
 
 // publicPaths 不登录也能访问。
 var publicPaths = map[string]bool{"/": true, "/help": true, "/about": true, "/privacy": true, "/terms": true, "/demo": true, "/healthz": true,
+	"/robots.txt": true, "/sitemap.xml": true,
 	"/login": true, "/register": true, "/forgot": true, "/reset": true, "/logout": true}
 
 // currentUser 返回当前登录的用户；没登录返回 nil。

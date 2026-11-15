@@ -301,6 +301,7 @@ func TestDataAttrURLEncoding(t *testing.T) {
 }
 
 // CSP 禁止内联脚本，所以模板里不能再出现 <script>…</script> 或 onclick 这类属性，否则对应的功能会悄悄失效。
+// 例外是 <script type="application/ld+json"> 的结构化数据：它不会被执行，不受 CSP 限制。
 func TestNoInlineScriptsInTemplates(t *testing.T) {
 	inline := regexp.MustCompile(`(?i)<script(?:\s[^>]*)?>\s*[^<\s]|\son[a-z]+\s*=\s*["']|javascript:`)
 	err := fs.WalkDir(webassets.FS, "templates", func(p string, d fs.DirEntry, err error) error {
@@ -309,7 +310,7 @@ func TestNoInlineScriptsInTemplates(t *testing.T) {
 		}
 		b, _ := webassets.FS.ReadFile(p)
 		for i, line := range strings.Split(string(b), "\n") {
-			if m := inline.FindString(line); m != "" {
+			if m := inline.FindString(line); m != "" && !strings.HasPrefix(strings.ToLower(m), `<script type="application/ld+json">`) { // 结构化数据只是数据，浏览器不执行
 				t.Errorf("%s:%d 有内联脚本 %q，请把逻辑放进 static/js/app.js", p, i+1, m)
 			}
 		}

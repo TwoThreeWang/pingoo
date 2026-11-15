@@ -20,6 +20,10 @@
           </table></div>{{end}}
         </div>
         <div class="sblk">
+          <div class="sec-h"><h2>使用情况<small>不含管理员和演示账号</small></h2></div>
+          <div hx-get="/admin/part/activity" hx-trigger="load" hx-swap="outerHTML"><p class="note" style="margin-top:0">正在统计…</p></div>
+        </div>
+        <div class="sblk">
           <div class="sec-h"><h2>本月 AI 用量<small>按模型，所有用户合计</small></h2></div>
           {{if $d.Usage}}<div class="tbl-wrap"><table class="tbl">
             <tr><th class="l">模型</th><th>调用</th><th>输入 tokens</th><th>其中缓存</th><th>输出 tokens</th><th>扣除积分</th></tr>

@@ -28,7 +28,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 // staticPage 渲染关于、隐私政策、服务条款这类固定内容的页面。
 func (s *Server) staticPage(name, title string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		s.page(w, r, name, title, "", map[string]any{"Updated": "2026 年 11 月 13 日", "PerYuan": store.CreditsPerYuan, "Contact": s.Store.SettingOr(r.Context(), store.KeySMTPFrom, "")})
+		s.page(w, r, name, title, "", map[string]any{"Updated": "2026 年 11 月 15 日", "PerYuan": store.CreditsPerYuan, "Contact": s.Store.SettingOr(r.Context(), store.KeySMTPFrom, "")})
 	}
 }
 

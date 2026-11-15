@@ -242,3 +242,18 @@
   <button class="btn" type="button" data-close>取消</button><button class="btn dark" type="submit" form="modelForm">保存</button>
 </div>
 {{end}}
+
+{{define "admin-activity"}}{{$a := .A}}
+<div>
+  <div class="big3">
+    <div><div class="k">活跃用户 · 24 小时</div><div class="n">{{num (index $a.Active 0)}}</div><div class="note" style="margin:2px 0 0">7 天 {{num (index $a.Active 1)}} · 30 天 {{num (index $a.Active 2)}}</div></div>
+    <div><div class="k">新注册 · 24 小时</div><div class="n">{{num (index $a.Signups 0)}}</div><div class="note" style="margin:2px 0 0">7 天 {{num (index $a.Signups 1)}} · 30 天 {{num (index $a.Signups 2)}}</div></div>
+    <div><div class="k">付费用户</div><div class="n">{{num $a.Paid}}</div><div class="note" style="margin:2px 0 0">套餐还在有效期内</div></div>
+  </div>
+  <div class="tbl-wrap"><table class="tbl">
+    <tr><th class="l">AI 功能</th><th>24 小时</th><th>7 天</th><th>30 天</th><th>30 天用过的人</th></tr>
+    {{range $a.AI}}<tr><td class="l">{{ledgerKind .Kind}}</td><td class="tnum">{{num (index .Count 0)}}</td><td class="tnum">{{num (index .Count 1)}}</td><td class="tnum">{{num (index .Count 2)}}</td><td class="tnum">{{num .Users}}</td></tr>{{end}}
+  </table></div>
+  <p class="note">都按“过去 24 小时 / 7 天 / 30 天”滚动计算。活跃 = 这段时间里登录过或打开过页面；AI 是发起的次数，含失败退回的和每天自动生成的洞察、报告。统计于 {{clock .At}}，每 5 分钟更新一次。</p>
+</div>
+{{end}}

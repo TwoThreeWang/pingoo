@@ -1304,3 +1304,123 @@ func TestE2EDiagnosisStop(t *testing.T) {
 		t.Errorf("已经结束的诊断不应该被改成已停止：%q → %q", done, d.Status)
 	}
 }
+
+// TestE2ESEO：对外页面有描述、canonical、分享卡片和统计代码，首页有结构化数据；
+// 重置密码页不加载统计（地址里有令牌）；登录后的页面不让收录、不加载统计、CSP 不放行站外地址。
+func TestE2ESEO(t *testing.T) {
+	e := newE2E(t)
+	ctx := context.Background()
+	_ = e.st.SetSetting(ctx, store.KeySiteURL, "https://pingoo.example.com")
+	_ = e.st.SavePlans(ctx, func() store.PlanConfig { c := e.st.Plans(ctx); c.Currency = "$"; return c }())
+
+	rec := e.do("GET", "/", nil)
+	body := rec.Body.String()
+	for _, want := range []string{`<link rel="canonical" href="https://pingoo.example.com/">`, `<meta name="description" content="Pingoo 每天同步`,
+		`<meta property="og:url" content="https://pingoo.example.com/">`, `<meta name="robots" content="index, follow">`,
+		`<script type="application/ld+json">`, `"@type":"SoftwareApplication"`, `"priceCurrency":"USD"`,
+		`googletagmanager.com/gtm.js?id=` + gtmID, `/static/js/gtm.js`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("首页缺少 %s", want)
+		}
+	}
+	if csp := rec.Header().Get("Content-Security-Policy"); !strings.Contains(csp, "script-src 'self' https://*.googletagmanager.com") {
+		t.Errorf("对外页面的 CSP 应该放行 GTM: %s", csp)
+	}
+	if body := e.do("GET", "/help", nil).Body.String(); !strings.Contains(body, `<link rel="canonical" href="https://pingoo.example.com/help">`) || strings.Contains(body, "ld+json") {
+		t.Error("帮助页应该有自己的 canonical，没有首页的结构化数据")
+	}
+	if body := e.do("GET", "/login?next=/overview", nil).Body.String(); !strings.Contains(body, `href="https://pingoo.example.com/login">`) {
+		t.Error("canonical 不应该带查询参数")
+	}
+	rec = e.do("GET", "/reset?t=secret-token", nil)
+	if body := rec.Body.String(); strings.Contains(body, "googletagmanager") || !strings.Contains(body, `content="noindex, nofollow"`) ||
+		strings.Contains(rec.Header().Get("Content-Security-Policy"), "google") {
+		t.Error("重置密码页不应该加载统计代码，也不应该被收录")
+	}
+
+	robots := e.do("GET", "/robots.txt", nil).Body.String()
+	if !strings.Contains(robots, "Disallow: /settings") || !strings.Contains(robots, "Sitemap: https://pingoo.example.com/sitemap.xml") {
+		t.Errorf("robots.txt 不对:\n%s", robots)
+	}
+	sm := e.do("GET", "/sitemap.xml", nil)
+	if b := sm.Body.String(); !strings.Contains(b, "<loc>https://pingoo.example.com/</loc>") || !strings.Contains(b, "<loc>https://pingoo.example.com/help</loc>") ||
+		strings.Contains(b, "/overview") || !strings.HasPrefix(sm.Header().Get("Content-Type"), "application/xml") {
+		t.Errorf("sitemap.xml 不对:\n%s", b)
+	}
+	for _, p := range sitemapPaths {
+		if !seoPages[p.Page].Sitemap {
+			t.Errorf("sitemap 里的 %s 在 seoPages 里没标 Sitemap", p.Path)
+		}
+	}
+
+	e.newUser("seo@example.com")
+	rec = e.do("GET", "/overview", nil)
+	if body := rec.Body.String(); rec.Code != http.StatusOK || strings.Contains(body, "googletagmanager") || strings.Contains(body, "canonical") ||
+		!strings.Contains(body, `content="noindex, nofollow"`) || rec.Header().Get("X-Robots-Tag") != "noindex, nofollow" {
+		t.Errorf("登录后的页面不应该被收录、不应该加载统计代码: %d", rec.Code)
+	}
+	if got := rec.Header().Get("Content-Security-Policy"); got != csp {
+		t.Errorf("登录后的页面 CSP 不应该放行站外地址: %s", got)
+	}
+}
+
+// TestE2EAdminActivity：后台概况的使用情况——不算管理员和演示账号，按 24 小时 / 7 天 / 30 天滚动；结果缓存几分钟。
+func TestE2EAdminActivity(t *testing.T) {
+	e := newE2E(t)
+	a := e.newUser("act-a@example.com") // 刚注册并登录：24 小时内活跃
+	b := e.newUser("act-b@example.com")
+	// b 是 10 天前注册、10 天前最后一次访问的老用户，有一个有效的付费套餐
+	e.exec(`UPDATE users SET created_at=now()-interval '40 days', last_login_at=now()-interval '10 days', plan='pro', plan_expires_at=now()+interval '5 days' WHERE id=$1`, b)
+	e.exec(`UPDATE sessions SET last_seen_at=now()-interval '10 days' WHERE user_id=$1`, b)
+	// AI 记录：a 今天问答 2 次、b 3 天前诊断 1 次、b 40 天前的问答不算；管理员自己的不算
+	e.exec(`INSERT INTO ledger(user_id,kind,credits,created_at) VALUES ($1,'chat',-2,now()), ($1,'chat',-2,now()-interval '2 hours'),
+		($2,'diagnose',-5,now()-interval '3 days'), ($2,'chat',-1,now()-interval '40 days'),
+		((SELECT id FROM users WHERE is_admin),'chat',-1,now())`, a, b)
+
+	e.login()
+	if rec := e.do("GET", "/admin", nil); !strings.Contains(rec.Body.String(), `hx-get="/admin/part/activity"`) {
+		t.Fatal("后台概况应该在页面打开后再加载使用情况")
+	}
+	body := e.do("GET", "/admin/part/activity", nil).Body.String()
+	row := func(name string) string {
+		m := regexp.MustCompile(name + `</td>((?:<td class="tnum">[^<]*</td>)+)`).FindStringSubmatch(body)
+		if m == nil {
+			return ""
+		}
+		return regexp.MustCompile(`<[^>]+>`).ReplaceAllString(strings.ReplaceAll(m[1], "</td><td", "</td>|<td"), "")
+	}
+	if got := row("AI 问答"); got != "2|2|2|1" {
+		t.Errorf("问答应该是 24 小时 2 次、7 天 2 次、30 天 2 次、1 个人，实际 %q", got)
+	}
+	if got := row("AI 诊断"); got != "0|1|1|1" {
+		t.Errorf("诊断应该是 0 / 1 / 1、1 个人，实际 %q", got)
+	}
+	if got := row("AI 报告"); got != "0|0|0|0" {
+		t.Errorf("没用过的功能也要列出来，全是 0，实际 %q", got)
+	}
+	for _, want := range []string{`活跃用户 · 24 小时</div><div class="n">1</div>`, `7 天 1 · 30 天 2`,
+		`新注册 · 24 小时</div><div class="n">1</div>`, `7 天 1 · 30 天 1`, `付费用户</div><div class="n">1</div>`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("使用情况缺少 %s:\n%s", want, body)
+		}
+	}
+
+	// 5 分钟内再打开用缓存，不重新查库
+	e.exec(`INSERT INTO ledger(user_id,kind,credits) VALUES ($1,'report',-3)`, a)
+	body = e.do("GET", "/admin/part/activity", nil).Body.String()
+	if got := row("AI 报告"); got != "0|0|0|0" {
+		t.Errorf("缓存期内不应该变: %q", got)
+	}
+	e.srv.activityMu.Lock()
+	e.srv.activityAt = time.Time{}
+	e.srv.activityMu.Unlock()
+	body = e.do("GET", "/admin/part/activity", nil).Body.String()
+	if got := row("AI 报告"); got != "1|1|1|1" {
+		t.Errorf("缓存过期后应该重新统计: %q", got)
+	}
+
+	e.cookie = nil
+	if rec := e.do("GET", "/admin/part/activity", nil); rec.Code == http.StatusOK {
+		t.Error("没登录不能看使用情况")
+	}
+}

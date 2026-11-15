@@ -3,8 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{.Title}} · Pingoo</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Crect width='18' height='18' rx='4' fill='%23151514'/%3E%3Cpath d='M4 12.5 7.5 9l2.5 2.5L14 6' fill='none' stroke='%23fafaf8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>{{.SEO.Title}}</title>
+{{if .SEO.Index}}<meta name="description" content="{{.SEO.Desc}}">
+{{if .SEO.Keywords}}<meta name="keywords" content="{{.SEO.Keywords}}">
+{{end}}<meta name="robots" content="index, follow">
+<link rel="canonical" href="{{.SEO.Canonical}}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Pingoo">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="{{.SEO.Title}}">
+<meta property="og:description" content="{{.SEO.Desc}}">
+<meta property="og:url" content="{{.SEO.Canonical}}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{.SEO.Title}}">
+<meta name="twitter:description" content="{{.SEO.Desc}}">
+{{else}}<meta name="robots" content="noindex, nofollow">
+{{end}}{{if .SEO.LD}}<script type="application/ld+json">{{.SEO.LD}}</script>
+{{end}}{{if .SEO.GTM}}<script src="/static/js/gtm.js?v={{.Asset}}"></script>
+<script async src="https://www.googletagmanager.com/gtm.js?id={{.SEO.GTM}}"></script>
+{{end}}<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Crect width='18' height='18' rx='4' fill='%23151514'/%3E%3Cpath d='M4 12.5 7.5 9l2.5 2.5L14 6' fill='none' stroke='%23fafaf8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/css/base.css?v={{.Asset}}">
 <link rel="stylesheet" href="/static/css/pages.css?v={{.Asset}}">
 <script src="/static/js/theme.js?v={{.Asset}}"></script>

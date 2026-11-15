@@ -79,6 +79,27 @@ func (s *Server) adminPage(w http.ResponseWriter, r *http.Request) {
 	s.page(w, r, "admin", "管理后台", "admin", d)
 }
 
+// activityTTL 是后台“使用情况”的缓存时间：几分钟内重复打开后台不再查库。
+const activityTTL = 5 * time.Minute
+
+// adminActivity 是后台概况里的“使用情况”。页面打开后再单独加载（hx-trigger="load"），不拖慢后台本身；
+// 结果缓存几分钟，管理员来回刷新也只查一次。
+func (s *Server) adminActivity(w http.ResponseWriter, r *http.Request) {
+	s.activityMu.Lock()
+	defer s.activityMu.Unlock() // 同时打开几次时只查一次库，其余的等它算完用缓存
+	if time.Since(s.activityAt) >= activityTTL {
+		a, err := s.Store.Activity(r.Context())
+		if err != nil {
+			s.Log.Error("统计使用情况失败", "err", err)
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(`<p class="note" style="margin-top:0">使用情况暂时统计不出来，稍后刷新再试。</p>`))
+			return
+		}
+		s.activity, s.activityAt = a, time.Now()
+	}
+	s.part(w, "admin-activity", map[string]any{"A": s.activity, "At": s.activityAt})
+}
+
 func (s *Server) adminSaveSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	_ = r.ParseForm()
