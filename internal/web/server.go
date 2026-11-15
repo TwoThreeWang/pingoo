@@ -32,8 +32,6 @@ import (
 	webassets "pingoo/web"
 )
 
-const Version = "0.1"
-
 type Server struct {
 	Cfg      *config.Config
 	Store    *store.Store
@@ -120,7 +118,7 @@ type view struct {
 
 // publicPages 用对外的页面布局（顶部是“首页 / 关于 / 登录 / 注册”），其余用应用里的布局。
 var publicPages = map[string]bool{"landing": true, "help": true, "about": true, "privacy": true, "terms": true,
-	"login": true, "register": true, "forgot": true, "reset": true, "notice": true}
+	"login": true, "register": true, "forgot": true, "reset": true, "notice": true, "changelog": true}
 
 func (s *Server) page(w http.ResponseWriter, r *http.Request, name, title, nav string, d any) {
 	s.render(w, r, http.StatusOK, name, title, nav, d)
@@ -232,6 +230,7 @@ func (s *Server) Handler() (http.Handler, error) {
 	mux.HandleFunc("GET /about", s.staticPage("about", "关于 Pingoo"))
 	mux.HandleFunc("GET /privacy", s.staticPage("privacy", "隐私政策"))
 	mux.HandleFunc("GET /terms", s.staticPage("terms", "服务条款"))
+	mux.HandleFunc("GET /changelog", s.changelogPage)
 	mux.HandleFunc("POST /demo", s.demoEnter)
 	mux.HandleFunc("GET /login", s.loginPage)
 	mux.HandleFunc("POST /login", s.loginPost)
@@ -337,7 +336,7 @@ const (
 
 // publicPaths 不登录也能访问。
 var publicPaths = map[string]bool{"/": true, "/help": true, "/about": true, "/privacy": true, "/terms": true, "/demo": true, "/healthz": true,
-	"/robots.txt": true, "/sitemap.xml": true,
+	"/robots.txt": true, "/sitemap.xml": true, "/changelog": true,
 	"/login": true, "/register": true, "/forgot": true, "/reset": true, "/logout": true}
 
 // currentUser 返回当前登录的用户；没登录返回 nil。

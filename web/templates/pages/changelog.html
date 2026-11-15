@@ -1,0 +1,14 @@
+{{define "main"}}
+<main class="wrap doc changelog">
+  <h1 class="headline">更新日志</h1>
+  <p class="lede">Pingoo 每个版本改了什么。当前版本 v{{.Version}}。</p>
+  {{range .D}}
+  <section class="rel" id="v{{.Version}}">
+    <h2><a href="#v{{.Version}}">v{{.Version}}</a><span class="muted mono">{{.Date}}</span></h2>
+    <p>{{.Summary}}</p>
+    {{range .Groups}}<h3>{{.Name}}</h3>
+    <ul>{{range .Items}}<li>{{.}}</li>{{end}}</ul>{{end}}
+  </section>
+  {{end}}
+</main>
+{{end}}

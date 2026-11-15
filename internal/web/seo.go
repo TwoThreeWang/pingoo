@@ -42,7 +42,8 @@ var seoPages = map[string]seoPage{
 	"terms":   {Desc: "Pingoo 服务条款：账号、积分、套餐、AI 功能的使用规则和责任说明。", Sitemap: true},
 	"register": {Desc: "免费注册 Pingoo，只需要一个邮箱。连接 Google Analytics 和 Search Console 后，每天自动收到所有网站的数据简报和 AI 分析。",
 		Keywords: seoKeywords, Sitemap: true},
-	"login": {Desc: "登录 Pingoo，查看你所有网站的 Google Analytics 和 Search Console 数据简报。"},
+	"changelog": {Desc: "Pingoo 更新日志：每个版本新增的功能、改进和修复。", Sitemap: true},
+	"login":     {Desc: "登录 Pingoo，查看你所有网站的 Google Analytics 和 Search Console 数据简报。"},
 }
 
 // seoView 是 <head> 里和搜索引擎、分享卡片、统计有关的内容。
@@ -142,6 +143,7 @@ var sitemapPaths = []struct{ Path, Page, Freq, Priority string }{
 	{"/help", "help", "weekly", "0.8"},
 	{"/register", "register", "monthly", "0.6"},
 	{"/about", "about", "monthly", "0.5"},
+	{"/changelog", "changelog", "weekly", "0.4"},
 	{"/privacy", "privacy", "yearly", "0.3"},
 	{"/terms", "terms", "yearly", "0.3"},
 }
