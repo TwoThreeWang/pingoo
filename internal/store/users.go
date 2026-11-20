@@ -54,10 +54,15 @@ type User struct {
 
 const userCols = `id,email,pass_hash,is_admin,credits,model_id,auto_ai,disabled,demo,created_at,last_login_at,plan,plan_expires_at,plan_credits_at`
 
-func scanUser(r pgx.Row) (User, error) {
+// scanUser 读出 userCols 这些列；extra 是查询里跟在后面的其他列。
+func scanUser(r pgx.Row, extra ...func(*User) any) (User, error) {
 	var u User
-	err := r.Scan(&u.ID, &u.Email, &u.PassHash, &u.IsAdmin, &u.Credits, &u.ModelID, &u.AutoAI, &u.Disabled, &u.Demo, &u.CreatedAt, &u.LastLoginAt,
-		&u.Plan, &u.PlanExpiresAt, &u.PlanCreditsAt)
+	dest := []any{&u.ID, &u.Email, &u.PassHash, &u.IsAdmin, &u.Credits, &u.ModelID, &u.AutoAI, &u.Disabled, &u.Demo, &u.CreatedAt, &u.LastLoginAt,
+		&u.Plan, &u.PlanExpiresAt, &u.PlanCreditsAt}
+	for _, f := range extra {
+		dest = append(dest, f(&u))
+	}
+	err := r.Scan(dest...)
 	return u, notFound(err)
 }
 
@@ -150,10 +155,9 @@ func (s *Store) Users(ctx context.Context, q string, limit int) ([]User, error) 
 	if err != nil {
 		return nil, err
 	}
+	// 以前这里少扫了套餐那几列，列数对不上，整个列表都读不出来（后台看不到套餐和到期时间）
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (User, error) {
-		var u User
-		err := r.Scan(&u.ID, &u.Email, &u.PassHash, &u.IsAdmin, &u.Credits, &u.ModelID, &u.AutoAI, &u.Disabled, &u.Demo, &u.CreatedAt, &u.LastLoginAt, &u.Sites)
-		return u, err
+		return scanUser(r, func(u *User) any { return &u.Sites })
 	})
 }
 

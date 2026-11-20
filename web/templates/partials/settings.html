@@ -43,7 +43,8 @@
 {{define "settings-ai"}}
 <div class="plan-box">
   <div class="plan-now"><span class="muted">当前套餐</span> <b>{{.Plan.Name}}</b>
-    {{if .Expires}}<span class="muted">· 到期 {{tsDate (deref2 .Expires)}}（还剩 {{.DaysLeft}} 天）</span>
+    {{if .Admin}}<span class="muted">· 管理员账号，长期有效</span>
+    {{else if .Expires}}<span class="muted">· 到期 {{tsDate (deref2 .Expires)}}（还剩 {{.DaysLeft}} 天）</span>
     {{else if .Expired}}<span class="warn-t">· 付费套餐已于 {{tsDate (deref2 .Expired)}} 到期，{{tsDate .GraceEnd}} 前续费，数据一点都不会少</span>{{end}}
     <span style="margin-left:auto;display:flex;gap:12px">{{if .Plan.BuyURL}}<a class="tlink" href="{{.Plan.BuyURL}}" target="_blank" rel="noopener">{{if .Expired}}续费{{else}}购买{{end}}{{.Plan.Name}}卡密</a>{{end}}<a class="tlink" href="/#pricing">比较套餐</a></span></div>
   <div class="plan-facts">{{.SitesUsed}}{{if lt .Plan.Sites 100000}} / {{.Plan.Sites}}{{end}} 个网站 · 明细保留 {{keepText .Plan.DetailDays}} · 每日趋势保留 {{keepText .Plan.TotalDays}}{{if gt .Plan.SyncHours 0}} · 每 {{.Plan.SyncHours}} 小时刷新{{end}}{{if .Plan.Digest}} · 每日邮件简报{{end}}{{if gt .Plan.MonthlyCredits 0}} · 每月送 {{num .Plan.MonthlyCredits}} 积分{{if .NextCredits}}（下次 {{tsMD (deref2 .NextCredits)}}）{{end}}{{end}}</div>

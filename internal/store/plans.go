@@ -327,9 +327,10 @@ func (s *Store) ExpiringUsers(ctx context.Context, from, to time.Time) ([]User, 
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (User, error) { return scanUser(r) })
 }
 
-// DigestUsers 返回付费套餐有效、没有关掉邮件简报的用户。
+// DigestUsers 返回付费套餐有效（管理员按专业版算，见 PlanID）、没有关掉邮件简报的用户。
+// 以前只看 plan 字段，管理员的 plan 一直是 free，所以管理员从来收不到简报。
 func (s *Store) DigestUsers(ctx context.Context) ([]User, error) {
-	rows, err := s.Pool.Query(ctx, `SELECT `+prefixed("u.", userCols)+` FROM users u WHERE u.plan <> 'free' AND u.plan_expires_at > now()
+	rows, err := s.Pool.Query(ctx, `SELECT `+prefixed("u.", userCols)+` FROM users u WHERE (u.is_admin OR (u.plan <> 'free' AND u.plan_expires_at > now()))
 		AND NOT u.disabled AND NOT u.demo AND NOT EXISTS (SELECT 1 FROM app_settings a WHERE a.user_id=u.id AND a.key=$1 AND a.value='true')`, KeyDigestOff)
 	if err != nil {
 		return nil, err

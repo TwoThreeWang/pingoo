@@ -365,3 +365,35 @@ func TestLedgerPage(t *testing.T) {
 		}
 	}
 }
+
+// 后台用户列表要能读出套餐和到期时间；管理员（plan 字段是 free）也要收到每日简报。
+func TestUsersListAndDigestUsers(t *testing.T) {
+	s := newStore(t)
+	ctx := userCtx()
+	exec(t, s, `UPDATE users SET plan='basic', plan_expires_at=now() + interval '10 days' WHERE id=1`)
+	admin := testdb.User(t, s.Pool, "admin@pingoo.test")
+	exec(t, s, `UPDATE users SET is_admin=true WHERE id=$1`, admin)
+	free := testdb.User(t, s.Pool, "free@pingoo.test")
+
+	list, err := s.Users(ctx, "", 100)
+	if err != nil || len(list) != 3 {
+		t.Fatalf("用户列表: %d 个, err=%v", len(list), err)
+	}
+	for _, u := range list {
+		if u.ID == 1 && (u.Plan != PlanBasic || u.PlanExpiresAt == nil) {
+			t.Errorf("列表里要有套餐和到期时间: %+v", u)
+		}
+	}
+
+	got := map[int64]bool{}
+	users, err := s.DigestUsers(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, u := range users {
+		got[u.ID] = true
+	}
+	if !got[1] || !got[admin] || got[free] {
+		t.Errorf("简报名单应该有付费用户和管理员、没有免费用户: %v", got)
+	}
+}

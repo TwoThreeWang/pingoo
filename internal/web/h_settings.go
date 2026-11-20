@@ -40,6 +40,7 @@ type aiView struct {
 	BuyURL  string // 购买积分卡密的地址，空表示后台没填
 	// 套餐
 	Plan        store.Plan
+	Admin       bool       // 管理员按专业版算、不限网站数，没有到期时间
 	Expires     *time.Time // 付费套餐的到期时间
 	DaysLeft    int
 	Expired     *time.Time // 付费套餐已经到期（还在 7 天宽限期里）时的到期时间
@@ -154,7 +155,8 @@ func (s *Server) aiView(r *http.Request) aiView {
 	now := time.Now()
 	v.Plan = s.Store.PlanOf(ctx, u.ID)
 	v.SitesUsed = s.Store.SiteCount(ctx)
-	if u.PlanExpiresAt != nil && u.Plan != store.PlanFree {
+	v.Admin = u.IsAdmin
+	if !u.IsAdmin && u.PlanExpiresAt != nil && u.Plan != store.PlanFree {
 		switch {
 		case u.PlanExpiresAt.After(now):
 			v.Expires, v.DaysLeft = u.PlanExpiresAt, int(u.PlanExpiresAt.Sub(now).Hours()/24)
